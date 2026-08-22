@@ -1,30 +1,33 @@
 'use client';
 
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { ChevronDownIcon, CheckIcon } from './Icons';
+import { ChevronDownIcon, CheckIcon, InfoCircleIcon } from './Icons';
 
 export type SelectOption = { value: string; label: string };
 
 /**
- * A hand-rolled listbox, not a native <select>. This is a deliberate,
- * higher-effort choice: the reference image shows the open dropdown with
- * its currently-selected option highlighted in a specific brand color
- * (secondary-light), which native <select> option styling cannot reliably
- * reproduce across browsers (Windows renders native <select> popups with
- * the OS's own theme, ignoring most CSS entirely).
+ * A hand-rolled listbox, not a native <select> — the reference product's
+ * open-state look (options listed inline below the trigger, selected
+ * option highlighted as a solid secondary-light bar, the whole group
+ * boxed in a light tint while open) isn't reproducible on a native
+ * <select> cross-browser.
  *
- * Because we're opting out of native <select> semantics, we have to
- * hand-build the accessibility behavior a native element would give for
- * free:
- *  - `role="combobox"` trigger button + `aria-expanded` + `aria-controls`
- *  - `role="listbox"` popup with `role="option"` children + `aria-selected`
- *  - `aria-activedescendant` on the trigger, pointing at the keyboard-
- *    highlighted option, so a screen reader announces the highlight
- *    without moving actual DOM focus off the trigger (the standard pattern
- *    for a "managed focus" listbox)
- *  - ArrowUp/ArrowDown to move the highlight, Enter/Space to choose it,
- *    Escape to close, and a document-level click listener to close on an
- *    outside click.
+ * Two things changed from an earlier version of this component after
+ * reviewing the actual product reference (Roomick-UI.pdf) closely:
+ *  1. The trigger is an underline field (matches Input.tsx's anatomy),
+ *     not a bordered box.
+ *  2. The open listbox renders INLINE, in normal document flow — not as
+ *     an absolutely-positioned floating popover. The reference shows
+ *     content below a Select visibly pushed down while it's open, not
+ *     covered by an overlay; matching that means no z-index/positioning
+ *     concerns at all, which is also simply less code.
+ *
+ * Accessibility: `role="combobox"` trigger + `aria-expanded`/
+ * `aria-controls`, `role="listbox"` + `role="option"` children,
+ * `aria-activedescendant` on the trigger (managed-focus pattern — DOM
+ * focus stays on the trigger the whole time; the "active" option is
+ * announced via aria-activedescendant, not by moving real focus), full
+ * Arrow/Enter/Escape keyboard support, click-outside-to-close.
  */
 export function Select({
   label,
@@ -58,8 +61,6 @@ export function Select({
   const listboxId = `${fieldId}-listbox`;
   const selected = options.find((o) => o.value === value) ?? null;
 
-  // Click-outside-to-close: a plain document listener, no library. Only
-  // attached while open, and cleaned up on close/unmount.
   useEffect(() => {
     if (!open) return;
     function handleClickOutside(event: MouseEvent) {
@@ -115,70 +116,75 @@ export function Select({
   const errorId = error ? `${fieldId}-error` : undefined;
 
   return (
-    <div className="flex flex-col gap-1.5" ref={containerRef}>
+    <div
+      ref={containerRef}
+      className={`flex flex-col gap-1 rounded-control px-3 -mx-3 py-2 transition-colors ${open ? 'bg-secondary-light/15' : ''}`}
+    >
       <label htmlFor={fieldId} className="text-small font-semibold text-secondary">
         {label}
       </label>
-      <div className="relative">
-        <button
-          ref={triggerRef}
-          type="button"
-          id={fieldId}
-          role="combobox"
-          aria-haspopup="listbox"
-          aria-expanded={open}
-          aria-controls={listboxId}
-          aria-activedescendant={open ? `${listboxId}-option-${activeIndex}` : undefined}
-          aria-describedby={errorId ?? hintId}
-          aria-invalid={Boolean(error)}
-          disabled={disabled}
-          onClick={() => (open ? setOpen(false) : openAt(Math.max(0, options.findIndex((o) => o.value === value))))}
-          onKeyDown={handleTriggerKeyDown}
-          className={`w-full flex items-center justify-between gap-2 bg-white border rounded-control px-4 py-2.5 text-body text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 disabled:pointer-events-none ${
-            error ? 'border-red-600' : 'border-accent/40'
-          }`}
-        >
-          <span className={selected ? 'text-secondary' : 'text-accent'}>{selected ? selected.label : placeholder}</span>
-          <ChevronDownIcon className={`size-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
-        </button>
+      <button
+        ref={triggerRef}
+        type="button"
+        id={fieldId}
+        role="combobox"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={listboxId}
+        aria-activedescendant={open ? `${listboxId}-option-${activeIndex}` : undefined}
+        aria-describedby={errorId ?? hintId}
+        aria-invalid={Boolean(error)}
+        disabled={disabled}
+        onClick={() => (open ? setOpen(false) : openAt(Math.max(0, options.findIndex((o) => o.value === value))))}
+        onKeyDown={handleTriggerKeyDown}
+        className={`w-full flex items-center justify-between gap-2 bg-transparent border-0 border-b pb-1 text-body text-left cursor-pointer focus:outline-none disabled:opacity-50 disabled:pointer-events-none disabled:cursor-default ${
+          error ? 'border-red-600' : open ? 'border-secondary' : 'border-accent/40'
+        }`}
+      >
+        <span className={selected ? 'text-secondary' : 'text-accent'}>{selected ? selected.label : placeholder}</span>
+        <ChevronDownIcon className={`size-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
 
-        {open ? (
-          <ul id={listboxId} role="listbox" aria-labelledby={fieldId} className="absolute z-10 mt-1 w-full rounded-control border border-accent/40 bg-white py-1 shadow-md max-h-64 overflow-auto">
-            {options.map((option, index) => {
-              const isSelected = option.value === value;
-              const isActive = index === activeIndex;
-              return (
-                <li
-                  key={option.value}
-                  id={`${listboxId}-option-${index}`}
-                  role="option"
-                  aria-selected={isSelected}
-                  onMouseEnter={() => setActiveIndex(index)}
-                  onClick={() => {
-                    onChange(option.value);
-                    setOpen(false);
-                    triggerRef.current?.focus();
-                  }}
-                  className={`flex items-center justify-between gap-2 px-4 py-2 text-body cursor-pointer ${
-                    isSelected ? 'bg-secondary-light/30 font-semibold' : isActive ? 'bg-secondary-light/10' : ''
-                  }`}
-                >
-                  {option.label}
-                  {isSelected ? <CheckIcon className="size-4 text-secondary" /> : null}
-                </li>
-              );
-            })}
-          </ul>
-        ) : null}
-      </div>
+      {open ? (
+        <ul id={listboxId} role="listbox" aria-labelledby={fieldId} className="mt-1 flex flex-col max-h-64 overflow-auto">
+          {options.map((option, index) => {
+            const isSelected = option.value === value;
+            const isActive = index === activeIndex;
+            return (
+              <li
+                key={option.value}
+                id={`${listboxId}-option-${index}`}
+                role="option"
+                aria-selected={isSelected}
+                onMouseEnter={() => setActiveIndex(index)}
+                onClick={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                  triggerRef.current?.focus();
+                }}
+                className={`flex items-center justify-between gap-2 rounded-control px-3 py-2 text-body cursor-pointer ${
+                  isSelected ? 'bg-secondary-light text-secondary font-semibold' : isActive ? 'bg-secondary-light/30' : ''
+                }`}
+              >
+                {option.label}
+                {isSelected ? <CheckIcon className="size-4" /> : null}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+
       {error ? (
-        <p id={errorId} className="text-small text-red-600">
+        <p id={errorId} className="text-small text-red-600 mt-1">
           {error}
         </p>
       ) : hint ? (
-        <p id={hintId} className="text-small text-secondary-light">
-          {hint}
-        </p>
+        <span className="mt-1 inline-flex text-accent-dark" title={hint}>
+          <InfoCircleIcon />
+          <span id={hintId} className="sr-only">
+            {hint}
+          </span>
+        </span>
       ) : null}
     </div>
   );

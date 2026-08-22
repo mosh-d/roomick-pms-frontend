@@ -9,15 +9,22 @@ variant, row = default/hover/disabled):
 
 | Variant | Default | Hover | Disabled |
 |---|---|---|---|
-| `primary` | `bg-primary text-secondary` | `hover:brightness-110` | `opacity-50` |
+| `primary` | `bg-primary text-white` | `hover:brightness-110` | `opacity-50` |
 | `secondary` | `bg-secondary text-white` | `hover:brightness-125` | `opacity-50` |
 | `outline` (`tone: onLight\|onDark`) | bordered, transparent fill | inverts to a solid fill | muted (`border-accent text-accent`) |
 
 ## Decisions worth knowing
 
-- **Primary button text is `text-secondary`, not white.** White-on-`#CCA000`
-  measures ~2.45:1 (fails WCAG AA); `secondary`-on-`primary` measures ~8:1.
-  Gold + deep purple is also a stronger on-brand pairing than gold + white.
+- **Primary button text is white**, per the actual product reference
+  imagery (Confirm Check-In, the Check-In nav panel) — a deliberate design
+  call, kept even though white-on-`#CCA000` measures ~2.45:1 and technically
+  fails WCAG AA. Same documented-tradeoff treatment as the VIP badge in
+  `status-tags.md`: consistency with the reference views wins over a strict
+  contrast rule for this specific, large, bold, high-emphasis element.
+- **This same white-on-primary rule extends to solid navigation panels**
+  (see `cards.md`'s "Solid primary panels" section) — any full-opacity
+  primary surface uses white text and white pill buttons, not
+  `text-secondary`.
 - **Sentence case, not the uppercase-tracked style Daddy Bear uses.**
   `uppercase tracking-wide` is a marketing-CTA convention; Roomick's
   "efficient over decorative" voice (`00-brand-voice.md`) calls for labels

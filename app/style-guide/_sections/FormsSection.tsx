@@ -10,8 +10,10 @@ import { Select, type SelectOption } from '@/components/ui/Select';
 import { YesNoToggle } from '@/components/ui/YesNoToggle';
 import { MultiSelectTagInput } from '@/components/ui/MultiSelectTagInput';
 import { BrandRadioCard, type BrandMode } from '@/components/ui/BrandRadioCard';
+import { RadioCard } from '@/components/ui/RadioCard';
 import { LogoUpload } from '@/components/ui/LogoUpload';
 import { FormSection } from '@/components/ui/FormSection';
+import { Section } from '@/components/ui/Section';
 import { Button } from '@/components/ui/Button';
 
 const ROOM_TYPE_OPTIONS: SelectOption[] = [
@@ -29,6 +31,29 @@ const AMENITY_OPTIONS: SelectOption[] = [
   { value: 'pool', label: 'Pool' },
   { value: 'gym', label: 'Gym' },
 ];
+
+const ID_TYPE_OPTIONS: SelectOption[] = [
+  { value: 'drivers_license', label: "Driver's License" },
+  { value: 'nin', label: 'NIN' },
+  { value: 'passport', label: 'Passport' },
+  { value: 'student_id', label: 'Student ID card' },
+];
+
+// Illustrative only — the real Check-In ID-capture flow is a later phase.
+// This just proves RadioCard's variant="toggle" swaps content correctly.
+function DigitalCaptureDemo() {
+  const [idType, setIdType] = useState<string | null>('passport');
+  return (
+    <div className="flex flex-col gap-4">
+      <Select name="idType" label="ID Type" options={ID_TYPE_OPTIONS} value={idType} onChange={setIdType} />
+      <LogoUpload label="ID Upload" file={null} onFileChange={() => {}} hint="Upload front and back picture of ID to extract ID number and expiry date." />
+    </div>
+  );
+}
+
+function ManualCaptureDemo() {
+  return <Textarea label="ID details" placeholder="Enter ID number, type, and expiry date manually..." />;
+}
 
 /**
  * Demonstrates the RHF + Zod pattern documented in
@@ -71,6 +96,7 @@ function BrandFields({
 
   return (
     <BrandRadioCard
+      name="brandMode"
       value={brandMode.field.value as BrandMode}
       onChange={brandMode.field.onChange}
       brandName={brandName.field.value ?? ''}
@@ -130,6 +156,7 @@ export function FormsSection() {
   const [standaloneMode, setStandaloneMode] = useState<BrandMode | null>('single');
   const [standaloneBrandName, setStandaloneBrandName] = useState('Caritas Inn');
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [captureMode, setCaptureMode] = useState<'digital' | 'manual' | null>('digital');
 
   return (
     <section className="flex flex-col gap-8">
@@ -140,6 +167,7 @@ export function FormsSection() {
         <Input label="Text Input (error state)" defaultValue="oops" error="This field is required" />
         <Textarea label="Description" placeholder="Type your description here..." />
         <Select
+          name="roomType"
           label="Room Type"
           options={ROOM_TYPE_OPTIONS}
           value={roomType}
@@ -148,12 +176,14 @@ export function FormsSection() {
         />
         <YesNoToggle label="Needs housekeeping today?" name="housekeeping" value={housekeeping} onChange={setHousekeeping} />
         <MultiSelectTagInput
+          name="amenities"
           label="Amenities (pick from list)"
           options={AMENITY_OPTIONS}
           value={amenities}
           onChange={setAmenities}
         />
         <MultiSelectTagInput
+          name="customTags"
           label="Custom tags (free text)"
           options={[]}
           value={customTags}
@@ -164,14 +194,42 @@ export function FormsSection() {
       </div>
 
       <div>
-        <h3 className="text-subheader font-semibold text-secondary mb-3">Brand mode (standalone)</h3>
+        <h3 className="text-subheader font-semibold text-secondary mb-3">
+          Brand mode (standalone) — wrapped in <code className="text-tiny">Section</code>, matching real usage
+        </h3>
         <div className="max-w-sm">
-          <BrandRadioCard
-            value={standaloneMode}
-            onChange={setStandaloneMode}
-            brandName={standaloneBrandName}
-            onBrandNameChange={setStandaloneBrandName}
-          />
+          <Section label="Organization Structure">
+            <BrandRadioCard
+              name="standaloneBrandMode"
+              value={standaloneMode}
+              onChange={setStandaloneMode}
+              brandName={standaloneBrandName}
+              onBrandNameChange={setStandaloneBrandName}
+            />
+          </Section>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-subheader font-semibold text-secondary mb-3">ID capture — same RadioCard primitive</h3>
+        <p className="text-small text-secondary-light max-w-prose mb-3">
+          No <code className="text-tiny">description</code> on either option ⇒ a plain radio row, with the selected
+          option&apos;s content nested below in its own Card — the same rendering path as Brand Mode above, just
+          different data.
+        </p>
+        <div className="max-w-md">
+          <Section label="ID Capture">
+            <RadioCard
+              tone="secondary"
+              name="captureMode"
+              options={[
+                { value: 'digital', title: 'Digital Capture', content: <DigitalCaptureDemo /> },
+                { value: 'manual', title: 'Manual Capture', content: <ManualCaptureDemo /> },
+              ]}
+              value={captureMode}
+              onChange={setCaptureMode}
+            />
+          </Section>
         </div>
       </div>
 

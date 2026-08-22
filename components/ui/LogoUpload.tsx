@@ -74,7 +74,7 @@ export function LogoUpload({
             type="button"
             onClick={() => onFileChange(null)}
             aria-label="Remove logo"
-            className="text-secondary-light hover:text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+            className="text-secondary-light hover:text-secondary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
           >
             <XIcon />
           </button>
@@ -95,7 +95,7 @@ export function LogoUpload({
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="text-body font-semibold text-primary-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
+            className="text-body font-semibold text-primary-text hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
           >
             Click to upload or drag and drop
           </button>

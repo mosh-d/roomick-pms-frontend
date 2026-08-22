@@ -13,7 +13,13 @@ export type CardTone = 'primary' | 'secondary' | 'accent';
 // deeper, richer tint instead, which stays reliably readable under plain
 // text-secondary (near-black) regardless of nesting depth. See
 // design-system/01-color.md for the contrast reasoning in full.
-const TONE_CLASSES: Record<CardTone, string> = {
+// Exported (not just module-private) so other components that need to look
+// like a Card — but can't literally render a <Card>, e.g. RadioCard.tsx's
+// clickable <label> — reuse the exact same tone→class mapping instead of
+// hand-copying it. Hand-copying is how the old BrandRadioCard drifted out
+// of sync with Card's own tone colors after the dark-variant fix; sharing
+// the constant makes that class of drift impossible.
+export const CARD_TONE_CLASSES: Record<CardTone, string> = {
   primary: 'bg-primary-dark/10 border-primary-dark/20',
   secondary: 'bg-secondary/10 border-secondary/20',
   accent: 'bg-accent-dark/10 border-accent-dark/20',
@@ -43,5 +49,5 @@ export function Card({
   className?: string;
   children: ReactNode;
 }) {
-  return <div className={`${TONE_CLASSES[tone]} border rounded-card p-4 ${className}`}>{children}</div>;
+  return <div className={`${CARD_TONE_CLASSES[tone]} border rounded-card p-4 ${className}`}>{children}</div>;
 }

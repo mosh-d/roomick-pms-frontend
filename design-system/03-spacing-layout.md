@@ -28,7 +28,7 @@ from their own device, rather than building phone-up.
 | Token | Value | Use |
 |---|---|---|
 | `radius-control` | `0.5rem` | Buttons, inputs, selects, textareas, chips |
-| `radius-card` | `0.75rem` | Cards, panels, dropzones, fieldsets |
+| `radius-card` | `0.5rem` | Cards, panels, dropzones, fieldsets — reduced twice per design review, now level with `radius-control` |
 | `radius-pill` | `999px` | Badges/status tags, and the Yes/No toggle only |
 
 The reference images never show a button as a full pill — only badges are

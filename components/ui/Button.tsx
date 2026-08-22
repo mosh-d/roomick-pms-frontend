@@ -13,7 +13,7 @@ export type ButtonSize = 'sm' | 'md';
 // happens to emit last, which is not something to rely on. This is the same
 // lesson Daddy Bear's own Button.tsx documents.
 const base =
-  'inline-flex items-center justify-center gap-2 rounded-control font-semibold transition-[filter,background-color,color,border-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none';
+  'inline-flex items-center justify-center gap-2 rounded-control font-semibold cursor-pointer transition-[filter,background-color,color,border-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:cursor-default';
 
 const sizeClasses: Record<ButtonSize, string> = {
   // min-h-11 = 44px, the minimum accessible tap target, kept even at the
@@ -29,13 +29,18 @@ const sizeClasses: Record<ButtonSize, string> = {
 // default/hover:/disabled: states below.
 const variantClasses: Record<ButtonVariant, Record<ButtonTone, string>> = {
   primary: {
-    // Text is text-secondary, not white: white-on-#CCA000 measures ~2.45:1
-    // (fails WCAG AA); secondary-on-primary measures ~8:1. hover:brightness
-    // is used instead of a second hover-only color token because it's
-    // surface-agnostic — an opacity-based hover would look different
-    // depending on what's rendered behind the button, brightness doesn't.
-    onLight: 'bg-primary text-secondary hover:brightness-110 disabled:opacity-50',
-    onDark: 'bg-primary text-secondary hover:brightness-110 disabled:opacity-50',
+    // White text per the actual product reference imagery (Confirm
+    // Check-In, the Check-In nav panel) — a deliberate design call, kept
+    // even though it measures ~2.45:1 against #CCA000 and technically
+    // fails WCAG AA (same documented-tradeoff treatment as the VIP badge
+    // in StatusTag.tsx: font-semibold + a large enough tap target keeps it
+    // legible in practice, and consistency with the reference views wins
+    // here). hover:brightness is used instead of a second hover-only color
+    // token because it's surface-agnostic — an opacity-based hover would
+    // look different depending on what's rendered behind the button,
+    // brightness doesn't.
+    onLight: 'bg-primary text-white hover:brightness-110 disabled:opacity-50',
+    onDark: 'bg-primary text-white hover:brightness-110 disabled:opacity-50',
   },
   secondary: {
     // Bigger brightness delta (125 vs 110) because a dark fill needs more

@@ -1,4 +1,5 @@
 import { forwardRef, type TextareaHTMLAttributes } from 'react';
+import { InfoCircleIcon } from './Icons';
 
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label: string;
@@ -6,9 +7,9 @@ type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   error?: string;
 };
 
-/** Same anatomy and forwardRef reasoning as Input.tsx — see that file's comment. */
+/** Same anatomy, focus-within tint, and forwardRef reasoning as Input.tsx — see that file's comment. */
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
-  { label, hint, error, id, name, rows = 4, className = '', ...rest },
+  { label, hint, error, id, name, rows = 3, className = '', ...rest },
   ref,
 ) {
   const fieldId = id ?? name;
@@ -16,7 +17,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   const errorId = error ? `${fieldId}-error` : undefined;
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1 rounded-control px-3 -mx-3 py-2 transition-colors focus-within:bg-secondary-light/15">
       <label htmlFor={fieldId} className="text-small font-semibold text-secondary">
         {label}
       </label>
@@ -27,19 +28,22 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
         rows={rows}
         aria-describedby={errorId ?? hintId}
         aria-invalid={Boolean(error)}
-        className={`w-full min-h-24 resize-y bg-white border rounded-control px-4 py-2.5 text-body placeholder:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 disabled:pointer-events-none ${
-          error ? 'border-red-600' : 'border-accent/40'
+        className={`w-full resize-y bg-transparent border-0 border-b pb-1 text-body placeholder:text-accent focus:outline-none disabled:opacity-50 disabled:pointer-events-none ${
+          error ? 'border-red-600' : 'border-accent/40 focus:border-secondary'
         } ${className}`}
         {...rest}
       />
       {error ? (
-        <p id={errorId} className="text-small text-red-600">
+        <p id={errorId} className="text-small text-red-600 mt-1">
           {error}
         </p>
       ) : hint ? (
-        <p id={hintId} className="text-small text-secondary-light">
-          {hint}
-        </p>
+        <span className="mt-1 inline-flex text-accent-dark" title={hint}>
+          <InfoCircleIcon />
+          <span id={hintId} className="sr-only">
+            {hint}
+          </span>
+        </span>
       ) : null}
     </div>
   );

@@ -5,6 +5,7 @@ import { ButtonsSection } from './_sections/ButtonsSection';
 import { CardsSection } from './_sections/CardsSection';
 import { StatusTagsSection } from './_sections/StatusTagsSection';
 import { FormsSection } from './_sections/FormsSection';
+import { LayoutPatternsSection } from './_sections/LayoutPatternsSection';
 
 // The primary verification vehicle for the design system — no real app
 // pages exist yet, so this is where every token/component/state is
@@ -26,6 +27,7 @@ export default function StyleGuidePage() {
       <CardsSection />
       <StatusTagsSection />
       <FormsSection />
+      <LayoutPatternsSection />
     </Container>
   );
 }

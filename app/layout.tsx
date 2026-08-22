@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { satoshi, playfairDisplay } from '@/lib/fonts';
 import { colors } from '@/design-system/tokens';
+import { Providers } from './providers';
 
 export const metadata: Metadata = {
   title: {
@@ -26,7 +27,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     // design-system/tokens.css once the fonts load — see lib/fonts.ts.
     <html lang="en" className={`${satoshi.variable} ${playfairDisplay.variable} h-full`}>
       <body className="min-h-full flex flex-col bg-white font-body text-body text-secondary antialiased">
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

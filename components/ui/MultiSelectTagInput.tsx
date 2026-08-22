@@ -1,16 +1,21 @@
 'use client';
 
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { XIcon, PlusIcon } from './Icons';
+import { XIcon, PlusIcon, CheckIcon } from './Icons';
 import type { SelectOption } from './Select';
 
 /**
  * One component, not two, covering both behaviors the reference image
- * shows: a dropdown-constrained multi-select (pick from `options` only)
- * and a free-text tag input (type anything, hit Add/Enter). The
+ * shows: a dropdown-constrained multi-select (pick from `options` only,
+ * with checkmarks for already-chosen values — see the "Applies to"
+ * field in the reference's Tax Rule Builder) and a free-text tag input
+ * (type anything, hit Add/Enter — see "Views"/"Amenities"). The
  * `allowCustom` prop switches between them rather than shipping two
- * near-duplicate components — the reuse-over-duplication call documented
- * in design-system/04-components/forms.md.
+ * near-duplicate components.
+ *
+ * Matches Select.tsx's inline (not floating) open-list pattern and its
+ * `bg-secondary-light/15` open-state box, for the same reasons — see that
+ * file's header comment.
  */
 export function MultiSelectTagInput({
   label,
@@ -53,11 +58,16 @@ export function MultiSelectTagInput({
     return options.find((o) => o.value === tagValue)?.label ?? tagValue;
   }
 
+  function toggleTag(tagValue: string) {
+    if (value.includes(tagValue)) onChange(value.filter((v) => v !== tagValue));
+    else onChange([...value, tagValue]);
+  }
+
   function removeTag(tagValue: string) {
     onChange(value.filter((v) => v !== tagValue));
   }
 
-  function addTag(tagValue: string) {
+  function addCustomTag(tagValue: string) {
     const trimmed = tagValue.trim();
     if (!trimmed || value.includes(trimmed)) return;
     onChange([...value, trimmed]);
@@ -66,37 +76,37 @@ export function MultiSelectTagInput({
   function handleDraftKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === 'Enter') {
       event.preventDefault();
-      addTag(draft);
+      addCustomTag(draft);
       setDraft('');
     }
   }
-
-  // Options not already chosen — the dropdown-constrained mode's list.
-  const remainingOptions = options.filter((o) => !value.includes(o.value));
 
   const hintId = hint ? `${fieldId}-hint` : undefined;
   const errorId = error ? `${fieldId}-error` : undefined;
 
   return (
-    <div className="flex flex-col gap-1.5" ref={containerRef}>
-      <label id={`${fieldId}-label`} className="text-small font-semibold text-secondary">
+    <div
+      ref={containerRef}
+      className={`flex flex-col gap-1 rounded-control px-3 -mx-3 py-2 transition-colors ${open ? 'bg-secondary-light/15' : ''}`}
+    >
+      <label id={`${fieldId}-label`} htmlFor={fieldId} className="text-small font-semibold text-secondary">
         {label}
       </label>
 
       {/* Chips row — every selected value, regardless of which mode added it. */}
       {value.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 mb-1">
           {value.map((tagValue) => (
             <span
               key={tagValue}
-              className="inline-flex items-center gap-1 rounded-pill bg-secondary/10 px-3 py-1 text-small text-secondary"
+              className="inline-flex items-center gap-1 rounded-pill bg-secondary-light/30 px-3 py-1 text-small text-secondary"
             >
               {labelFor(tagValue)}
               <button
                 type="button"
                 onClick={() => removeTag(tagValue)}
                 aria-label={`Remove ${labelFor(tagValue)}`}
-                className="text-secondary-light hover:text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+                className="text-secondary-light hover:text-secondary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
               >
                 <XIcon className="size-3" />
               </button>
@@ -106,8 +116,9 @@ export function MultiSelectTagInput({
       ) : null}
 
       {allowCustom ? (
-        // Free-text mode: a plain text field + Add button/Enter-to-add.
-        <div className="flex gap-2">
+        // Free-text mode: underline field + Add button/Enter-to-add,
+        // matching Input.tsx's field anatomy.
+        <div className="flex items-end gap-3">
           <input
             id={fieldId}
             name={name}
@@ -116,68 +127,69 @@ export function MultiSelectTagInput({
             onKeyDown={handleDraftKeyDown}
             placeholder="Text Input..."
             aria-describedby={errorId ?? hintId}
-            className={`flex-1 bg-white border rounded-control px-4 py-2.5 text-body placeholder:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              error ? 'border-red-600' : 'border-accent/40'
+            className={`flex-1 bg-transparent border-0 border-b pb-1 text-body placeholder:text-accent focus:outline-none ${
+              error ? 'border-red-600' : 'border-accent/40 focus:border-secondary'
             }`}
           />
           <button
             type="button"
             onClick={() => {
-              addTag(draft);
+              addCustomTag(draft);
               setDraft('');
             }}
-            className="inline-flex items-center gap-1 px-3 text-body font-semibold text-primary-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
+            className="inline-flex items-center gap-1 pb-1 text-body font-semibold text-primary-text hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
           >
             <PlusIcon className="size-4" /> Add
           </button>
         </div>
       ) : (
-        // Dropdown-constrained mode: a trigger that opens a plain option
-        // list of everything not already chosen. Reuses Select.tsx's
-        // click-outside/listbox conventions at a smaller scale rather than
-        // importing Select itself, since this list never needs Select's
-        // keyboard-highlight/combobox machinery — every click immediately
-        // commits (adds a chip) instead of "selecting" a single value.
-        <div className="relative">
-          <button
-            type="button"
-            id={fieldId}
-            aria-haspopup="listbox"
-            aria-expanded={open}
-            aria-labelledby={`${fieldId}-label`}
-            onClick={() => setOpen((o) => !o)}
-            disabled={remainingOptions.length === 0}
-            aria-describedby={errorId ?? hintId}
-            className={`w-full flex items-center justify-between gap-2 bg-white border rounded-control px-4 py-2.5 text-body text-left text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 ${
-              error ? 'border-red-600' : 'border-accent/40'
-            }`}
-          >
-            Tick an option
-          </button>
-          {open ? (
-            <ul role="listbox" className="absolute z-10 mt-1 w-full rounded-control border border-accent/40 bg-white py-1 shadow-md max-h-64 overflow-auto">
-              {remainingOptions.map((option) => (
-                <li
-                  key={option.value}
-                  role="option"
-                  aria-selected={false}
-                  onClick={() => addTag(option.value)}
-                  className="px-4 py-2 text-body cursor-pointer hover:bg-secondary-light/10"
-                >
-                  {option.label}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
+        // Dropdown-constrained mode: underline trigger + inline checklist
+        // (checkmarks toggle membership, chips above are the source of
+        // truth for what's selected).
+        <button
+          type="button"
+          id={fieldId}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-labelledby={`${fieldId}-label`}
+          onClick={() => setOpen((o) => !o)}
+          aria-describedby={errorId ?? hintId}
+          className={`w-full flex items-center justify-between gap-2 bg-transparent border-0 border-b pb-1 text-body text-left text-accent cursor-pointer focus:outline-none ${
+            error ? 'border-red-600' : open ? 'border-secondary' : 'border-accent/40'
+          }`}
+        >
+          Tick an option
+        </button>
       )}
 
+      {!allowCustom && open ? (
+        <ul role="listbox" className="mt-1 flex flex-col max-h-64 overflow-auto">
+          {options.map((option) => {
+            const isSelected = value.includes(option.value);
+            return (
+              <li
+                key={option.value}
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => toggleTag(option.value)}
+                className={`flex items-center justify-between gap-2 rounded-control px-3 py-2 text-body cursor-pointer ${
+                  isSelected ? 'bg-secondary-light text-secondary font-semibold' : 'hover:bg-secondary-light/30'
+                }`}
+              >
+                {option.label}
+                {isSelected ? <CheckIcon className="size-4" /> : null}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+
       {error ? (
-        <p id={errorId} className="text-small text-red-600">
+        <p id={errorId} className="text-small text-red-600 mt-1">
           {error}
         </p>
       ) : hint ? (
-        <p id={hintId} className="text-small text-secondary-light">
+        <p id={hintId} className="text-small text-secondary-light mt-1">
           {hint}
         </p>
       ) : null}

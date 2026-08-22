@@ -39,6 +39,24 @@ export function TypographySection() {
           </div>
         ))}
       </div>
+
+      <div>
+        <h3 className="text-subheader font-semibold text-secondary mb-3">
+          Display serif (opt-in) — <code className="text-tiny">font-display</code>
+        </h3>
+        <p className="text-small text-secondary-light max-w-prose mb-3">
+          Playfair Display isn&apos;t used anywhere in the 9 default roles above (Satoshi is the default for all of
+          them, per 02-typography.md) — it&apos;s an opt-in layer for occasional brand moments, applied via the{' '}
+          <code className="text-tiny">font-display</code> utility on top of Header/Title/Emphasis, never below{' '}
+          <code className="text-tiny">text-header</code>. Shown here so it&apos;s actually verified to render, not
+          just documented.
+        </p>
+        <div className="flex flex-col gap-3">
+          <p className="text-title font-display text-secondary">The quick brown fox</p>
+          <p className="text-header font-display font-semibold text-secondary">The quick brown fox</p>
+          <p className="text-title font-display font-bold italic text-secondary">The quick brown fox</p>
+        </div>
+      </div>
     </section>
   );
 }
