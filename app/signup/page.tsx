@@ -1,16 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { RadioCard } from '@/components/ui/RadioCard';
 import { apiFetch, ApiError } from '@/lib/api';
 import { registerSchema, verifyEmailSchema, type RegisterFormValues, type VerifyEmailFormValues } from '@/lib/schemas/auth';
 
 type RegisterResponse = { tenantId: string; userId: string; subdomain: string; verificationToken: string };
+type SignupMode = 'demo' | 'real';
 
 /**
  * Step 1 of the reference's onboarding wizard (Roomick-UI.pdf) — Owner
@@ -27,8 +30,28 @@ type RegisterResponse = { tenantId: string; userId: string; subdomain: string; v
  * "stubbed in MVP"), since no email-sending infrastructure exists yet.
  * Pre-filling it here is a deliberate, visible dev convenience — not
  * something a production build should do once real email delivery lands.
+ *
+ * Demo vs. real is the very first choice (see PHASE_NOTES.md) — a plain
+ * inline RadioCard row (no `description` on either option), matching
+ * every other top-level either/or choice in the reference. Choosing
+ * "Try a demo" just tags the resulting tenant `isDemo: true`, which the
+ * backend auto-expires in 30 days (or the owner can delete it early via
+ * DELETE /tenants/me) — everything past this point is the identical form/
+ * flow either way.
+ *
+ * `?demo=true`/`?demo=false` pre-selects the choice and skips straight to
+ * the form — the landing page's two CTAs link here with it set, so a
+ * visitor who already chose "Try a demo" there doesn't have to choose
+ * again. `useSearchParams()` requires a Suspense boundary in the App
+ * Router (reading it opts the route out of static rendering), hence the
+ * default export below just wraps the real page in one.
  */
-export default function SignupPage() {
+function SignupPageInner() {
+  const searchParams = useSearchParams();
+  const demoParam = searchParams.get('demo');
+  const initialMode: SignupMode | null = demoParam === 'true' ? 'demo' : demoParam === 'false' ? 'real' : null;
+
+  const [mode, setMode] = useState<SignupMode | null>(initialMode);
   const [step, setStep] = useState<'register' | 'verify' | 'done'>('register');
   const [registered, setRegistered] = useState<RegisterResponse | null>(null);
 
@@ -36,13 +59,28 @@ export default function SignupPage() {
     <Container className="max-w-xl py-16">
       <h1 className="text-title font-bold text-secondary mb-2">Create your Roomick account</h1>
       <p className="text-body text-secondary-light mb-8">
-        {step === 'register' && 'Set up your organization and owner account.'}
+        {mode === null && 'Try it out risk-free, or get started for real — same setup either way.'}
+        {mode !== null && step === 'register' && 'Set up your organization and owner account.'}
         {step === 'verify' && 'Confirm your email to finish setting up your account.'}
         {step === 'done' && "You're verified — onboarding continues in a later phase."}
       </p>
 
-      {step === 'register' ? (
+      {mode === null ? (
+        <RadioCard
+          name="signupMode"
+          tone="secondary"
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: 'demo', title: 'Try a demo' },
+            { value: 'real', title: 'Get started' },
+          ]}
+        />
+      ) : null}
+
+      {mode !== null && step === 'register' ? (
         <RegisterForm
+          isDemo={mode === 'demo'}
           onSuccess={(result) => {
             setRegistered(result);
             setStep('verify');
@@ -67,7 +105,15 @@ export default function SignupPage() {
   );
 }
 
-function RegisterForm({ onSuccess }: { onSuccess: (result: RegisterResponse) => void }) {
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupPageInner />
+    </Suspense>
+  );
+}
+
+function RegisterForm({ isDemo, onSuccess }: { isDemo: boolean; onSuccess: (result: RegisterResponse) => void }) {
   const [formError, setFormError] = useState<string | null>(null);
   const {
     register,
@@ -81,7 +127,7 @@ function RegisterForm({ onSuccess }: { onSuccess: (result: RegisterResponse) => 
     try {
       const result = await apiFetch<RegisterResponse>('/auth/register', {
         method: 'POST',
-        body: { ...values, phone: values.phone || undefined },
+        body: { ...values, phone: values.phone || undefined, isDemo },
       });
       onSuccess(result);
     } catch (error) {
@@ -95,6 +141,12 @@ function RegisterForm({ onSuccess }: { onSuccess: (result: RegisterResponse) => 
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+      {isDemo ? (
+        <p className="text-small text-secondary-light">
+          Demo mode — this organization auto-deletes 30 days from creation, or you can delete it yourself at any
+          time from account settings.
+        </p>
+      ) : null}
       <Section label="Owner account">
         <Input label="Full Name" {...register('name')} error={errors.name?.message} />
         <Input label="Email" type="email" {...register('email')} error={errors.email?.message} />
