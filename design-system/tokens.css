@@ -1,0 +1,134 @@
+/**
+ * Roomick design tokens — canonical source for Tailwind v4.
+ *
+ * Tailwind v4 is CSS-first: there is no tailwind.config.ts. Instead, every
+ * custom property declared inside an `@theme` block becomes a utility class
+ * automatically. `--color-primary: #CCA000` generates `bg-primary`,
+ * `text-primary`, `border-primary`, `ring-primary`, etc. `--font-body` becomes
+ * the `font-body` utility. `--text-title` (paired with
+ * `--text-title--line-height`) becomes the `text-title` utility, setting both
+ * font-size and line-height together — this is Tailwind's own convention,
+ * used by its built-in `text-sm`/`text-base`/etc (see
+ * node_modules/tailwindcss/theme.css for the built-ins we're extending).
+ *
+ * This file is imported once, from app/globals.css, right after
+ * `@import "tailwindcss"`. Components should only ever reference the
+ * generated utility classes (`bg-primary`, `text-title`, `rounded-card`) —
+ * never redeclare or hardcode these values elsewhere.
+ *
+ * design-system/tokens.ts mirrors the same raw values for the rare JS-context
+ * need (theme-color meta tag, canvas/chart colors later). Keep both in sync
+ * by hand — the palette is intentionally small, so this isn't a heavy lift.
+ */
+
+@theme {
+  /* ============================================================
+   * BRAND COLORS — the 8 tokens given directly by the brand spec.
+   * Deliberately NOT redeclaring white/black here: Tailwind's built-in
+   * bg-white/bg-black already equal pure #FFFFFF/#000000, and this @theme
+   * block *extends* Tailwind's default palette rather than replacing it —
+   * grays, red-600 (used for form error states below), etc. all stay
+   * available alongside these.
+   * ============================================================ */
+  --color-primary: #cca000; /* gold — CTAs, primary buttons, VIP badge, focus rings */
+  --color-primary-dark: #2e2400; /* deep bronze — rarely used directly, mostly a hover/pressed reference point */
+  --color-primary-light: #fff0b9; /* pale gold — tints, hover backgrounds on light surfaces */
+  --color-secondary: #160029; /* near-black deep purple — default body text, secondary buttons, dark surfaces */
+  --color-secondary-light: #a698b2; /* muted lavender-gray — secondary text, subtle tints */
+  --color-accent: #a1abb2; /* cool slate — borders, disabled states, neutral UI chrome */
+  --color-accent-dark: #3b444a; /* darker slate — stronger neutral chrome, "blocked" room status */
+
+  /* ------------------------------------------------------------
+   * ACCESSIBILITY EXTENSION — not in the original brand spec.
+   * Raw Primary gold (#CCA000) fails WCAG AA contrast for text: against
+   * white it measures ~2.45:1, well under the 4.5:1 minimum for body-size
+   * text (and under even the relaxed 3:1 large-text/UI-component floor by
+   * a smaller but still real margin). Reserve raw `primary` for the things
+   * the reference images actually show it doing — large fills, badge
+   * backgrounds, borders, icons — and use this darker, AA-passing gold
+   * anywhere gold appears as *small text* (Accent/Small-Accent typography
+   * roles, the VIP badge label). #8C6D00 measures ~4.9:1 on white.
+   * ------------------------------------------------------------ */
+  --color-primary-text: #8c6d00;
+
+  /* ------------------------------------------------------------
+   * STATUS COLORS — a documented extension. The brand spec's 8 tokens
+   * cover chrome/branding; a hotel PMS also needs an *operational* color
+   * language for room and housekeeping state, which the reference images
+   * show (5 room-status pills + 3 housekeeping pills + VIP) but don't
+   * give hex values for. Chosen to sit in the same saturation/lightness
+   * family as the brand palette rather than reaching for generic
+   * Bootstrap-style red/green/yellow. Several statuses deliberately alias
+   * an existing value instead of minting a new hex — see status-tags.md
+   * for the reasoning (they represent the same real-world condition seen
+   * through two different lenses: e.g. a "dirty" room and an
+   * "out_of_order" room read the same operational urgency).
+   * ------------------------------------------------------------ */
+  --color-status-vacant: #3f8f5c; /* green — ready to sell */
+  --color-status-occupied: #2e7d8c; /* blue-teal — guest in house */
+  --color-status-cleaning: #6b4a8a; /* purple, same hue family as --color-secondary — housekeeping in progress */
+  --color-status-out-of-order: #9a5a2e; /* rust — needs maintenance before it can be sold */
+  --color-status-blocked: var(--color-accent-dark); /* reused, not a new hex — administratively held, not a physical problem */
+  --color-status-dirty: var(--color-status-out-of-order); /* alias: "needs attention before use" reads the same as out-of-order */
+  --color-status-clean: var(--color-status-occupied); /* alias: "occupiable" reads the same as occupied */
+  --color-status-inspected: var(--color-status-vacant); /* alias: fully ready reads the same as vacant */
+  /* VIP has no dedicated color token — its badge is an outline using
+     --color-primary directly (see components/ui/StatusTag.tsx). */
+
+  /* ============================================================
+   * TYPOGRAPHY
+   * ============================================================ */
+
+  /* Satoshi (self-hosted via next/font/local, see lib/fonts.ts) is the
+     default for every UI role — this is a dense operational tool, not a
+     marketing site, so a single consistent sans throughout beats serif
+     flourish. Playfair Display is opt-in only (the `font-display` utility),
+     layered onto Header/Title/Emphasis roles for occasional brand moments —
+     see 02-typography.md for the full rule. */
+  --font-body: 'Satoshi', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Playfair Display', ui-serif, Georgia, 'Times New Roman', serif;
+
+  /* ------------------------------------------------------------
+   * TYPE SCALE — sourced from the brand spec's Figma text-styles panel,
+   * which lists 9 roles (Title, Header, Sub-header, Body, Accent, Small
+   * Accent, Small, Tiny, Emphasis) but only 6 *distinct* size/line-height
+   * pairs — several roles are metrically identical and differ only in
+   * color or weight (Body == Accent's size, both 14/16; Small == Small
+   * Accent's size, both 12/14; Title == Emphasis's size, both 32/34).
+   * Rather than mint duplicate tokens for identical metrics, we define one
+   * token per unique pair and compose the semantic difference (color,
+   * weight) at the call site — see 02-typography.md for the full mapping
+   * table and the `Text` component that encodes it.
+   *
+   * Line-heights follow Tailwind's own convention: a unitless calc() ratio
+   * (line-height ÷ font-size), not a fixed rem, so it scales correctly if
+   * the font-size is ever overridden locally.
+   * ------------------------------------------------------------ */
+  --text-title: 2rem; /* 32px — Title, Emphasis (Emphasis = text-title + font-bold always) */
+  --text-title--line-height: calc(34 / 32);
+
+  --text-header: 1.125rem; /* 18px — Header */
+  --text-header--line-height: calc(20 / 18);
+
+  --text-subheader: 1rem; /* 16px — Sub-header */
+  --text-subheader--line-height: calc(18 / 16);
+
+  --text-body: 0.875rem; /* 14px — Body, Accent (Accent = text-body + text-primary-text color) */
+  --text-body--line-height: calc(16 / 14);
+
+  --text-small: 0.75rem; /* 12px — Small, Small Accent (Small Accent = text-small + text-primary-text color) */
+  --text-small--line-height: calc(14 / 12);
+
+  --text-tiny: 0.6875rem; /* 11px — Tiny */
+  --text-tiny--line-height: calc(13 / 11);
+
+  /* ============================================================
+   * RADII — three tiers, not one. The reference images show badges (and
+   * only badges) as full pills; buttons and inputs read as controls, not
+   * marketing CTAs, so they get a smaller control radius. See
+   * 03-spacing-layout.md for the full rationale.
+   * ============================================================ */
+  --radius-control: 0.5rem; /* buttons, inputs, selects, textareas, chips */
+  --radius-card: 0.75rem; /* cards, panels, dropzones, fieldsets */
+  --radius-pill: 999px; /* badges/status tags, and the Yes/No toggle only */
+}

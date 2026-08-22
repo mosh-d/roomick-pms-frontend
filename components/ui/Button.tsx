@@ -1,0 +1,80 @@
+import type { ButtonHTMLAttributes } from 'react';
+import { SpinnerIcon } from './Icons';
+
+export type ButtonVariant = 'primary' | 'secondary' | 'outline';
+export type ButtonTone = 'onLight' | 'onDark';
+export type ButtonSize = 'sm' | 'md';
+
+// Truly shared styles only. Every variant below owns its FULL shape
+// (background, border, text color, hover, disabled) rather than partially
+// overriding a shared base — conflicting Tailwind utilities (e.g. two
+// different `bg-*` classes on the same element) don't resolve by className
+// string order, they resolve by which rule Tailwind's generated stylesheet
+// happens to emit last, which is not something to rely on. This is the same
+// lesson Daddy Bear's own Button.tsx documents.
+const base =
+  'inline-flex items-center justify-center gap-2 rounded-control font-semibold transition-[filter,background-color,color,border-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none';
+
+const sizeClasses: Record<ButtonSize, string> = {
+  // min-h-11 = 44px, the minimum accessible tap target, kept even at the
+  // denser `sm` size used for inline table-row actions.
+  sm: 'px-3 py-1.5 text-small min-h-9',
+  md: 'px-4 py-2 text-body min-h-11',
+};
+
+// variant -> (tone, for outline only) -> full class string. Reference image:
+// column 1 (gold solid) = primary, column 3 (purple solid) = secondary,
+// column 2 (white/black, inverts to solid on hover) = outline. Each
+// variant's 3 reference rows (default/hover/disabled) map directly to the
+// default/hover:/disabled: states below.
+const variantClasses: Record<ButtonVariant, Record<ButtonTone, string>> = {
+  primary: {
+    // Text is text-secondary, not white: white-on-#CCA000 measures ~2.45:1
+    // (fails WCAG AA); secondary-on-primary measures ~8:1. hover:brightness
+    // is used instead of a second hover-only color token because it's
+    // surface-agnostic — an opacity-based hover would look different
+    // depending on what's rendered behind the button, brightness doesn't.
+    onLight: 'bg-primary text-secondary hover:brightness-110 disabled:opacity-50',
+    onDark: 'bg-primary text-secondary hover:brightness-110 disabled:opacity-50',
+  },
+  secondary: {
+    // Bigger brightness delta (125 vs 110) because a dark fill needs more
+    // change to read as "hovered" than a light one does.
+    onLight: 'bg-secondary text-white hover:brightness-125 disabled:opacity-50',
+    onDark: 'bg-secondary text-white hover:brightness-125 disabled:opacity-50',
+  },
+  outline: {
+    // Reference image: default = bordered, hover = inverts to a solid
+    // fill, disabled = muted gray (reusing the existing `accent` token
+    // rather than minting a new one).
+    onLight:
+      'border border-black text-black bg-transparent hover:bg-black hover:text-white disabled:border-accent disabled:text-accent',
+    onDark:
+      'border border-white text-white bg-transparent hover:bg-white hover:text-secondary disabled:border-accent disabled:text-accent',
+  },
+};
+
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: ButtonVariant;
+  tone?: ButtonTone;
+  size?: ButtonSize;
+  loading?: boolean;
+};
+
+export function Button({
+  variant = 'primary',
+  tone = 'onLight',
+  size = 'md',
+  loading = false,
+  disabled,
+  className = '',
+  children,
+  ...rest
+}: ButtonProps) {
+  const classes = `${base} ${sizeClasses[size]} ${variantClasses[variant][tone]} ${className}`;
+  return (
+    <button className={classes} disabled={disabled || loading} {...rest}>
+      {loading ? <SpinnerIcon /> : children}
+    </button>
+  );
+}
