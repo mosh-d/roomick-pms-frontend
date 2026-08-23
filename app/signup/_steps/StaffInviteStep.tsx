@@ -12,6 +12,7 @@ import { apiFetch, ApiError } from '@/lib/api';
 import { staffInviteSchema, type StaffInviteFormValues } from '@/lib/schemas/onboarding';
 import { useAuthStore } from '@/lib/store/authStore';
 import { useWizardStore } from '@/lib/store/wizardStore';
+import { useAutosaveDraft } from '@/lib/useAutosaveDraft';
 
 type Role = { id: string; name: string };
 
@@ -44,6 +45,7 @@ export function StaffInviteStep({ onNext }: { onNext: () => void }) {
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<StaffInviteFormValues>({
     resolver: zodResolver(staffInviteSchema),
@@ -51,6 +53,8 @@ export function StaffInviteStep({ onNext }: { onNext: () => void }) {
     mode: 'onTouched',
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'invites' });
+
+  useAutosaveDraft(watch, (values) => patch({ staffInvites: values.invites }));
 
   useEffect(() => {
     let cancelled = false;

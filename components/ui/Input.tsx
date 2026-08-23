@@ -8,6 +8,8 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   /** Shown as a small info-icon row below the field (hover/focus reveals the text via `title`) — matches the reference product's field anatomy, present on nearly every field. */
   hint?: string;
   error?: string;
+  /** Fixed, non-editable text before the field's value — e.g. a phone field's `+234` calling-code badge, derived from a country the user already picked elsewhere. */
+  prefix?: string;
 };
 
 /**
@@ -44,7 +46,7 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
  * it behaves the same way every time.
  */
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, hint, error, id, name, type, className = '', ...rest },
+  { label, hint, error, prefix, id, name, type, className = '', ...rest },
   ref,
 ) {
   const [revealed, setRevealed] = useState(false);
@@ -60,6 +62,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         {label}
       </label>
       <div className="relative flex items-center">
+        {prefix ? (
+          <span className="pb-1 pr-1.5 text-body text-secondary-light shrink-0" aria-hidden="true">
+            {prefix}
+          </span>
+        ) : null}
         <input
           ref={ref}
           id={fieldId}

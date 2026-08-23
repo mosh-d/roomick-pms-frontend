@@ -12,7 +12,9 @@ import { apiFetch, ApiError } from '@/lib/api';
 import { registerSchema, type RegisterFormValues } from '@/lib/schemas/auth';
 import { COUNTRIES } from '@/lib/countries';
 import { slugify } from '@/lib/slug';
-import { useWizardStore } from '@/lib/store/wizardStore';
+import { callingCodeFor, displayFromE164, formatPhoneAsYouType, formatPhoneDisplay } from '@/lib/phone';
+import { useWizardStore, type OwnerAccountDraft } from '@/lib/store/wizardStore';
+import { useAutosaveDraft } from '@/lib/useAutosaveDraft';
 
 /**
  * Step 1 of the onboarding wizard (Roomick-UI.pdf "Owner Account Form") —
@@ -61,13 +63,14 @@ export function RegisterForm({
 }) {
   const owner = useWizardStore((state) => state.owner);
   const accountCreated = useWizardStore((state) => state.accountCreated);
+  const registerDraft = useWizardStore((state) => state.registerDraft);
   const patch = useWizardStore((state) => state.patch);
 
   if (accountCreated && owner) {
     return <AlreadyRegistered owner={owner} onNext={() => onNext({ email: owner.email, password: '' })} />;
   }
 
-  return <RegisterFields isDemo={isDemo} onNext={onNext} patch={patch} />;
+  return <RegisterFields isDemo={isDemo} onNext={onNext} patch={patch} registerDraft={registerDraft} />;
 }
 
 /**
@@ -97,7 +100,7 @@ function AlreadyRegistered({
           <Input label="Email" value={owner.email} readOnly />
           <Input label="Country" value={owner.country ?? ''} readOnly />
         </div>
-        <Input label="Phone" value={owner.phone ?? ''} readOnly />
+        <Input label="Phone" value={owner.phone ? formatPhoneDisplay(owner.phone) : ''} readOnly />
       </Section>
 
       <Section label="Organization">
@@ -119,17 +122,38 @@ function AlreadyRegistered({
   );
 }
 
+/** Strips `password` before writing a live draft to wizardStore — never persisted, not even transiently (see wizardStore.ts's header comment). */
+function stripPassword(values: RegisterFormValues): OwnerAccountDraft {
+  return {
+    firstName: values.firstName,
+    lastName: values.lastName,
+    email: values.email,
+    phone: values.phone,
+    country: values.country,
+    groupName: values.groupName,
+    subdomain: values.subdomain,
+  };
+}
+
 function RegisterFields({
   isDemo,
   onNext,
   patch,
+  registerDraft,
 }: {
   isDemo: boolean;
   onNext: (credentials: { email: string; password: string }) => void;
   patch: ReturnType<typeof useWizardStore.getState>['patch'];
+  registerDraft: OwnerAccountDraft | null;
 }) {
   const [formError, setFormError] = useState<string | null>(null);
-  const [subdomainEdited, setSubdomainEdited] = useState(false);
+  // Already-edited if resuming a draft with a subdomain in it — otherwise
+  // the auto-slugify effect below would immediately overwrite whatever the
+  // owner had typed there before the reload that brought this draft back.
+  const [subdomainEdited, setSubdomainEdited] = useState(() => Boolean(registerDraft?.subdomain));
+  const [phoneDisplay, setPhoneDisplay] = useState(() =>
+    registerDraft?.phone ? displayFromE164(registerDraft.phone, registerDraft.country) : '',
+  );
   const {
     register,
     handleSubmit,
@@ -138,9 +162,19 @@ function RegisterFields({
     watch,
     control,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterFormValues>({ resolver: zodResolver(registerSchema), mode: 'onTouched' });
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    mode: 'onTouched',
+    defaultValues: registerDraft ?? undefined,
+  });
+
+  // See useAutosaveDraft.ts — a reload while still typing here (before
+  // "Create account" is clicked) used to lose everything typed so far,
+  // same gap every later step had. Password is deliberately excluded.
+  useAutosaveDraft(watch, (values) => patch({ registerDraft: stripPassword(values) }));
 
   const groupName = watch('groupName');
+  const country = watch('country');
   useEffect(() => {
     if (!subdomainEdited) {
       setValue('subdomain', slugify(groupName ?? ''), { shouldValidate: false });
@@ -178,6 +212,7 @@ function RegisterFields({
         },
         accountCreated: true,
         verificationToken: result.verificationToken,
+        registerDraft: null,
       });
       onNext({ email: values.email, password: values.password });
     } catch (error) {
@@ -223,7 +258,28 @@ function RegisterFields({
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
-            <Input label="Phone" type="tel" autoComplete="tel" {...register('phone')} error={errors.phone?.message} />
+            <Controller
+              control={control}
+              name="phone"
+              render={({ field }) => (
+                <Input
+                  label="Phone"
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  prefix={callingCodeFor(country) ?? undefined}
+                  hint={callingCodeFor(country) ? undefined : 'Pick a country above for a calling-code prefix'}
+                  value={phoneDisplay}
+                  onChange={(event) => {
+                    const { display, e164 } = formatPhoneAsYouType(event.target.value, country);
+                    setPhoneDisplay(display);
+                    field.onChange(e164);
+                  }}
+                  onBlur={field.onBlur}
+                  error={errors.phone?.message}
+                />
+              )}
+            />
             <Input
               label="Password"
               type="password"

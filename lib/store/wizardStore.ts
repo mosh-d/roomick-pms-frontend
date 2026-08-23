@@ -53,6 +53,13 @@ interface WizardData {
   verificationToken: string | null;
   emailVerified: boolean;
   loggedIn: boolean;
+  // Live autosave target for the Owner Account form *before* it's
+  // submitted — `owner` specifically means "the account was created with
+  // these values" (drives RegisterForm's read-only mode), so a half-typed,
+  // not-yet-submitted edit can't be written there without also looking
+  // like a real account exists. Cleared once `accountCreated` flips true.
+  // Password is never included here (see this file's persist comment).
+  registerDraft: OwnerAccountDraft | null;
 
   // Everything from here on is pure local draft state — validated per step
   // (each step's own form still runs its own zod schema before advancing),
@@ -88,6 +95,7 @@ const initialData: WizardData = {
   step: 'register',
   owner: null,
   accountCreated: false,
+  registerDraft: null,
   verificationToken: null,
   emailVerified: false,
   loggedIn: false,

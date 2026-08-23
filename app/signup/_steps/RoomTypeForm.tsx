@@ -8,6 +8,7 @@ import { MultiSelectTagInput } from '@/components/ui/MultiSelectTagInput';
 import { Button } from '@/components/ui/Button';
 import { roomTypeSchema, type RoomTypeFormValues } from '@/lib/schemas/onboarding';
 import { useWizardStore } from '@/lib/store/wizardStore';
+import { useAutosaveDraft } from '@/lib/useAutosaveDraft';
 
 const AMENITY_OPTIONS = [
   { value: 'wifi', label: 'Wi-Fi' },
@@ -30,12 +31,15 @@ export function RoomTypeForm({ onNext }: { onNext: () => void }) {
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<RoomTypeFormValues>({
     resolver: zodResolver(roomTypeSchema),
     defaultValues: roomType ?? { adults: 2, children: 0, amenities: [] },
     mode: 'onTouched',
   });
+
+  useAutosaveDraft(watch, (values) => patch({ roomType: values }));
 
   function onSubmit(values: RoomTypeFormValues) {
     patch({ roomType: values });

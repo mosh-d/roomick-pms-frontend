@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { branchSetupSchema, type BranchSetupFormValues } from '@/lib/schemas/onboarding';
 import { useWizardStore } from '@/lib/store/wizardStore';
+import { useAutosaveDraft } from '@/lib/useAutosaveDraft';
 
 const CATEGORY_OPTIONS = [
   { value: 'hotel', label: 'Hotel' },
@@ -44,12 +45,18 @@ export function BranchSetupForm({ onNext }: { onNext: () => void }) {
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<BranchSetupFormValues>({
     resolver: zodResolver(branchSetupSchema),
     defaultValues: branch ?? { checkInTime: '14:00', checkOutTime: '11:00' },
     mode: 'onTouched',
   });
+
+  // Mirrors every keystroke into wizardStore (debounced), not just
+  // submitted values — a reload mid-edit resumes from here instead of
+  // losing whatever hadn't been submitted yet. See useAutosaveDraft.ts.
+  useAutosaveDraft(watch, (values) => patch({ branch: values }));
 
   function onSubmit(values: BranchSetupFormValues) {
     patch({ branch: values });

@@ -540,3 +540,102 @@ re-renders.
   unchanged from Phase 7.
 - Email-global-uniqueness discussion — still deferred, not started.
 - Encryption at rest for sensitive fields — still deferred, not started.
+
+## Phase 9 — Stale dev-server cache, phone formatting, and closing the autosave gap (2026-08-23)
+
+### Delivered
+- **Root-caused a real "Next.js recoverable error" the owner hit directly**:
+  `Cannot read properties of undefined (reading 'hasHydrated')` inside
+  `useHasHydrated.ts` — the exact crash Phase 8 already fixed in source, but
+  the browser was still being served a stale Turbopack build. Cause: an
+  orphaned `next dev` process from earlier in this session had been left
+  running and squatting port 3000 (meant for the backend) since before the
+  Phase 8 fix landed, and its `.next/dev` build cache/lock file survived a
+  plain `taskkill`. Fixed by killing the orphan, deleting `.next` entirely,
+  and restarting both dev servers clean — confirmed with a real Playwright
+  load + reload against the fresh build: zero console/page errors. Not a
+  code bug; this file's own "Process hygiene" lesson (kill dev servers
+  between sessions, don't let orphans accumulate) is the actual fix.
+- **Phone number: country-calling-code prefix + live formatting.**
+  `lib/phone.ts` (new, `libphonenumber-js` — hand-rolling E.164/AsYouType
+  formatting correctly isn't realistic; this is the standard library for
+  it). `Input` gained an optional `prefix` slot (a fixed `+234` badge, not
+  part of the editable value) for this and reused the reference's Country
+  field to derive it — no second "phone country" picker. `RegisterForm`'s
+  Phone field is now RHF-`Controller`-driven: the visible value is grouped
+  national digits (`AsYouType`, re-derived fresh on every keystroke, not
+  patched in place — the only approach that stays correct through mid-value
+  edits), the value actually validated/submitted/stored is canonical E.164
+  (`+2348031234567`), comfortably inside `RegisterDto.phone`'s existing
+  `@MaxLength(20)` — no backend change needed. Read-only views
+  (`AlreadyRegistered`) format the stored E.164 back to international
+  display via the same library.
+- **Closed the last "reload loses data" gap: live-typing autosave, not just
+  on-submit.** Every deferred-submission step (Organization Structure
+  onward, see Phase 7) already saved to `wizardStore` — but only once the
+  step was actually submitted; a reload while still mid-form (before
+  clicking Continue) lost whatever hadn't been submitted yet, since RHF
+  only holds live keystrokes in that form's own local state until then.
+  `lib/useAutosaveDraft.ts` (new) subscribes to each form's `watch()` and
+  mirrors every change into `wizardStore`, debounced (400ms) — wired into
+  `BranchSetupForm`, `RoomTypeForm`, `RoomsForm`, `StaffInviteStep`. The
+  Owner Account form needed one more piece since it's the one step that
+  still submits immediately: a new `wizardStore.registerDraft` field holds
+  its *pre-submission* draft specifically (separate from `owner`, which
+  means "the account was actually created with these values" and drives
+  `RegisterForm`'s read-only mode — conflating the two would make an
+  unsubmitted, half-typed edit look like a real account exists).
+  `registerDraft` excludes `password` the same way the persisted store
+  always has (`stripPassword()`, explicit field-by-field, not a destructure-
+  and-omit that could silently start including a future field by accident).
+  `OrgStructureForm` needed no change — its single radio pick already wrote
+  to `wizardStore` immediately on click, not on a later submit.
+
+### Decisions & deviations
+1. **`AsYouType(country).input(digits)` alone doesn't group every
+   country's number correctly without a leading trunk digit.** Verified
+   directly (not assumed): Nigeria's *national* format template only
+   activates once a leading "0" is typed (`AsYouType('NG').input('803...')`
+   returns the digits back ungrouped; with a leading "0" it groups
+   correctly). Since the calling code is already shown as a separate badge
+   here — the owner never types the trunk "0" or the "+234" — the fix is to
+   always format through the *international* template instead
+   (`AsYouType().input('+234' + digits)`, which groups reliably), then
+   strip the `+234 ` prefix back off before displaying it. A leading "0" is
+   still tolerated and stripped if someone types one out of habit.
+2. **Resuming a saved `registerDraft`'s phone needed a different formatting
+   path than live typing does** (`displayFromE164`, not
+   `formatPhoneAsYouType` directly) — the saved value is already canonical
+   E.164 (`+2348031234567`), and re-feeding that same string through the
+   live-typing formatter double-counts the calling code (parses it as
+   "international input", producing `+234 803 123 4567` inside the field on
+   top of the separate `+234` badge). `displayFromE164` recovers just the
+   national significant number via `parsePhoneNumberFromString` first, then
+   reuses the same grouping logic. Caught by actually reloading a seeded
+   draft and looking at the rendered field, not assumed correct because the
+   live-typing path worked.
+3. **A trunk "0" is stripped unconditionally when a calling code is known,
+   not just for Nigeria.** Leading-zero national trunk prefixes are the
+   most common convention globally (also true for the UK, Germany, France,
+   and others); no real number is lost by stripping it since it's implied
+   by the calling code being shown separately either way.
+
+### Verified
+`npm run lint` and `npx tsc --noEmit` clean (frontend); `npx tsc --noEmit`
+clean (backend, after reverting an unrelated stray `tsconfig.json` edit
+found sitting uncommitted — not part of this or any prior session's actual
+work, discarded rather than carried forward). Live Playwright runs: (1) a
+full clean-cache load + reload of `/signup` with zero console/page errors,
+confirming the hydration crash is gone; (2) typed into the Owner Account
+form (name, country, phone, group name), waited past the debounce, reloaded
+— every field including the phone (grouped display + `+234` badge)
+resumed correctly; (3) seeded a mid-`branch-setup` draft, typed into two
+fields without submitting, reloaded — both fields resumed; (4) one real
+registration through the actual UI (not a direct API call) with a Nigerian
+phone number, confirmed via a direct Prisma query — with the tenant's RLS
+context explicitly set, not an unscoped query that would silently return
+nothing — that `phone` persisted as `+2348031234567` and `country` as
+`'NG'`.
+
+### Carried forward
+- Everything else already carried forward from Phase 8 — unchanged.

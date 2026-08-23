@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { roomsBulkSchema, type RoomsBulkFormValues } from '@/lib/schemas/onboarding';
 import { useWizardStore } from '@/lib/store/wizardStore';
+import { useAutosaveDraft } from '@/lib/useAutosaveDraft';
 
 /**
  * Onboarding step 4b (Roomick-UI.pdf "Rooms") — property/dto/rooms.dto.ts's
@@ -26,8 +27,11 @@ export function RoomsForm({ onNext }: { onNext: () => void }) {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<RoomsBulkFormValues>({ resolver: zodResolver(roomsBulkSchema), defaultValues: rooms ?? undefined, mode: 'onTouched' });
+
+  useAutosaveDraft(watch, (values) => patch({ rooms: values }));
 
   function onSubmit(values: RoomsBulkFormValues) {
     patch({ rooms: values });
