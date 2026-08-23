@@ -140,7 +140,22 @@ export function RoomTypeForm({ onBack, onNext }: { onBack: () => void; onNext: (
             // Not `valueAsNumber` — optional field; an empty string coerced
             // with valueAsNumber becomes NaN, not undefined, which fails
             // z.number().optional(). setValueAs maps empty to undefined.
-            {...register(`roomTypes.${index}.sizeM2`, { setValueAs: (v) => (v === '' ? undefined : Number(v)) })}
+            {...register(`roomTypes.${index}.sizeM2`, {
+              setValueAs: (v) => (v === '' ? undefined : Number(v)),
+              // `step="0.1"` only guides the spinner arrows — a free-typed
+              // "32.567" isn't rejected by the browser itself. Rounded on
+              // blur (not every keystroke, same reasoning as Bed Type's
+              // title-case above) to match `RoomType.sizeM2`'s actual
+              // `Decimal(6,1)` column — caught live from a real Finish-time
+              // "Request validation failed" this schema gave no warning
+              // for beforehand (see roomTypeSchema's own comment).
+              onBlur: (event) => {
+                if (event.target.value === '') return;
+                setValue(`roomTypes.${index}.sizeM2`, Number(Number(event.target.value).toFixed(1)), {
+                  shouldValidate: true,
+                });
+              },
+            })}
             error={errors.roomTypes?.[index]?.sizeM2?.message}
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">

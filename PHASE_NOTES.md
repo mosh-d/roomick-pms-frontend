@@ -972,3 +972,19 @@ Confirmed the actual account was unstuck by the already-documented route: `/logi
 
 ### Carried forward
 - Everything else already carried forward from Phase 15 — unchanged.
+
+## Phase 17 — Silent decimal-precision validation gap (2026-08-23)
+
+Same account, unstuck by Phase 16's login-recovery path, immediately hit a second wall: "Request validation failed" at Finish with no indication which field. Root-caused directly against the real backend (`curl`, not inferred from reading code): `POST /branches/:id/room-types` with `sizeM2: 32.55` returns exactly `{"errors":["sizeM2 must be a number conforming to the specified constraints"]}` — `RoomType.sizeM2` is `Decimal(6,1)` (`CreateRoomTypeDto`: `@IsNumber({ maxDecimalPlaces: 1 })`), but `roomTypeSchema` (frontend) never checked decimal precision at all, and `sizeM2`'s field is a plain native number input with no cap — `step="0.1"` only guides the spinner arrows, it doesn't reject a free-typed "32.55". `baseRate` has the same backend limit (`maxDecimalPlaces: 2`) but was already safe: `CurrencyInput` caps it at 2 decimals as-typed (`lib/numberFormat.ts`'s own header comment already documented this), so only `sizeM2` was actually exposed.
+
+### Delivered
+- `roomTypeSchema.sizeM2`/`baseRate` both gained a `hasAtMostDecimals` refine, matching the backend's exact limits (1 and 2) — string-based decimal-digit counting off `toString()`, not `value * 10**n` then checking for an integer, since that multiplication can itself introduce the floating-point noise it would be trying to detect.
+- `RoomTypeForm`'s Room Size field now rounds to 1 decimal on blur (`Number(Number(v).toFixed(1))`), the same "fix it, don't just flag it" treatment Bed Type's title-case-on-blur already gets — a value that already violates the limit gets corrected the moment focus leaves the field, not just rejected on submit.
+- `ReviewStep`'s error display was itself part of the problem: `ApiError.message` alone is the backend's generic `detail` ("Request validation failed"), never showing which field actually failed even though the specific class-validator messages were already sitting unused in `error.errors` (`problem-json.filter.ts`'s `rec.message` array). New `formatApiError()` appends them when present — this is what turned an opaque dead end into something diagnosable at all.
+
+### Verified
+`npx tsc --noEmit` and `eslint` clean. The actual failure mode confirmed directly against the running backend (the `curl` call above, not assumed from the DTO alone) before writing the fix. Live Playwright check on the real form: typing `32.55` into Room Size and blurring lands on `32.5`, and Continue advances cleanly past the step afterward.
+
+### Carried forward
+- This fix only rounds *new* input going forward — a draft that already has an out-of-range `sizeM2` sitting in `wizardStore` from before this shipped needs that field re-touched (click in, click out) to get corrected; nothing here retroactively scans/fixes already-stored drafts.
+- Everything else already carried forward from Phase 16 — unchanged.

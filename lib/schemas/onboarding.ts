@@ -35,7 +35,29 @@ export const branchSetupSchema = z.object({
 
 export type BranchSetupFormValues = z.infer<typeof branchSetupSchema>;
 
-/** Mirrors property/dto/room-type.dto.ts's CreateRoomTypeDto + CapacityDto. */
+/**
+ * String-based, not `n * 10 ** max` then checking for an integer — that
+ * multiplication can itself introduce floating-point noise (e.g. some
+ * values don't round-trip exactly through `* 100`), which would make the
+ * check unreliable for the exact values it exists to catch. Reading the
+ * decimal digit count off `toString()` has no such failure mode.
+ */
+function hasAtMostDecimals(value: number, max: number): boolean {
+  const decimalPart = value.toString().split('.')[1];
+  return !decimalPart || decimalPart.length <= max;
+}
+
+/**
+ * Mirrors property/dto/room-type.dto.ts's CreateRoomTypeDto + CapacityDto
+ * — including its decimal-place limits (`baseRate`'s `@IsNumber({
+ * maxDecimalPlaces: 2 })`, `sizeM2`'s `maxDecimalPlaces: 1`), which this
+ * schema didn't check at all until a real Finish-time "Request validation
+ * failed" surfaced the gap: `CurrencyInput` already caps `baseRate` at 2
+ * decimals as-typed (`lib/numberFormat.ts`), but `sizeM2` is a plain
+ * native number input with no such cap, so a value like `32.55` sailed
+ * through this schema's live `onTouched` validation with no warning and
+ * only failed once it reached the backend at the very end of the wizard.
+ */
 export const roomTypeSchema = z.object({
   name: z.string().trim().min(2, 'At least 2 characters').max(100),
   // RHF's `valueAsNumber: true` (see RoomTypeForm) converts the native
@@ -43,11 +65,18 @@ export const roomTypeSchema = z.object({
   // z.number(), not z.coerce.number(), so useForm's generic and the
   // resolver's inferred type agree (coerce's input/output type split
   // otherwise breaks RHF's <T> inference; see setupPatternSchema below).
-  baseRate: z.number().positive('Must be greater than 0'),
+  baseRate: z
+    .number()
+    .positive('Must be greater than 0')
+    .refine((n) => hasAtMostDecimals(n, 2), 'At most 2 decimal places'),
   adults: z.number().int().min(1).max(20),
   children: z.number().int().min(0).max(20),
   bedType: z.string().trim().max(50).optional().or(z.literal('')),
-  sizeM2: z.number().positive().optional(),
+  sizeM2: z
+    .number()
+    .positive()
+    .refine((n) => hasAtMostDecimals(n, 1), 'At most 1 decimal place')
+    .optional(),
   amenities: z.array(z.string()).optional(),
 });
 

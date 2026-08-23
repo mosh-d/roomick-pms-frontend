@@ -91,8 +91,10 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         setSessionExpired(true);
+      } else if (error instanceof ApiError) {
+        setSubmitError(formatApiError(error));
       } else {
-        setSubmitError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
+        setSubmitError('Something went wrong. Please try again.');
       }
     } finally {
       setSubmitting(false);
@@ -330,6 +332,25 @@ async function createRooms(branch: BranchDraft, branchId: string, accessToken: s
       if (match) card.id = match.id;
     }
   }
+}
+
+/**
+ * `ApiError.message` alone (the backend's generic `detail`, e.g. "Request
+ * validation failed") tells a reader *that* one of the Finish chain's
+ * calls got rejected, not *which field* — the actual per-field
+ * class-validator messages are already sitting in `error.errors`
+ * (`problem-json.filter.ts`'s `rec.message` array) but were never shown.
+ * Appends them, one per line, whenever they're the array shape the
+ * backend's default `ValidationPipe` actually produces; falls back to
+ * just `message` for every other kind of error this same catch handles
+ * (a domain conflict, a 500, ...), where there's nothing more specific to
+ * add.
+ */
+function formatApiError(error: ApiError): string {
+  if (Array.isArray(error.errors) && error.errors.length > 0) {
+    return `${error.message}: ${error.errors.join('; ')}`;
+  }
+  return error.message;
 }
 
 /** Always rendered inside a `tone="accent"` Section (see this file's other usages) — the label uses `text-accent-dark`, not `text-secondary-light`, to stay in the same slate family as the card itself rather than mixing in secondary's purple hue. The value keeps `text-secondary` regardless of tone, matching Card.tsx's own documented convention: value text needs the contrast, not a tone-matched color. */
