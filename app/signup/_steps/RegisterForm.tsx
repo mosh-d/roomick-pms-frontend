@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -54,41 +55,50 @@ export function RegisterForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      {isDemo ? (
-        <p className="text-small text-secondary-light">
-          Demo mode — this organization auto-deletes 30 days from creation, or you can delete it yourself at any
-          time from account settings.
-        </p>
-      ) : null}
-      <Section label="Owner account">
-        <Input label="Full Name" {...register('name')} error={errors.name?.message} />
-        <Input label="Email" type="email" {...register('email')} error={errors.email?.message} />
-        <Input
-          label="Password"
-          type="password"
-          hint="At least 8 characters, with an uppercase letter, a lowercase letter, and a number"
-          {...register('password')}
-          error={errors.password?.message}
-        />
-        <Input label="Phone" {...register('phone')} error={errors.phone?.message} />
-      </Section>
+    <>
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+        {isDemo ? (
+          <p className="text-small text-secondary-light">
+            Demo mode — this organization auto-deletes 30 days from creation, or you can delete it yourself at any
+            time from account settings.
+          </p>
+        ) : null}
+        <Section label="Owner account">
+          <Input label="Full Name" {...register('name')} error={errors.name?.message} />
+          <Input label="Email" type="email" {...register('email')} error={errors.email?.message} />
+          <Input
+            label="Password"
+            type="password"
+            hint="At least 8 characters, with an uppercase letter, a lowercase letter, and a number"
+            {...register('password')}
+            error={errors.password?.message}
+          />
+          <Input label="Phone" {...register('phone')} error={errors.phone?.message} />
+        </Section>
 
-      <Section label="Organization">
-        <Input label="Group / Hotel Name" {...register('groupName')} error={errors.groupName?.message} />
-        <Input
-          label="Subdomain"
-          hint="Your account's address — e.g. acme → acme.roomick.com"
-          {...register('subdomain')}
-          error={errors.subdomain?.message}
-        />
-      </Section>
+        <Section label="Organization">
+          <Input label="Group / Hotel Name" {...register('groupName')} error={errors.groupName?.message} />
+          <Input
+            label="Subdomain"
+            hint="Your account's address — e.g. acme → acme.roomick.com"
+            {...register('subdomain')}
+            error={errors.subdomain?.message}
+          />
+        </Section>
 
-      {formError ? <p className="text-small text-red-600">{formError}</p> : null}
+        {formError ? <p className="text-small text-red-600">{formError}</p> : null}
 
-      <Button type="submit" loading={isSubmitting}>
-        Create account
-      </Button>
-    </form>
+        <Button type="submit" loading={isSubmitting}>
+          Create account
+        </Button>
+      </form>
+
+      <p className="text-small text-secondary-light mt-4">
+        Already have an account?{' '}
+        <Link href="/login" className="text-primary-text font-semibold hover:underline">
+          Log in
+        </Link>
+      </p>
+    </>
   );
 }

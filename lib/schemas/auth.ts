@@ -38,3 +38,22 @@ export const verifyEmailSchema = z.object({
 });
 
 export type VerifyEmailFormValues = z.infer<typeof verifyEmailSchema>;
+
+/**
+ * Mirrors login.dto.ts's LoginDto. The backend's `subdomain` is optional
+ * there ("optional if the request carries an X-Tenant-ID header instead")
+ * — but a public /login page has no tenant header to fall back on, so it's
+ * required here for the flow to actually work.
+ */
+export const loginSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Enter a valid email').max(320),
+  password: z.string().min(1, 'Required'),
+  subdomain: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(1, 'Required')
+    .max(63, 'At most 63 characters'),
+});
+
+export type LoginFormValues = z.infer<typeof loginSchema>;
