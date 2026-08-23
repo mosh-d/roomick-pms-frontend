@@ -957,3 +957,18 @@ Already committed separately, folded in here for the record: `(fix): Stale Timez
 
 ### Carried forward
 - Everything else already carried forward from Phase 14 — unchanged.
+
+## Phase 16 — Session-recovery dead end (2026-08-23)
+
+Found live, immediately after Phase 15's own token-refresh fix shipped: a real account got stuck on Review with a plain "Unauthorized" and no way forward, even after a hard refresh and a brand-new tab — ruling out the stale-bundle explanation that fit *every* prior "reported bug that doesn't reproduce fresh" case this session. Two real, separate gaps, not one:
+
+1. **`ReviewStep`'s error message had nothing actionable in it.** A 401 reaching `handleFinish`'s catch block means Phase 15's own retry-refresh *already tried and failed* — the stored refresh token is genuinely dead, not just the access token — so there's nothing left for "Finish" to retry on its own. It needs a real re-login, but the screen only ever showed the raw `ApiError.message` ("Unauthorized") with no link, no explanation, nowhere to go. Now: a 401 specifically sets a distinct `sessionExpired` state instead of the generic `submitError`, rendering "Your session expired. **Log in again** — everything here is saved, so you'll land right back on this step" with a real `/login` link.
+2. **`AutoLoginStep` trusted a stale flag over the actual token state.** `wizardStore.loggedIn` and `authStore`'s tokens are two independently-persisted pieces of state that can drift — Phase 15's `refreshAccessToken()` clears `authStore` on a dead refresh token, but has no way to reach into `wizardStore` and flip `loggedIn` back to `false` too (different store, no coupling between them). So a session that died mid-Review left `loggedIn` still claiming "signed in," and *if* the wizard were navigated back to `AutoLoginStep`, it would have trusted that flag, skipped the real login call, and rendered "Already signed in — nothing to redo here" — a second, quieter dead end sitting behind the first. Fixed by deriving `loggedIn` as `wizardStore.loggedIn && Boolean(authStore.accessToken)`, not the flag alone.
+
+Confirmed the actual account was unstuck by the already-documented route: `/login` re-runs the same `authStore.login()` `AutoLoginStep` uses, `wizardStore`'s draft (branches/rooms/step) is a fully separate persisted store untouched by any of this, and `page.tsx`'s step routing reads `wizardStore.step` directly with no dependency on `loggedIn` — so signing in at `/login` and navigating back to `/signup` lands exactly back on Review with a working session, no lost progress.
+
+### Verified
+`npx tsc --noEmit` and `eslint` clean. Live Playwright checks for both fixes specifically: a branch with a dead refresh token hitting Finish shows the new "session expired" link (not the bare "Unauthorized" string, confirmed by its literal absence); `AutoLoginStep` given `loggedIn: true` but no stored access token now correctly falls through to its real "Sign in required" / "Go to login" branch instead of the stale "Already signed in" one.
+
+### Carried forward
+- Everything else already carried forward from Phase 15 — unchanged.

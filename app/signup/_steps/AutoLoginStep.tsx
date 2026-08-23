@@ -20,9 +20,19 @@ import { ApiError } from '@/lib/api';
  * retype what they just entered thirty seconds ago.
  *
  * Two cases beyond the normal one:
- *  - `wizardStore.loggedIn` already true (navigated back here after already
- *    signing in) — skip straight to `onSuccess()`, same "don't redo
- *    already-done work" pattern as RegisterForm/VerifyEmailForm.
+ *  - `wizardStore.loggedIn` already true *and* `authStore` actually still
+ *    holds an access token (navigated back here after already signing
+ *    in) — skip straight to `onSuccess()`, same "don't redo already-done
+ *    work" pattern as RegisterForm/VerifyEmailForm. `loggedIn` alone isn't
+ *    trusted for this: it's a separately-persisted flag that can drift
+ *    from `authStore`'s actual token state — a failed refresh (see
+ *    api.ts's retry-on-401) clears `authStore` but has no way to reach
+ *    into `wizardStore` and flip `loggedIn` back too, so a session that
+ *    died mid-review would otherwise leave `loggedIn` claiming a signed-in
+ *    state this step would then trust and skip re-authenticating for,
+ *    with nothing else in the wizard ever forcing a real login again.
+ *    Caught live from exactly that: someone stuck on Review with a dead
+ *    session had no path back through the wizard itself, only `/login`.
  *  - `password` is empty — happens when `RegisterForm` was already in its
  *    read-only "account already exists" state (see that file), which has
  *    no password to hand forward. `authStore`'s token is persisted (see
@@ -42,7 +52,8 @@ export function AutoLoginStep({
   onSuccess: () => void;
 }) {
   const login = useAuthStore((state) => state.login);
-  const loggedIn = useWizardStore((state) => state.loggedIn);
+  const hasAccessToken = useAuthStore((state) => Boolean(state.accessToken));
+  const loggedIn = useWizardStore((state) => state.loggedIn) && hasAccessToken;
   const owner = useWizardStore((state) => state.owner);
   const patch = useWizardStore((state) => state.patch);
   const [error, setError] = useState<string | null>(null);

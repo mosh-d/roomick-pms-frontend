@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Section } from '@/components/ui/Section';
 import { Button } from '@/components/ui/Button';
 import { apiFetch, ApiError } from '@/lib/api';
@@ -32,6 +33,15 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
   const tenantId = useAuthStore((state) => state.user?.tenantId);
   const wizard = useWizardStore();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Distinct from submitError, not just another string message: apiFetch
+  // already retries a 401 once via a token refresh (see api.ts), so a 401
+  // reaching here means that refresh itself failed too — the stored
+  // session is genuinely dead, not just this one request. That's not
+  // something "Finish" can retry its way out of; it needs a real
+  // re-login, so it gets a real link instead of sitting as inert red text
+  // the way a plain 401 message used to (the exact dead end this was
+  // caught from: nothing on this screen pointed anywhere once it hit).
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [reviewIndex, setReviewIndex] = useState(0);
 
@@ -40,6 +50,7 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
   async function handleFinish() {
     if (!owner || !brandMode || branches.length === 0) return;
     setSubmitError(null);
+    setSessionExpired(false);
     setSubmitting(true);
     try {
       let brandId = wizard.brandId;
@@ -78,7 +89,11 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
 
       onFinish();
     } catch (error) {
-      setSubmitError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
+      if (error instanceof ApiError && error.status === 401) {
+        setSessionExpired(true);
+      } else {
+        setSubmitError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -182,7 +197,17 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
         </Section>
       ) : null}
 
-      {submitError ? <p className="text-small text-red-600">{submitError}</p> : null}
+      {sessionExpired ? (
+        <p className="text-small text-red-600">
+          Your session expired.{' '}
+          <Link href="/login" className="font-semibold underline">
+            Log in again
+          </Link>{' '}
+          — everything here is saved, so you&apos;ll land right back on this step once you&apos;re signed back in.
+        </p>
+      ) : submitError ? (
+        <p className="text-small text-red-600">{submitError}</p>
+      ) : null}
 
       <div className="flex items-center gap-3">
         <Button type="button" variant="secondary" onClick={onBack} disabled={submitting}>
