@@ -2,6 +2,7 @@
 
 import { Section } from '@/components/ui/Section';
 import { Button } from '@/components/ui/Button';
+import type { InvitedStaff } from './StaffInviteStep';
 
 export type ReviewSummary = {
   subdomain: string;
@@ -13,6 +14,7 @@ export type ReviewSummary = {
   roomTypeName: string;
   baseRate: string;
   roomCount: number;
+  invitedStaff: InvitedStaff[];
 };
 
 /**
@@ -43,6 +45,14 @@ export function ReviewStep({ summary, onFinish }: { summary: ReviewSummary; onFi
         <Row label="Base Rate" value={`${summary.currency} ${summary.baseRate}`} />
         <Row label="Rooms Created" value={String(summary.roomCount)} />
       </Section>
+
+      {summary.invitedStaff.length > 0 ? (
+        <Section label="Staff Invited">
+          {summary.invitedStaff.map((staff) => (
+            <Row key={staff.email} label={staff.email} value={staff.roleName} />
+          ))}
+        </Section>
+      ) : null}
 
       <Button type="button" onClick={onFinish}>
         Finish

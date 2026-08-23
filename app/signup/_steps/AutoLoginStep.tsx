@@ -37,7 +37,9 @@ export function AutoLoginStep({
 
   useEffect(() => {
     let cancelled = false;
-    setError(null);
+    // No setState synchronously in the effect body (lint: react-hooks/set-state-in-effect)
+    // — `error` only gets set from the async .catch below, and cleared by the
+    // Retry button's own click handler before it bumps retryKey, not here.
     login(email, password, subdomain)
       .then(() => {
         if (!cancelled) onSuccess();
@@ -58,7 +60,13 @@ export function AutoLoginStep({
       {error ? (
         <>
           <p className="text-small text-red-600">{error}</p>
-          <Button type="button" onClick={() => setRetryKey((key) => key + 1)}>
+          <Button
+            type="button"
+            onClick={() => {
+              setError(null);
+              setRetryKey((key) => key + 1);
+            }}
+          >
             Retry
           </Button>
         </>

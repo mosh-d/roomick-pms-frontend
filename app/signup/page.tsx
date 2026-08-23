@@ -14,6 +14,7 @@ import { CreateBrandStep } from './_steps/CreateBrandStep';
 import { BranchSetupForm, type BranchResponse } from './_steps/BranchSetupForm';
 import { RoomTypeForm, type RoomTypeResponse } from './_steps/RoomTypeForm';
 import { RoomsForm } from './_steps/RoomsForm';
+import { StaffInviteStep, type InvitedStaff } from './_steps/StaffInviteStep';
 import { ReviewStep, type ReviewSummary } from './_steps/ReviewStep';
 
 type SignupMode = 'demo' | 'real';
@@ -26,6 +27,7 @@ type WizardStep =
   | 'branch-setup'
   | 'room-type'
   | 'rooms'
+  | 'staff-invite'
   | 'review'
   | 'complete';
 
@@ -38,6 +40,7 @@ const STEP_LABELS: Record<WizardStep, string> = {
   'branch-setup': 'Tell us about your property.',
   'room-type': 'Add your first room type.',
   rooms: 'Create your first rooms.',
+  'staff-invite': 'Invite your first staff members, or skip for now.',
   review: 'Review everything before you finish.',
   complete: "You're all set.",
 };
@@ -46,16 +49,19 @@ const STEP_LABELS: Record<WizardStep, string> = {
  * The full onboarding wizard (Roomick-UI.pdf), one screen at a time:
  * demo/real choice → Owner Account → Verify Email → (silent auto-login,
  * see AutoLoginStep) → Organization Structure → Branch Setup → Room Type →
- * Rooms → Review → done. Each step's form component owns its own DTO-exact
- * schema and API call; this file only owns the step sequence and the data
- * handed from one step to the next (brandId, branchId, roomTypeId, …).
+ * Rooms → Staff Invite → Review → done. Each step's form component owns its
+ * own DTO-exact schema and API call; this file only owns the step sequence
+ * and the data handed from one step to the next (brandId, branchId,
+ * roomTypeId, invited staff, …).
  *
  * Buildings/floors ("Full" onboarding mode) and multiple room types/room
  * batches are deliberately not built here — the backend's rooms/bulk
  * endpoint has a documented "Rooms Only" mode (skip floorId entirely, a
  * hidden default building/floor is auto-created) that this wizard uses, and
  * managing more than one room type is future Room Types management screen
- * work, not first-run onboarding. See PHASE_NOTES.md.
+ * work, not first-run onboarding. Tax rule configuration and logo upload
+ * are skipped for a different reason — no backend endpoint exists for
+ * either yet, confirmed by checking, not assumed. See PHASE_NOTES.md.
  */
 function SignupPageInner() {
   const searchParams = useSearchParams();
@@ -72,6 +78,7 @@ function SignupPageInner() {
   const [branch, setBranch] = useState<BranchResponse | null>(null);
   const [roomType, setRoomType] = useState<RoomTypeResponse | null>(null);
   const [roomCount, setRoomCount] = useState(0);
+  const [invitedStaff, setInvitedStaff] = useState<InvitedStaff[]>([]);
 
   return (
     <Container className="max-w-xl py-16">
@@ -170,6 +177,16 @@ function SignupPageInner() {
           roomTypeId={roomType.id}
           onSuccess={(rooms) => {
             setRoomCount(rooms.length);
+            setStep('staff-invite');
+          }}
+        />
+      ) : null}
+
+      {step === 'staff-invite' && branch ? (
+        <StaffInviteStep
+          branchId={branch.id}
+          onDone={(invited) => {
+            setInvitedStaff(invited);
             setStep('review');
           }}
         />
@@ -177,7 +194,7 @@ function SignupPageInner() {
 
       {step === 'review' && registered && brandMode && branch && roomType ? (
         <ReviewStep
-          summary={buildSummary(registered, brandMode, branch, roomType, roomCount)}
+          summary={buildSummary(registered, brandMode, branch, roomType, roomCount, invitedStaff)}
           onFinish={() => setStep('complete')}
         />
       ) : null}
@@ -201,6 +218,7 @@ function buildSummary(
   branch: BranchResponse,
   roomType: RoomTypeResponse,
   roomCount: number,
+  invitedStaff: InvitedStaff[],
 ): ReviewSummary {
   return {
     subdomain: registered.subdomain,
@@ -212,6 +230,7 @@ function buildSummary(
     roomTypeName: roomType.name,
     baseRate: roomType.baseRate,
     roomCount,
+    invitedStaff,
   };
 }
 

@@ -48,6 +48,7 @@ export function RoomTypeForm({ branchId, onSuccess }: { branchId: string; onSucc
           baseRate: values.baseRate,
           capacity: { adults: values.adults, children: values.children },
           bedType: values.bedType || undefined,
+          sizeM2: values.sizeM2,
           amenities: values.amenities,
         },
       });
@@ -69,6 +70,18 @@ export function RoomTypeForm({ branchId, onSuccess }: { branchId: string; onSucc
           error={errors.baseRate?.message}
         />
         <Input label="Bed Type" hint="e.g. king, twin" {...register('bedType')} error={errors.bedType?.message} />
+        <Input
+          label="Room Size"
+          type="number"
+          step="0.1"
+          hint="Square meters, optional"
+          // Not `valueAsNumber` — this field is optional, and an empty
+          // string coerced with valueAsNumber becomes NaN, not undefined,
+          // which fails z.number().optional()'s check. setValueAs maps the
+          // empty case to undefined explicitly instead.
+          {...register('sizeM2', { setValueAs: (v) => (v === '' ? undefined : Number(v)) })}
+          error={errors.sizeM2?.message}
+        />
       </Section>
 
       <Section label="Capacity">

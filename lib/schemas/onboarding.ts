@@ -54,10 +54,26 @@ export const roomTypeSchema = z.object({
   adults: z.number().int().min(1).max(20),
   children: z.number().int().min(0).max(20),
   bedType: z.string().trim().max(50).optional().or(z.literal('')),
+  sizeM2: z.number().positive().optional(),
   amenities: z.array(z.string()).optional(),
 });
 
 export type RoomTypeFormValues = z.infer<typeof roomTypeSchema>;
+
+/** Mirrors users/dto/bulk-invite.dto.ts's BulkInviteDto + InviteRowDto. roleId comes from GET /auth/roles, not a free-text role name. */
+export const staffInviteSchema = z.object({
+  invites: z
+    .array(
+      z.object({
+        email: z.string().trim().toLowerCase().email('Enter a valid email').max(320),
+        roleId: z.string().min(1, 'Choose a role'),
+      }),
+    )
+    .min(1)
+    .max(50),
+});
+
+export type StaffInviteFormValues = z.infer<typeof staffInviteSchema>;
 
 /**
  * Mirrors property/dto/rooms.dto.ts's BulkCreateRoomsDto — the `range`
