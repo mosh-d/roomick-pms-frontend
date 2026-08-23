@@ -14,7 +14,9 @@ import { COUNTRIES } from '@/lib/countries';
 import { slugify } from '@/lib/slug';
 import { callingCodeFor, displayFromE164, formatPhoneAsYouType, formatPhoneDisplay } from '@/lib/phone';
 import { useWizardStore, type OwnerAccountDraft } from '@/lib/store/wizardStore';
+import { useAuthStore } from '@/lib/store/authStore';
 import { useAutosaveDraft } from '@/lib/useAutosaveDraft';
+import { resumeOnboardingDraft } from '@/lib/resumeOnboarding';
 
 /**
  * Step 1 of the onboarding wizard (Roomick-UI.pdf "Owner Account Form") —
@@ -147,6 +149,14 @@ function RegisterFields({
   registerDraft: OwnerAccountDraft | null;
 }) {
   const [formError, setFormError] = useState<string | null>(null);
+  // Set when register() fails because this exact account already exists
+  // (SUBDOMAIN_TAKEN/EMAIL_TAKEN) — holds what's needed to offer "log in
+  // and continue where you left off" instead of a dead-end field error.
+  // Cleared on the next real edit so a stale offer can't outlive the
+  // values it was computed from.
+  const [conflict, setConflict] = useState<{ email: string; password: string; subdomain: string } | null>(null);
+  const [resuming, setResuming] = useState(false);
+  const authLogin = useAuthStore((state) => state.login);
   // Already-edited if resuming a draft with a subdomain in it — otherwise
   // the auto-slugify effect below would immediately overwrite whatever the
   // owner had typed there before the reload that brought this draft back.
@@ -183,6 +193,7 @@ function RegisterFields({
 
   async function onSubmit(values: RegisterFormValues) {
     setFormError(null);
+    setConflict(null);
     try {
       const result = await apiFetch<{ tenantId: string; userId: string; subdomain: string; verificationToken: string }>(
         '/auth/register',
@@ -218,9 +229,44 @@ function RegisterFields({
     } catch (error) {
       if (error instanceof ApiError && error.isCode('SUBDOMAIN_TAKEN')) {
         setError('subdomain', { message: error.message });
+        setConflict({ email: values.email, password: values.password, subdomain: values.subdomain });
+        return;
+      }
+      if (error instanceof ApiError && error.isCode('EMAIL_TAKEN')) {
+        setError('email', { message: error.message });
+        setConflict({ email: values.email, password: values.password, subdomain: values.subdomain });
         return;
       }
       setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
+    }
+  }
+
+  /**
+   * "This subdomain/email already belongs to a real account" isn't
+   * necessarily a mistake — it's what happens every time this exact
+   * owner comes back to a signup link after already registering (a fresh
+   * browser session has no local record `accountCreated` was ever true).
+   * Logging in *is* the "do these details actually match that account"
+   * check — a wrong password fails here with the normal INVALID_CREDENTIALS
+   * message, same as `/login` would show, so this can't be used to confirm
+   * someone else's account exists. Once logged in, `resumeOnboardingDraft`
+   * reads how far onboarding actually got on the backend and rehydrates
+   * wizardStore to match — no `onNext()` here, since the wizard's `step`
+   * (set by that patch) is what actually drives which screen page.tsx
+   * renders next, and it's rarely "verify email" from this path.
+   */
+  async function handleResume() {
+    if (!conflict) return;
+    setFormError(null);
+    setResuming(true);
+    try {
+      const login = await authLogin(conflict.email, conflict.password, conflict.subdomain);
+      const resumePatch = await resumeOnboardingDraft(login.accessToken, login.user);
+      patch(resumePatch);
+    } catch (error) {
+      setFormError(error instanceof ApiError ? error.message : 'Could not log in with these details.');
+    } finally {
+      setResuming(false);
     }
   }
 
@@ -275,7 +321,19 @@ function RegisterFields({
                     setPhoneDisplay(display);
                     field.onChange(e164);
                   }}
-                  onBlur={field.onBlur}
+                  onBlur={(event) => {
+                    // Re-normalizes from whatever the DOM actually shows,
+                    // not just the last onChange — the safety net an
+                    // autofilled value needs (a browser can set an
+                    // autofilled `<input>`'s value in a way that doesn't
+                    // reliably fire React's onChange, leaving the raw
+                    // autofilled text, leading trunk "0" included, on
+                    // screen with none of the live formatting applied).
+                    const { display, e164 } = formatPhoneAsYouType(event.target.value, country);
+                    setPhoneDisplay(display);
+                    field.onChange(e164);
+                    field.onBlur();
+                  }}
                   error={errors.phone?.message}
                 />
               )}
@@ -311,6 +369,18 @@ function RegisterFields({
         </Section>
 
         {formError ? <p className="text-small text-red-600">{formError}</p> : null}
+
+        {conflict ? (
+          <div className="flex flex-col gap-2 rounded-control bg-secondary-light/15 px-3 py-2">
+            <p className="text-small text-secondary">
+              An account already exists with these details — if that&apos;s you, log in and continue setting it up
+              instead of creating a new one.
+            </p>
+            <Button type="button" variant="secondary" loading={resuming} onClick={handleResume}>
+              Log in and continue where I left off
+            </Button>
+          </div>
+        ) : null}
 
         <Button type="submit" loading={isSubmitting}>
           Create account

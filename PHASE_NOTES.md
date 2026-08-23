@@ -639,3 +639,95 @@ nothing — that `phone` persisted as `+2348031234567` and `country` as
 
 ### Carried forward
 - Everything else already carried forward from Phase 8 — unchanged.
+
+## Phase 10 — Log in and continue where you left off (2026-08-23)
+
+A returning owner hitting `SUBDOMAIN_TAKEN`/`EMAIL_TAKEN` on a fresh browser
+session (no local `wizardStore` memory that the account already exists) had
+no way forward except a dead-end field error — reported directly, alongside
+a phone-field bug ("the leading 0 should be stripped after leaving focus")
+found investigating it, and a real stale-dev-server-cache issue that turned
+out to be why an earlier report ("can't navigate to next step") looked like
+a code bug and wasn't.
+
+### Delivered
+- **`RegisterForm`'s conflict handling now offers a real path forward, not
+  just an error.** Catching `SUBDOMAIN_TAKEN` or `EMAIL_TAKEN` sets a new
+  `conflict` state (the email/password/subdomain just submitted) and shows
+  "Log in and continue where I left off" alongside the existing field
+  error. Clicking it calls `authStore.login()` with those exact values —
+  which *is* the "do these details actually match a real account" check: a
+  wrong password fails with the same `INVALID_CREDENTIALS` text `/login`
+  itself would show, and an unverified account correctly fails closed with
+  `EMAIL_NOT_VERIFIED` (verified live, not assumed — see below). This can't
+  be used to probe whether someone else's account exists.
+- **`lib/resumeOnboarding.ts`** (new) — once logged in, calls the backend's
+  new `GET /tenants/me/onboarding-status` (see
+  `roomick-pms-backend/PHASE_NOTES.md`) and maps its response onto a
+  `wizardStore` patch: rehydrates `owner` (from `Tenant`/`User` columns —
+  `User.name` is one column, split back into first/last on a best-effort
+  basis, first space-separated token vs. the rest, since the original split
+  was never stored), and walks brand → branch → room type → rooms exactly
+  like the probe does, landing `step` at the first thing that's actually
+  missing (`org-structure` with nothing yet, all the way to `review` if
+  rooms already exist). No `onNext()` call in this path — `wizardStore.step`
+  is what actually drives `page.tsx`'s render, and it's essentially never
+  `verify` from here (logging in already proves the email is verified).
+- **Fixed: phone field showing the raw typed/autofilled text (leading `0`
+  included) instead of the live-formatted value.** The `onChange`-based
+  `AsYouType` formatting (Phase 9) works correctly for real typing and
+  paste, confirmed directly — but a browser autofill can set an `<input>`'s
+  value in a way that doesn't reliably fire it, leaving the DOM showing
+  whatever was autofilled, untouched. Added an `onBlur` handler that
+  re-normalizes straight from the live DOM value (not the last known
+  `field.value`, which could be equally stale if `onChange` never fired) —
+  this both fixes the reported bug and is literally what was asked for
+  ("the leading 0 should be removed automatically after leaving focus").
+- **Root-caused the "still can't navigate to the next step" report as a
+  second stale-dev-server-cache symptom, not a new bug** — the same class
+  of issue Phase 9 already found and fixed once, recurring because the
+  browser tab reporting it had stayed open across yet another dev-server
+  restart. Confirmed by testing the exact reported flow (fill Branch Setup,
+  reload, click Continue, click a sidebar phase link) fresh against the
+  live server with zero errors; the fix was a hard refresh on the stale
+  tab, not a code change.
+
+### Decisions & deviations
+1. **A purpose-built backend endpoint, not three generic list endpoints.**
+   See the backend's own `PHASE_NOTES.md` entry for the reasoning — this
+   flow needs exactly one thing (how far did onboarding get), not a
+   reusable "list branches for a brand" API that doesn't exist yet either.
+2. **The resumed `rooms` draft is a placeholder (`{ from: 1, to:
+   roomCount }`), not a reconstruction of whatever range actually created
+   those rooms.** Review only uses it to compute a display count and to
+   satisfy its own "did every step finish" render guard
+   (`if (!branch || !roomType || !rooms) return null`); Finish's real
+   guard against re-creating rooms is `createdRoomCount === 0`, already
+   populated from the real count — the placeholder's numbers are never
+   submitted to the backend.
+3. **Staff invites are not resumed.** The probe doesn't query sent invites
+   (no backend endpoint lists them either), and re-offering the staff
+   invite step on resume is harmless — it's additive, not something
+   Finish would otherwise conflict on re-running.
+
+### Verified
+`npm run lint` and `npx tsc --noEmit` clean (frontend and backend). Backend
+probe endpoint checked directly via real API calls at both extremes — a
+freshly verified tenant with nothing else yet, and the same tenant after
+really creating a brand/branch/room type/5 rooms — confirming the exact
+response shape `resumeOnboardingDraft` expects. The UI side (conflict
+detected → resume button shown) confirmed via a real duplicate-registration
+attempt against a live account. The login-side safety check confirmed
+directly: attempting to resume with an *unverified* account correctly fails
+with `EMAIL_NOT_VERIFIED` and leaves `wizardStore` untouched — logging in
+first is a real gate, not a formality. Phone-blur fix confirmed by
+simulating a native (non-React-event) DOM value set, matching how a browser
+autofill actually behaves, then checking the field re-formats correctly on
+blur.
+
+### Carried forward
+- Real edit/re-submit semantics for Owner Account fields once already
+  created — unchanged from Phase 7/8; resuming reads existing values, it
+  still doesn't let you change them.
+- Email-global-uniqueness discussion, encryption at rest — still deferred,
+  unchanged.

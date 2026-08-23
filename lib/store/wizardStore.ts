@@ -35,7 +35,7 @@ export interface InvitedStaff {
   roleName: string;
 }
 
-interface WizardData {
+export interface WizardData {
   mode: SignupMode | null;
   step: WizardStep;
 
