@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { apiFetch, ApiError } from '@/lib/api';
 import { verifyEmailSchema, type VerifyEmailFormValues } from '@/lib/schemas/auth';
+import { useWizardStore } from '@/lib/store/wizardStore';
 
 /**
  * Step 1b — email verification. The token is a real stubbed JWT the backend
@@ -16,16 +17,17 @@ import { verifyEmailSchema, type VerifyEmailFormValues } from '@/lib/schemas/aut
  * infrastructure exists yet. Pre-filling it here is a deliberate, visible
  * dev convenience — not something a production build should do once real
  * email delivery lands.
+ *
+ * If `emailVerified` is already true in `wizardStore` (navigated back here
+ * after already verifying), this skips straight to `onNext()` — same
+ * "don't get stuck re-submitting something already done" reasoning as
+ * `RegisterForm`'s read-only mode.
  */
-export function VerifyEmailForm({
-  subdomain,
-  initialToken,
-  onSuccess,
-}: {
-  subdomain: string;
-  initialToken: string;
-  onSuccess: () => void;
-}) {
+export function VerifyEmailForm({ onNext }: { onNext: () => void }) {
+  const owner = useWizardStore((state) => state.owner);
+  const verificationToken = useWizardStore((state) => state.verificationToken);
+  const emailVerified = useWizardStore((state) => state.emailVerified);
+  const patch = useWizardStore((state) => state.patch);
   const [formError, setFormError] = useState<string | null>(null);
   const {
     register,
@@ -33,15 +35,29 @@ export function VerifyEmailForm({
     formState: { errors, isSubmitting },
   } = useForm<VerifyEmailFormValues>({
     resolver: zodResolver(verifyEmailSchema),
-    defaultValues: { token: initialToken },
-    mode: 'onBlur',
+    defaultValues: { token: verificationToken ?? '' },
+    mode: 'onTouched',
   });
+
+  if (emailVerified) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Section label="Verify email">
+          <p className="text-body text-secondary">Email already verified — nothing to re-submit here.</p>
+        </Section>
+        <Button type="button" onClick={onNext}>
+          Continue
+        </Button>
+      </div>
+    );
+  }
 
   async function onSubmit(values: VerifyEmailFormValues) {
     setFormError(null);
     try {
       await apiFetch<{ verified: true }>('/auth/verify-email', { method: 'POST', body: values });
-      onSuccess();
+      patch({ emailVerified: true });
+      onNext();
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
     }
@@ -51,9 +67,9 @@ export function VerifyEmailForm({
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       <Section label="Verify email">
         <p className="text-small text-secondary-light">
-          Account created for <span className="font-semibold">{subdomain}</span>. No email-sending is wired up yet
-          (the backend&apos;s own DTO comment says this token is &quot;stubbed in MVP&quot;) — it&apos;s pre-filled
-          below so you can continue; a real deployment would require checking your inbox instead.
+          Account created for <span className="font-semibold">{owner?.subdomain}</span>. No email-sending is wired
+          up yet (the backend&apos;s own DTO comment says this token is &quot;stubbed in MVP&quot;) — it&apos;s
+          pre-filled below so you can continue; a real deployment would require checking your inbox instead.
         </p>
         <Input label="Verification token" {...register('token')} error={errors.token?.message} />
       </Section>

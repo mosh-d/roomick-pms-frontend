@@ -58,22 +58,16 @@ function ManualCaptureDemo() {
 /**
  * Demonstrates the RHF + Zod pattern documented in
  * design-system/04-components/forms.md: one schema, defined once, powering
- * real-time client validation. `brandMode`/`brandName` are wired through
- * RHF's `Controller` (BrandRadioCard is a controlled component, not a
+ * real-time client validation. `brandMode` is wired through RHF's
+ * `Controller` (BrandRadioCard is a controlled component, not a
  * plain-ref-forwarding native input, so `register()` alone can't drive it)
  * while `hotelName` uses plain `register()` since Input forwards its ref
  * directly to a native <input>.
  */
-const onboardingSchema = z
-  .object({
-    hotelName: z.string().min(1, 'Hotel name is required'),
-    brandMode: z.enum(['single', 'multi']),
-    brandName: z.string().optional(),
-  })
-  .refine((data) => data.brandMode !== 'single' || Boolean(data.brandName?.trim()), {
-    message: 'Brand name is required for Single Brand mode',
-    path: ['brandName'],
-  });
+const onboardingSchema = z.object({
+  hotelName: z.string().min(1, 'Hotel name is required'),
+  brandMode: z.enum(['single', 'multi']),
+});
 
 type OnboardingFormValues = z.infer<typeof onboardingSchema>;
 
@@ -84,26 +78,10 @@ type OnboardingFormValues = z.infer<typeof onboardingSchema>;
  * RHF's validation/state machinery while giving back plain value/onChange
  * props to hand to any controlled component, native or custom.
  */
-function BrandFields({
-  control,
-  errors,
-}: {
-  control: Control<OnboardingFormValues>;
-  errors: { brandName?: { message?: string } };
-}) {
+function BrandFields({ control }: { control: Control<OnboardingFormValues> }) {
   const brandMode = useController({ name: 'brandMode', control });
-  const brandName = useController({ name: 'brandName', control });
 
-  return (
-    <BrandRadioCard
-      name="brandMode"
-      value={brandMode.field.value as BrandMode}
-      onChange={brandMode.field.onChange}
-      brandName={brandName.field.value ?? ''}
-      onBrandNameChange={brandName.field.onChange}
-      brandNameError={errors.brandName?.message}
-    />
-  );
+  return <BrandRadioCard name="brandMode" value={brandMode.field.value as BrandMode} onChange={brandMode.field.onChange} />;
 }
 
 function OnboardingDemoForm() {
@@ -116,8 +94,8 @@ function OnboardingDemoForm() {
     formState: { errors, isSubmitting },
   } = useForm<OnboardingFormValues>({
     resolver: zodResolver(onboardingSchema),
-    defaultValues: { hotelName: '', brandMode: 'single', brandName: '' },
-    mode: 'onBlur',
+    defaultValues: { hotelName: '', brandMode: 'single' },
+    mode: 'onTouched',
   });
 
   async function onSubmit(values: OnboardingFormValues) {
@@ -132,7 +110,7 @@ function OnboardingDemoForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 max-w-md">
       <FormSection label="Hotel Brand Onboarding">
         <Input label="Hotel Name" {...register('hotelName')} error={errors.hotelName?.message} />
-        <BrandFields control={control} errors={errors} />
+        <BrandFields control={control} />
         <LogoUpload file={logoFile} onFileChange={setLogoFile} />
       </FormSection>
 
@@ -155,7 +133,6 @@ export function FormsSection() {
   const [amenities, setAmenities] = useState<string[]>(['wifi']);
   const [customTags, setCustomTags] = useState<string[]>([]);
   const [standaloneMode, setStandaloneMode] = useState<BrandMode | null>('single');
-  const [standaloneBrandName, setStandaloneBrandName] = useState('Caritas Inn');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [captureMode, setCaptureMode] = useState<'digital' | 'manual' | null>('digital');
 
@@ -200,13 +177,7 @@ export function FormsSection() {
         </h3>
         <div className="max-w-sm">
           <Section label="Organization Structure">
-            <BrandRadioCard
-              name="standaloneBrandMode"
-              value={standaloneMode}
-              onChange={setStandaloneMode}
-              brandName={standaloneBrandName}
-              onBrandNameChange={setStandaloneBrandName}
-            />
+            <BrandRadioCard name="standaloneBrandMode" value={standaloneMode} onChange={setStandaloneMode} />
           </Section>
         </div>
       </div>

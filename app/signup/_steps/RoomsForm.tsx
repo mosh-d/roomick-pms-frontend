@@ -1,16 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Section } from '@/components/ui/Section';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { apiFetch, ApiError } from '@/lib/api';
 import { roomsBulkSchema, type RoomsBulkFormValues } from '@/lib/schemas/onboarding';
-import { useAuthStore } from '@/lib/store/authStore';
-
-export type RoomsBulkResponse = Array<{ id: string; number: string }>;
+import { useWizardStore } from '@/lib/store/wizardStore';
 
 /**
  * Onboarding step 4b (Roomick-UI.pdf "Rooms") — property/dto/rooms.dto.ts's
@@ -19,42 +15,23 @@ export type RoomsBulkResponse = Array<{ id: string; number: string }>;
  * PHASE_NOTES.md and roomTypeSchema's comment on the same trade-off).
  * `floorId` is omitted entirely — the backend auto-creates a hidden default
  * building/floor for this, its own documented "Rooms Only" onboarding mode.
+ *
+ * Purely local, like every step from Organization Structure onward — see
+ * PHASE_NOTES.md's "deferred submission" entry and BranchSetupForm's
+ * header comment.
  */
-export function RoomsForm({
-  branchId,
-  roomTypeId,
-  onSuccess,
-}: {
-  branchId: string;
-  roomTypeId: string;
-  onSuccess: (rooms: RoomsBulkResponse) => void;
-}) {
-  const accessToken = useAuthStore((state) => state.accessToken);
-  const tenantId = useAuthStore((state) => state.user?.tenantId);
-  const [formError, setFormError] = useState<string | null>(null);
+export function RoomsForm({ onNext }: { onNext: () => void }) {
+  const rooms = useWizardStore((state) => state.rooms);
+  const patch = useWizardStore((state) => state.patch);
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<RoomsBulkFormValues>({ resolver: zodResolver(roomsBulkSchema), mode: 'onBlur' });
+  } = useForm<RoomsBulkFormValues>({ resolver: zodResolver(roomsBulkSchema), defaultValues: rooms ?? undefined, mode: 'onTouched' });
 
-  async function onSubmit(values: RoomsBulkFormValues) {
-    setFormError(null);
-    try {
-      const rooms = await apiFetch<RoomsBulkResponse>(`/branches/${branchId}/rooms/bulk`, {
-        method: 'POST',
-        accessToken: accessToken ?? undefined,
-        tenantId,
-        body: {
-          roomTypeId,
-          range: { from: values.from, to: values.to, prefix: values.prefix || undefined },
-          view: values.view || undefined,
-        },
-      });
-      onSuccess(rooms);
-    } catch (error) {
-      setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
-    }
+  function onSubmit(values: RoomsBulkFormValues) {
+    patch({ rooms: values });
+    onNext();
   }
 
   return (
@@ -78,10 +55,8 @@ export function RoomsForm({
         <Input label="View" hint="Optional, e.g. sea, garden" {...register('view')} error={errors.view?.message} />
       </Section>
 
-      {formError ? <p className="text-small text-red-600">{formError}</p> : null}
-
       <Button type="submit" loading={isSubmitting}>
-        Create rooms
+        Continue
       </Button>
     </form>
   );

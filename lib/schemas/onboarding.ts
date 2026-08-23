@@ -1,19 +1,12 @@
 import { z } from 'zod';
 
-/** Mirrors tenants/dto/configure-mode.dto.ts. `brandName` is optional in single mode too — the backend defaults it to the tenant's groupName when omitted. */
-export const configureModeSchema = z.object({
-  mode: z.enum(['single', 'multi']),
-  brandName: z.string().trim().min(2, 'At least 2 characters').max(200).optional().or(z.literal('')),
-});
-
-export type ConfigureModeFormValues = z.infer<typeof configureModeSchema>;
-
-/** Mirrors property/dto/brand.dto.ts's CreateBrandDto — name only; logoUrl/primaryColor/defaultPolicies are brand-management work, not onboarding. */
-export const createBrandSchema = z.object({
-  name: z.string().trim().min(2, 'At least 2 characters').max(200),
-});
-
-export type CreateBrandFormValues = z.infer<typeof createBrandSchema>;
+// No zod schema for Organization Structure (single/multi-brand mode) — it's
+// a single required radio choice (`OrgStructureForm` just checks `brandMode
+// !== null`), and there's no separate "Brand Name" field to validate here
+// anymore (see BrandRadioCard.tsx and PHASE_NOTES.md — it's collected once,
+// at signup, and reused as the head brand's name for either mode). The
+// actual `POST /tenants/configure-mode` call only fires once, as part of
+// Review's "Finish" submission chain — see page.tsx.
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 

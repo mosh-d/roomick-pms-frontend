@@ -13,7 +13,14 @@ npm run dev -- -p 3001      # http://localhost:3001
 
 **Runs on 3001, not Next.js's default 3000** — the backend owns port 3000 (its own documented default, and what its `CORS_ORIGINS` env var already allowlists is `http://localhost:3001`). Running both on their default ports collides; this cost real time to work out once, so it's written down here now.
 
-No other `.env` is required yet — nothing calls the backend live as of this writing (see `PHASE_NOTES.md`). Once API integration starts, this section will document the required `NEXT_PUBLIC_API_URL` and any other env vars.
+```bash
+cp .env.example .env.local
+```
+
+| Var | Purpose |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | The backend's base URL (`http://localhost:3000/api/v1` by default — every route lives under `/api/v1`, see `main.ts`). |
+| `NEXT_PUBLIC_LANDING_URL` | Where `roomick-landing` (the separate marketing site) runs — the wizard's top-bar wordmark links out to it. A real cross-app URL, not an internal route; the two are separate Next.js apps on separate ports. |
 
 ## What's here
 

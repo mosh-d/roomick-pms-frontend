@@ -37,6 +37,9 @@ export const registerSchema = z.object({
     .regex(/[A-Z]/, 'Needs an uppercase letter')
     .regex(/[0-9]/, 'Needs a number'),
   phone: z.string().trim().max(20).optional().or(z.literal('')),
+  // ISO 3166-1 alpha-2, matches RegisterDto's optional `country` (reporting
+  // only for now — see auth/dto/register.dto.ts).
+  country: z.string().length(2).optional().or(z.literal('')),
 });
 
 export type RegisterFormValues = z.infer<typeof registerSchema>;

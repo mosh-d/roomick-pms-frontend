@@ -1,36 +1,23 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { RadioCard } from '@/components/ui/RadioCard';
-import type { BrandMode } from '@/components/ui/BrandRadioCard';
-import { RegisterForm, type RegisterResponse } from './_steps/RegisterForm';
+import { RegisterForm } from './_steps/RegisterForm';
 import { VerifyEmailForm } from './_steps/VerifyEmailForm';
 import { AutoLoginStep } from './_steps/AutoLoginStep';
 import { OrgStructureForm } from './_steps/OrgStructureForm';
-import { CreateBrandStep } from './_steps/CreateBrandStep';
-import { BranchSetupForm, type BranchResponse } from './_steps/BranchSetupForm';
-import { RoomTypeForm, type RoomTypeResponse } from './_steps/RoomTypeForm';
+import { BranchSetupForm } from './_steps/BranchSetupForm';
+import { RoomTypeForm } from './_steps/RoomTypeForm';
 import { RoomsForm } from './_steps/RoomsForm';
-import { StaffInviteStep, type InvitedStaff } from './_steps/StaffInviteStep';
-import { ReviewStep, type ReviewSummary } from './_steps/ReviewStep';
+import { StaffInviteStep } from './_steps/StaffInviteStep';
+import { ReviewStep } from './_steps/ReviewStep';
 import { WizardShell, type WizardPhaseKey } from './_steps/WizardShell';
-
-type SignupMode = 'demo' | 'real';
-type WizardStep =
-  | 'register'
-  | 'verify'
-  | 'auto-login'
-  | 'org-structure'
-  | 'create-brand'
-  | 'branch-setup'
-  | 'room-type'
-  | 'rooms'
-  | 'staff-invite'
-  | 'review'
-  | 'complete';
+import { useWizardStore, type WizardStep, type SignupMode } from '@/lib/store/wizardStore';
+import { useAuthStore } from '@/lib/store/authStore';
+import { useHasHydrated } from '@/lib/useHasHydrated';
 
 /**
  * Maps this wizard's ~10 fine-grained internal steps onto the 4 named
@@ -44,7 +31,6 @@ const PHASE_FOR_STEP: Record<WizardStep, WizardPhaseKey> = {
   verify: 'owner',
   'auto-login': 'owner',
   'org-structure': 'org',
-  'create-brand': 'org',
   'branch-setup': 'branch',
   'room-type': 'branch',
   rooms: 'branch',
@@ -53,12 +39,19 @@ const PHASE_FOR_STEP: Record<WizardStep, WizardPhaseKey> = {
   complete: 'review',
 };
 
+/** The step `WizardShell`'s sidebar navigates to when a passed phase is clicked — always that phase's first internal step. */
+const FIRST_STEP_FOR_PHASE: Record<WizardPhaseKey, WizardStep> = {
+  owner: 'register',
+  org: 'org-structure',
+  branch: 'branch-setup',
+  review: 'review',
+};
+
 const STEP_LABELS: Record<WizardStep, string> = {
   register: 'Set up your organization and owner account.',
   verify: 'Confirm your email to finish setting up your account.',
   'auto-login': 'Signing you in…',
   'org-structure': 'How is your organization structured?',
-  'create-brand': 'Name your first brand.',
   'branch-setup': 'Tell us about your property.',
   'room-type': 'Add your first room type.',
   rooms: 'Create your first rooms.',
@@ -71,10 +64,19 @@ const STEP_LABELS: Record<WizardStep, string> = {
  * The full onboarding wizard (Roomick-UI.pdf), one screen at a time:
  * demo/real choice → Owner Account → Verify Email → (silent auto-login,
  * see AutoLoginStep) → Organization Structure → Branch Setup → Room Type →
- * Rooms → Staff Invite → Review → done. Each step's form component owns its
- * own DTO-exact schema and API call; this file only owns the step sequence
- * and the data handed from one step to the next (brandId, branchId,
- * roomTypeId, invited staff, …).
+ * Rooms → Staff Invite → Review → done.
+ *
+ * Deferred submission (see PHASE_NOTES.md for the full write-up): Owner
+ * Account + Verify Email + auto-login still submit immediately — creating
+ * a real account is a real gate, there's no verifying an email for an
+ * account that doesn't exist. Everything from Organization Structure
+ * onward is pure local state (`wizardStore`, persisted to localStorage)
+ * until Review's "Finish" fires the whole remaining chain at once. That's
+ * what fixes the two problems the previous "submit every step immediately"
+ * design had: going back to re-check or fix something no longer
+ * re-triggers an already-succeeded API call (there's nothing to conflict
+ * with — nothing's been created yet), and a page reload doesn't lose
+ * anything either.
  *
  * Buildings/floors ("Full" onboarding mode) and multiple room types/room
  * batches are deliberately not built here — the backend's rooms/bulk
@@ -88,19 +90,41 @@ const STEP_LABELS: Record<WizardStep, string> = {
 function SignupPageInner() {
   const searchParams = useSearchParams();
   const demoParam = searchParams.get('demo');
-  const initialMode: SignupMode | null = demoParam === 'true' ? 'demo' : demoParam === 'false' ? 'real' : null;
 
-  const [mode, setMode] = useState<SignupMode | null>(initialMode);
-  const [step, setStep] = useState<WizardStep>('register');
+  // `persist` hydrates from localStorage asynchronously, after the first
+  // render — without this guard, a reload briefly renders `mode === null`
+  // (the demo/real choice screen) using the store's un-hydrated initial
+  // state before snapping to whatever step was actually saved, which reads
+  // as a real bug ("I see a brief create-your-account screen on reload"),
+  // not just a cosmetic flicker. See useHasHydrated.ts.
+  const wizardHydrated = useHasHydrated(useWizardStore);
+  const authHydrated = useHasHydrated(useAuthStore);
 
-  const [registered, setRegistered] = useState<RegisterResponse | null>(null);
-  const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
-  const [brandMode, setBrandMode] = useState<BrandMode | null>(null);
-  const [brandId, setBrandId] = useState<string | null>(null);
-  const [branch, setBranch] = useState<BranchResponse | null>(null);
-  const [roomType, setRoomType] = useState<RoomTypeResponse | null>(null);
-  const [roomCount, setRoomCount] = useState(0);
-  const [invitedStaff, setInvitedStaff] = useState<InvitedStaff[]>([]);
+  const mode = useWizardStore((state) => state.mode);
+  const step = useWizardStore((state) => state.step);
+  const ownerEmail = useWizardStore((state) => state.owner?.email);
+  const patch = useWizardStore((state) => state.patch);
+
+  // Never persisted (see wizardStore.ts's header comment on why the
+  // password specifically stays out of the store) — held here just long
+  // enough to hand off from RegisterForm to AutoLoginStep.
+  const [password, setPassword] = useState('');
+
+  useEffect(() => {
+    if (mode === null && (demoParam === 'true' || demoParam === 'false')) {
+      patch({ mode: demoParam === 'true' ? 'demo' : 'real' });
+    }
+  }, [demoParam, mode, patch]);
+
+  function setMode(next: SignupMode | null) {
+    patch({ mode: next });
+  }
+
+  function goTo(next: WizardStep) {
+    patch({ step: next });
+  }
+
+  if (!wizardHydrated || !authHydrated) return null;
 
   if (mode === null) {
     return (
@@ -124,7 +148,7 @@ function SignupPageInner() {
   }
 
   return (
-    <WizardShell currentPhase={PHASE_FOR_STEP[step]}>
+    <WizardShell currentPhase={PHASE_FOR_STEP[step]} onNavigate={(phase) => goTo(FIRST_STEP_FOR_PHASE[phase])}>
       <Container className="max-w-xl py-0">
         <h1 className="text-title font-bold text-secondary mb-2">Create your Roomick account</h1>
         <p className="text-body text-secondary-light mb-8">{STEP_LABELS[step]}</p>
@@ -132,136 +156,62 @@ function SignupPageInner() {
         {step === 'register' ? (
           <RegisterForm
             isDemo={mode === 'demo'}
-            onSuccess={(result, creds) => {
-              setRegistered(result);
-              setCredentials(creds);
-              setStep('verify');
+            onNext={(creds) => {
+              setPassword(creds.password);
+              goTo('verify');
             }}
           />
         ) : null}
 
-        {step === 'verify' && registered ? (
-          <VerifyEmailForm
-            subdomain={registered.subdomain}
-            initialToken={registered.verificationToken}
-            onSuccess={() => setStep('auto-login')}
-          />
+        {step === 'verify' ? <VerifyEmailForm onNext={() => goTo('auto-login')} /> : null}
+
+        {step === 'auto-login' ? (
+          <AutoLoginStep email={ownerEmail ?? ''} password={password} onSuccess={() => goTo('org-structure')} />
         ) : null}
 
-        {step === 'auto-login' && registered && credentials ? (
-          <AutoLoginStep
-            email={credentials.email}
-            password={credentials.password}
-            subdomain={registered.subdomain}
-            onSuccess={() => setStep('org-structure')}
-          />
-        ) : null}
+        {step === 'org-structure' ? <OrgStructureForm onNext={() => goTo('branch-setup')} /> : null}
 
-        {step === 'org-structure' ? (
-          <OrgStructureForm
-            onSuccess={({ mode: resolvedMode, brandId: resolvedBrandId }) => {
-              setBrandMode(resolvedMode);
-              if (resolvedBrandId) {
-                setBrandId(resolvedBrandId);
-                setStep('branch-setup');
-              } else {
-                setStep('create-brand');
-              }
-            }}
-          />
-        ) : null}
+        {step === 'branch-setup' ? <BranchSetupForm onNext={() => goTo('room-type')} /> : null}
 
-        {step === 'create-brand' ? (
-          <CreateBrandStep
-            onSuccess={(id) => {
-              setBrandId(id);
-              setStep('branch-setup');
-            }}
-          />
-        ) : null}
+        {step === 'room-type' ? <RoomTypeForm onNext={() => goTo('rooms')} /> : null}
 
-        {step === 'branch-setup' && brandId ? (
-          <BranchSetupForm
-            brandId={brandId}
-            onSuccess={(result) => {
-              setBranch(result);
-              setStep('room-type');
-            }}
-          />
-        ) : null}
+        {step === 'rooms' ? <RoomsForm onNext={() => goTo('staff-invite')} /> : null}
 
-        {step === 'room-type' && branch ? (
-          <RoomTypeForm
-            branchId={branch.id}
-            onSuccess={(result) => {
-              setRoomType(result);
-              setStep('rooms');
-            }}
-          />
-        ) : null}
+        {step === 'staff-invite' ? <StaffInviteStep onNext={() => goTo('review')} /> : null}
 
-        {step === 'rooms' && branch && roomType ? (
-          <RoomsForm
-            branchId={branch.id}
-            roomTypeId={roomType.id}
-            onSuccess={(rooms) => {
-              setRoomCount(rooms.length);
-              setStep('staff-invite');
-            }}
-          />
-        ) : null}
+        {step === 'review' ? <ReviewStep onFinish={() => goTo('complete')} /> : null}
 
-        {step === 'staff-invite' && branch ? (
-          <StaffInviteStep
-            branchId={branch.id}
-            onDone={(invited) => {
-              setInvitedStaff(invited);
-              setStep('review');
-            }}
-          />
-        ) : null}
-
-        {step === 'review' && registered && brandMode && branch && roomType ? (
-          <ReviewStep
-            summary={buildSummary(registered, brandMode, branch, roomType, roomCount, invitedStaff)}
-            onFinish={() => setStep('complete')}
-          />
-        ) : null}
-
-        {step === 'complete' ? (
-          <Section label="Setup complete">
-            <p className="text-body text-secondary">
-              <span className="font-semibold">{registered?.subdomain}</span> is ready — organization, branch, room
-              type, and {roomCount} room{roomCount === 1 ? '' : 's'} are all set up. A front-desk/operations
-              dashboard is the next phase of this project — see <code className="text-tiny">PHASE_NOTES.md</code>.
-            </p>
-          </Section>
-        ) : null}
+        {step === 'complete' ? <CompleteStep /> : null}
       </Container>
     </WizardShell>
   );
 }
 
-function buildSummary(
-  registered: RegisterResponse,
-  brandMode: BrandMode,
-  branch: BranchResponse,
-  roomType: RoomTypeResponse,
-  roomCount: number,
-  invitedStaff: InvitedStaff[],
-): ReviewSummary {
-  return {
-    subdomain: registered.subdomain,
-    brandMode,
-    branchName: branch.name,
-    branchCategory: branch.category ?? undefined,
-    currency: branch.currency,
-    timezone: branch.timezone,
-    roomTypeName: roomType.name,
-    baseRate: roomType.baseRate,
-    roomCount,
-    invitedStaff,
-  };
+function CompleteStep() {
+  const owner = useWizardStore((state) => state.owner);
+  const createdRoomCount = useWizardStore((state) => state.createdRoomCount);
+  const resetWizard = useWizardStore((state) => state.reset);
+  const clearAuth = useAuthStore((state) => state.clear);
+
+  return (
+    <Section label="Setup complete">
+      <p className="text-body text-secondary">
+        <span className="font-semibold">{owner?.subdomain}</span> is ready — organization, branch, room type, and{' '}
+        {createdRoomCount} room{createdRoomCount === 1 ? '' : 's'} are all set up. A front-desk/operations
+        dashboard is the next phase of this project — see <code className="text-tiny">PHASE_NOTES.md</code>.
+      </p>
+      <button
+        type="button"
+        onClick={() => {
+          resetWizard();
+          clearAuth();
+        }}
+        className="text-body text-secondary-light hover:text-secondary underline cursor-pointer self-start"
+      >
+        Start a new signup
+      </button>
+    </Section>
+  );
 }
 
 export default function SignupPage() {

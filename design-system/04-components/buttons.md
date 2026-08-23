@@ -9,7 +9,7 @@ variant, row = default/hover/disabled):
 
 | Variant | Default | Hover | Disabled |
 |---|---|---|---|
-| `primary` | `bg-primary text-white` | `hover:brightness-125` | `opacity-50` |
+| `primary` | `bg-primary text-white` | `hover:brightness-125 hover:text-secondary` | `opacity-50` |
 | `secondary` | `bg-secondary text-white` | `hover:brightness-200` | `opacity-50` |
 | `outline` (`tone: onLight\|onDark`) | bordered, transparent fill | inverts to a solid fill | muted (`border-accent text-accent`) |
 
@@ -43,7 +43,10 @@ variant, row = default/hover/disabled):
   anything is still 0, so no multiplier shifts the hue, only how far R/B
   scale up. `brightness-150` was verified visually and was still barely
   perceptible against the near-black base; `-200` is the first step that
-  reads clearly as "hovered."
+  reads clearly as "hovered." `primary` also gets `hover:text-secondary`
+  (white text swaps to near-black on hover) — brightening the gold fill
+  pushed white text's already-marginal contrast (see below) even lower;
+  `secondary`'s brightened fill stays dark enough that white text is fine.
 - **`outline`'s disabled state reuses `accent`**, not a dimmed version of
   black — matching the reference image's visibly muted-gray disabled row
   with zero new hex values.

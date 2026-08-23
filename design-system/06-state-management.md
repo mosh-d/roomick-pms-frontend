@@ -53,6 +53,13 @@ state machine) currently needs it.
     setSidebarOpen: (v) => set({ sidebarOpen: v }),
   }));
   ```
-  No example store exists yet in this codebase — the first real one should
-  land alongside the first feature that actually needs cross-component
-  client state (there's nothing to hold until then).
+  Two real stores exist now: `lib/store/authStore.ts` (the signed-in
+  session — `accessToken`/`refreshToken`/`user`) and
+  `lib/store/wizardStore.ts` (the entire onboarding wizard draft — every
+  step's field values, which step you're on, and completion-tracking ids).
+  Both use `zustand/middleware`'s `persist` (localStorage) — an addition to
+  the plain example above, needed because both stores hold state that has
+  to survive a page reload, not just move between components in one
+  render tree. See `wizardStore.ts`'s and `authStore.ts`'s own header
+  comments for the reasoning (including why the persisted session was a
+  deliberate reversal of an earlier "never persist a token" decision).

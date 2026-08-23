@@ -14,14 +14,25 @@ class-validator DTOs; sharing one schema across that language/framework
 boundary is future work, not this phase.) See `/style-guide`'s
 `FormsSection` for a working `zodResolver` example.
 
-**Every `useForm()` call uses `mode: 'onBlur'`.** The default (`onSubmit`)
-means a field never shows its error until the whole form is submitted once
-— on a multi-field form that reads as "nothing happened" the first few
-times a user tabs past an invalid field. `onBlur` validates a field the
-moment it loses focus (then re-validates live once it's been touched, RHF's
-built-in behavior), so a mistake is flagged immediately, not after a failed
-submit. This isn't optional per-form — treat it as part of the pattern, not
-a per-field judgment call.
+**Every `useForm()` call uses `mode: 'onTouched'`.** The default
+(`onSubmit`) means a field never shows its error until the whole form is
+submitted once — on a multi-field form that reads as "nothing happened" the
+first few times a user tabs past an invalid field. `onTouched` validates a
+field the moment it first loses focus, then re-validates live on every
+keystroke after that — so a mistake is flagged immediately, and fixing it
+clears the error as you type, not only after you click away again.
+
+This landed after `mode: 'onBlur'` shipped first and turned out to be a
+real bug, not a style choice: RHF's `reValidateMode` (which governs live
+re-validation on subsequent keystrokes) only takes effect once, but with
+`mode: 'onBlur'` a field only re-validates on the *next blur* — so typing a
+fix left the error sitting on screen the whole time you were correcting it,
+only clearing once you clicked away again. `onTouched` is RHF's own
+purpose-built mode for exactly this pattern — validate on first blur, then
+live after that — confirmed with a real keystroke-by-keystroke Playwright
+test (`.fill()` alone doesn't reproduce the gap; it never blurs). This
+isn't optional per-form — treat it as part of the pattern, not a per-field
+judgment call.
 
 ## Field anatomy — underline, not a bordered box
 
@@ -79,7 +90,13 @@ pointing at whichever (or both) exist.
   by the `open` boolean, not `focus-within` — the trigger keeps DOM focus
   the entire time via a managed-focus / `aria-activedescendant` pattern, so
   CSS focus alone can't drive this). The selected/highlighted option is a
-  solid `bg-secondary-light` bar with a checkmark, not a subtle tint.
+  solid `bg-secondary-light` bar with a checkmark, not a subtle tint. The
+  trigger is a real `<input>`, not a `<button>` — added once a 195-entry
+  country list (`lib/countries.ts`) made click-and-scroll the only way to
+  pick anything genuinely painful. Typing filters `options` live (case-
+  insensitive substring match on `label`); opening always starts the
+  filter empty, and closing (Escape, selecting, clicking outside) reverts
+  the field to showing the selected option's label.
 - **`YesNoToggle`** — the opposite choice from Select: built on real native
   `<input type="radio">` elements (visually hidden, styled sibling
   labels), because the pill-segment visual the reference shows *is*
@@ -108,11 +125,15 @@ pointing at whichever (or both) exist.
   this logic, not re-derived per feature.
 - **`BrandRadioCard`** — a thin, domain-specific wrapper around
   `RadioCard` (`tone="secondary"`): owns the `BrandMode` enum's option
-  copy (no descriptions, matching the reference) and the "Single-Brand
-  Structure nests a Brand Name `Input`" business rule, delegating all
-  actual rendering to `RadioCard`. This is the pattern for any future
-  feature-specific radio-card use — a thin wrapper supplying
-  options/content, never hand-rolled radio/card markup again.
+  copy only (no descriptions, matching the reference) and delegates all
+  actual rendering to `RadioCard`. Neither option nests a field — an
+  earlier version put a "Brand Name" `Input` on `single` only, removed
+  once the backend started deriving the head brand's name from the
+  organization name already collected at signup, for single and multi
+  mode alike (see `roomick-pms-backend/PHASE_NOTES.md`'s `configure-mode`
+  entry). This is still the pattern for any future feature-specific
+  radio-card use — a thin wrapper supplying option copy (and content, when
+  a feature actually needs it), never hand-rolled radio/card markup again.
 - **`LogoUpload`** — a hidden native `<input type="file">` is always the
   primary interaction (keyboard-reachable, opens the OS picker); drag-and-
   drop is layered on top as a progressive enhancement, never the only way

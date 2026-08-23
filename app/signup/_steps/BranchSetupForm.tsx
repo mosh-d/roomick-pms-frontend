@@ -1,24 +1,13 @@
 'use client';
 
-import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Section } from '@/components/ui/Section';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
-import { apiFetch, ApiError } from '@/lib/api';
 import { branchSetupSchema, type BranchSetupFormValues } from '@/lib/schemas/onboarding';
-import { useAuthStore } from '@/lib/store/authStore';
-
-export type BranchResponse = {
-  id: string;
-  name: string;
-  address: unknown;
-  currency: string;
-  timezone: string;
-  category: string | null;
-};
+import { useWizardStore } from '@/lib/store/wizardStore';
 
 const CATEGORY_OPTIONS = [
   { value: 'hotel', label: 'Hotel' },
@@ -32,8 +21,15 @@ const CATEGORY_OPTIONS = [
  * Onboarding step 3 (Roomick-UI.pdf "Branch Setup") — the physical
  * property. Built directly against property/dto/branch.dto.ts's
  * CreateBranchDto + AddressDto — no star rating (not a DTO field despite
- * the reference image showing one), no tax-rule/staff-invite sections
- * (branch-management work, not first-run onboarding; see PHASE_NOTES.md).
+ * the reference image showing one), no tax-rule/staff-invite sections here
+ * (staff invite is its own later step; tax rules have no backend support
+ * at all yet — see PHASE_NOTES.md).
+ *
+ * Purely local now, like every step from Organization Structure through
+ * Rooms/Staff Invite (see PHASE_NOTES.md's "deferred submission" entry):
+ * validates, saves to `wizardStore`, advances — no `POST /brands/:id/
+ * branches` call here. That call only happens once, as part of Review's
+ * "Finish" chain, once a real `brandId` actually exists.
  *
  * Country/timezone/currency are free-text fields with format hints, not
  * proper pickers (a full IANA-timezone or ISO-4217-currency dropdown is
@@ -41,10 +37,9 @@ const CATEGORY_OPTIONS = [
  * check-out use a native `<input type="time">` via Input's HTML passthrough
  * rather than a custom time-picker component.
  */
-export function BranchSetupForm({ brandId, onSuccess }: { brandId: string; onSuccess: (branch: BranchResponse) => void }) {
-  const accessToken = useAuthStore((state) => state.accessToken);
-  const tenantId = useAuthStore((state) => state.user?.tenantId);
-  const [formError, setFormError] = useState<string | null>(null);
+export function BranchSetupForm({ onNext }: { onNext: () => void }) {
+  const branch = useWizardStore((state) => state.branch);
+  const patch = useWizardStore((state) => state.patch);
   const {
     register,
     handleSubmit,
@@ -52,37 +47,13 @@ export function BranchSetupForm({ brandId, onSuccess }: { brandId: string; onSuc
     formState: { errors, isSubmitting },
   } = useForm<BranchSetupFormValues>({
     resolver: zodResolver(branchSetupSchema),
-    defaultValues: { checkInTime: '14:00', checkOutTime: '11:00' },
-    mode: 'onBlur',
+    defaultValues: branch ?? { checkInTime: '14:00', checkOutTime: '11:00' },
+    mode: 'onTouched',
   });
 
-  async function onSubmit(values: BranchSetupFormValues) {
-    setFormError(null);
-    try {
-      const branch = await apiFetch<BranchResponse>(`/brands/${brandId}/branches`, {
-        method: 'POST',
-        accessToken: accessToken ?? undefined,
-        tenantId,
-        body: {
-          name: values.name,
-          address: {
-            street: values.street,
-            city: values.city,
-            state: values.state || undefined,
-            country: values.country,
-            zip: values.zip || undefined,
-          },
-          timezone: values.timezone,
-          currency: values.currency,
-          checkInTime: values.checkInTime || undefined,
-          checkOutTime: values.checkOutTime || undefined,
-          category: values.category || undefined,
-        },
-      });
-      onSuccess(branch);
-    } catch (error) {
-      setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
-    }
+  function onSubmit(values: BranchSetupFormValues) {
+    patch({ branch: values });
+    onNext();
   }
 
   return (
@@ -134,8 +105,6 @@ export function BranchSetupForm({ brandId, onSuccess }: { brandId: string; onSuc
         <Input label="Check-in Time" type="time" {...register('checkInTime')} error={errors.checkInTime?.message} />
         <Input label="Check-out Time" type="time" {...register('checkOutTime')} error={errors.checkOutTime?.message} />
       </Section>
-
-      {formError ? <p className="text-small text-red-600">{formError}</p> : null}
 
       <Button type="submit" loading={isSubmitting}>
         Continue

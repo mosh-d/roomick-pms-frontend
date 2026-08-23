@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { ApiError } from '@/lib/api';
 import { loginSchema, type LoginFormValues } from '@/lib/schemas/auth';
 import { useAuthStore } from '@/lib/store/authStore';
+import { useHasHydrated } from '@/lib/useHasHydrated';
 
 /**
  * Standalone login for a returning visit — the reference's Owner Account
@@ -26,6 +27,10 @@ import { useAuthStore } from '@/lib/store/authStore';
  * uses inside the wizard; this page is the manual entry point to it.
  */
 export default function LoginPage() {
+  // See useHasHydrated.ts — without this, a reload with an existing
+  // persisted session briefly renders the login form (the store's
+  // un-hydrated `user: null`) before snapping to "Signed in as...".
+  const authHydrated = useHasHydrated(useAuthStore);
   const login = useAuthStore((state) => state.login);
   const user = useAuthStore((state) => state.user);
   const [formError, setFormError] = useState<string | null>(null);
@@ -33,7 +38,7 @@ export default function LoginPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema), mode: 'onBlur' });
+  } = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema), mode: 'onTouched' });
 
   async function onSubmit(values: LoginFormValues) {
     setFormError(null);
@@ -51,6 +56,8 @@ export default function LoginPage() {
       setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
     }
   }
+
+  if (!authHydrated) return null;
 
   if (user) {
     return (
@@ -74,7 +81,13 @@ export default function LoginPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <Section label="Account">
           <Input label="Email" type="email" {...register('email')} error={errors.email?.message} />
-          <Input label="Password" type="password" {...register('password')} error={errors.password?.message} />
+          <Input
+            label="Password"
+            type="password"
+            autoComplete="current-password"
+            {...register('password')}
+            error={errors.password?.message}
+          />
           <Input
             label="Subdomain"
             hint="The unique id you picked at signup (e.g. acme)"

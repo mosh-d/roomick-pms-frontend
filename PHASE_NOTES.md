@@ -162,7 +162,8 @@ themselves).
   beside the icon, matching the reference's per-field `ⓘ` anatomy.
 - Every `useForm()` call across the app now sets `mode: 'onBlur'` — errors
   used to only appear after a failed full-form submit; now a field
-  validates the moment it loses focus.
+  validates the moment it loses focus. (Superseded the same day — see
+  Phase 6: this turned out to only be half the fix.)
 - `RegisterForm`'s Owner Account step now matches the reference field-for-
   field where the backend allows: First Name + Last Name (not one "Full
   Name" field) — joined into the single `name` string `RegisterDto`
@@ -170,15 +171,13 @@ themselves).
   to change.
 
 ### Decisions & deviations
-1. **`Country` (shown on the reference's Owner Account Form) is not built.**
-   `RegisterDto` has no matching field at all — a fourth reference/backend
-   mismatch, same shape as the three already documented in Phases 2–3.
-   Worse than the others: the global `ValidationPipe`'s
+1. **`Country` (shown on the reference's Owner Account Form) was not built
+   in this pass** — `RegisterDto` had no matching field at all (a fourth
+   reference/backend mismatch, same shape as the three already documented
+   in Phases 2–3), and worse than the others, the global `ValidationPipe`'s
    `forbidNonWhitelisted: true` means sending an undeclared field doesn't
-   get silently dropped, it fails the whole request. Building a UI control
-   with nowhere real to send its value would be a half-finished
-   implementation, not a shortcut — omitted until the backend has a field
-   for it (a small, real addition if wanted: flag it rather than assume).
+   get silently dropped, it fails the whole request. **Added the same
+   day — see Phase 6.**
 2. **Group/Hotel Name and Subdomain still live on the Owner Account step**,
    even though the reference's Step 1 mockup doesn't show either. Not an
    oversight — `POST /auth/register` creates the tenant in this one call
@@ -215,8 +214,329 @@ Autofill fix could not be verified this way — see the note above.
 
 ### Carried forward
 - `Country` field — needs a backend DTO change first; not attempted here.
+  **Done same day — see Phase 6.**
 - Real building/floor/multi-branch UI — same "Full onboarding mode" item
   from Phase 3, now additionally confirmed to need matching sidebar nesting
   if it's ever built.
 - Verify the autofill fix against a real Chrome profile, not just headless
   Playwright.
+
+## Phase 6 — Real bugs from live use, `Country`, and auto-derived subdomain (2026-08-23)
+
+Phase 5's fixes shipped, then got exercised in an actual browser (not just
+Playwright) and turned up real regressions — a genuine "trust but verify"
+lesson: a Playwright pass that only ever calls `.fill()` and checks the
+next assertion immediately doesn't catch everything a person actually
+typing at normal speed, blurring, re-focusing, and looking at the screen
+will.
+
+### Delivered
+- **`Country` field, end to end.** `roomick-pms-backend`: `Tenant.country`
+  (nullable `VARCHAR(2)`, migration `20260823000000_tenant_country`),
+  `RegisterDto.country?` (`@IsISO31661Alpha2()`), wired through
+  `AuthService.register()`. `roomick-pms-frontend`: `lib/countries.ts` (a
+  static ISO 3166-1 list — no reason to fetch something this small from
+  anywhere), a real `Select` in `RegisterForm` paired with Email (matching
+  the reference's Email/Country row), `registerSchema` validates it as an
+  optional 2-letter code. Verified past the API response — read back
+  directly via the Prisma client after a real registration, not just "the
+  request didn't fail."
+- **Subdomain is now auto-suggested from Group/Hotel Name**, not typed from
+  scratch — `lib/slug.ts`'s `slugify()`, live via a `watch()` + `useEffect`
+  in `RegisterForm`, stops following the moment the owner edits the
+  subdomain field themselves (a `subdomainEdited` flag). Still a real,
+  editable field — a `SUBDOMAIN_TAKEN` conflict is still recoverable by
+  hand — just no longer something to invent unprompted. Hint copy now
+  explains what it actually is (a login id, not yet a public URL) with a
+  concrete before/after example, per direct request.
+- **Fixed: validation errors didn't clear while fixing them.** The real
+  bug behind "the validation messages don't disappear even when I enter
+  the correct thing" — `mode: 'onBlur'` (Phase 5) only re-validates an
+  errored field on its *next blur*, not while typing, until the form has
+  been submitted once. Switched every form to `mode: 'onTouched'` — RHF's
+  own purpose-built mode for this exact pattern (validate on first blur,
+  then live on every keystroke after that). Confirmed the distinction
+  matters with a real keystroke-by-keystroke Playwright test
+  (`pressSequentially`, not `.fill()`) — `.fill()` doesn't reproduce the
+  gap because it doesn't blur.
+- **Fixed: two eye icons in the password field.** Chrome's own
+  key/reveal icon (tied to its password-manager heuristics) was stacking
+  with `Input`'s controlled toggle. Fixed properly, not just papered over:
+  `autocomplete="new-password"` on the signup password field and
+  `"current-password"` on login (the actual semantic fix — tells Chrome's
+  password manager which of its own behaviors applies) plus a CSS fallback
+  hiding the specific pseudo-elements Chrome/Edge use for it.
+- **Fixed: the autofill fallback color was still a visible mismatched
+  band.** Phase 5's flat `white` fallback didn't match the pale-cream
+  `Section` background most inputs actually sit on. Replaced with
+  `color-mix(in srgb, var(--color-primary-light) 15%, white)` — the exact
+  flat color `bg-primary-light/15` renders to — computed from the token,
+  not a hand-picked hex.
+- **Sidebar phases you've already passed are now real navigation**, not
+  just `cursor-pointer` styling with nothing behind it — clicking one
+  jumps back to that phase's first step (`WizardShell`'s new `onNavigate`
+  prop). The current phase and anything still ahead stay non-interactive —
+  see the decision below on why.
+- Primary button hover: text now switches to `text-secondary` on hover —
+  Phase 5's brightened gold fill (`brightness-125`) pushed white text's
+  already-marginal contrast lower than intended.
+
+### Decisions & deviations
+1. **Backward sidebar navigation doesn't undo or re-edit already-created
+   backend resources.** Clicking back to "Owner Account Form" after
+   `register()` already created the tenant just re-shows that form, empty
+   — resubmitting it will hit `EMAIL_TAKEN`/`SUBDOMAIN_TAKEN`, a visible,
+   expected error rather than a silent duplicate. Real "go back and edit
+   what you already created" semantics (PATCH-ing the existing tenant/
+   branch/etc. instead of re-POSTing) is a bigger feature, not attempted
+   here — this is a known rough edge, not hidden.
+2. **`Country` is reporting-only, same as originally planned** (see
+   Phase 5's carried-forward item) — nothing reads it yet beyond the raw
+   column; the explicit follow-up flagged is using it to suggest a
+   default branch timezone during Branch Setup, not built this pass.
+
+### Verified
+`npm run lint` (one non-blocking React Compiler note on `RegisterForm`'s
+use of RHF's `watch()` — expected, not a bug) and `npx tsc --noEmit` both
+clean, backend `npx tsc --noEmit` clean. Live Playwright re-runs, this time
+specifically targeting the failure modes above: real keystroke-by-keystroke
+typing (not `.fill()`) confirms errors clear live; password-field
+screenshot confirms exactly one eye icon; sidebar-click navigation
+screenshotted landing back on the Owner Account form; `country` read back
+from the database via the Prisma client after a real registration, not
+just checked against the API response.
+
+### Carried forward
+- Using `Country` to suggest a default branch timezone during Branch
+  Setup — flagged as the reason to add the field, not built yet.
+- Real edit/re-submit semantics for backward sidebar navigation past a
+  step that already created a resource. **Mostly resolved the same day —
+  see Phase 7**: everything from Organization Structure onward no longer
+  creates anything until Review's "Finish", so there's nothing to conflict
+  with on the way back. Owner Account specifically (the one step that still
+  submits immediately) got its own fix — see Phase 7's `RegisterForm`
+  entry.
+- Encryption at rest for sensitive user fields (email, phone) — explicitly
+  requested, scoped as its own focused piece of work rather than folded
+  into this batch of UI fixes; see the commit that lands it separately.
+
+## Phase 7 — Deferred submission, wizard data model corrections (2026-08-23)
+
+The single biggest architectural change to this wizard since Phase 3: a
+sustained round of direct feedback on the live app made clear the "submit
+every step immediately" design (Phase 3 onward) was the wrong shape —
+going back to fix or check something re-triggered an already-succeeded API
+call and failed (`SUBDOMAIN_TAKEN`, etc.), and nothing survived a page
+reload. Both are symptoms of the same root cause: steps 4–9 had no reason
+to touch the backend before the owner actually confirms everything at
+Review.
+
+### Delivered
+- **`lib/store/wizardStore.ts`** — a new persisted (localStorage) Zustand
+  store holding the *entire* draft: every step's field values, which
+  internal step you're on, and (for Organization Structure onward)
+  completion-tracking ids (`brandId`, `branchId`, `roomTypeId`, …) set only
+  once Review's "Finish" actually creates each resource. Draft types are
+  imported from each step's own zod schema (`RegisterFormValues`,
+  `BranchSetupFormValues`, …), not hand-duplicated — the store can't drift
+  out of sync with the schema that actually validates the data.
+- **Organization Structure → Staff Invite are now pure local state.**
+  `OrgStructureForm`, `BranchSetupForm`, `RoomTypeForm`, `RoomsForm`,
+  `StaffInviteStep` each still run their own zod validation on submit, but
+  now just save to `wizardStore` and advance — no API call, matching every
+  step from here through Review. The corresponding backend calls (
+  `configure-mode`, create branch, create room type, bulk-create rooms,
+  send staff invites) all moved into **`ReviewStep`'s "Finish" handler**,
+  which runs them in sequence against the real backend. Each result id is
+  written back to `wizardStore` the moment it succeeds, so a failure
+  partway through (e.g. branch creation works but room-type creation
+  fails) can be retried without re-running — and re-failing on — the steps
+  that already succeeded.
+- **`RegisterForm` now has a read-only mode.** Account creation is the one
+  step that still can't be deferred (there's no verifying an email for an
+  account that doesn't exist) — so navigating back here after the account
+  already exists can't just re-show the same editable form; resubmitting
+  fails with `SUBDOMAIN_TAKEN`/`EMAIL_TAKEN`, which was the literal "stuck"
+  bug reported. Once `wizardStore.accountCreated` is true, the fields
+  render read-only with the values actually submitted, and "Continue" is
+  pure navigation. `VerifyEmailForm` and `AutoLoginStep` got the matching
+  treatment (`emailVerified`/`loggedIn` flags) for the same reason.
+- **`authStore` is now persisted too** — a deliberate reversal of Phase
+  3's original decision (see that store's updated header comment). A
+  persisted draft with no session to eventually submit it with wouldn't
+  actually fix "I lost my progress on reload" — the access token needs to
+  survive the same reload the draft does. The underlying trade-off (no
+  real session strategy decided yet) is unchanged; this is a bounded call
+  for the current onboarding-only scope, not a verdict on session storage
+  for the app in general.
+- **Data model correction: eliminated the redundant "Brand Name" ask.**
+  `configureMode` (backend, `tenants.service.ts`) now always creates the
+  head brand — for multi-brand tenants too, not just single — defaulting
+  its name to the already-collected `groupName`. This directly resolves
+  three things raised together: "what's the need for hotel name when we
+  already have brand name" (there wasn't a need — `BrandRadioCard` no
+  longer has a nested Brand Name field on *either* option, since the name
+  always comes from Step 1); "nothing shows up when I click Multi-Brand
+  Structure" (there was never meant to be different content for the two
+  options once the redundant field was gone — both are now plain radio
+  choices); and the reference's own note ("register your head brand to get
+  started... more brands can be added later") — this backend change is
+  exactly that. `CreateBrandStep.tsx` (the old separate "name your first
+  brand" screen for multi-mode) is deleted; multi-brand tenants can still
+  add more brands later via the already-unrestricted `POST /brands`.
+- **Sidebar navigation is real now, not just styled.** A commenter pointed
+  out clicking a passed sidebar phase did nothing — `cursor-pointer` with
+  no `onClick` behind it would just be a different way of lying about
+  what's interactive, so `WizardShell` got an actual `onNavigate` prop
+  wired to jump back to a passed phase's first step (`page.tsx`'s
+  `FIRST_STEP_FOR_PHASE`).
+- Clicking the "Roomick" wordmark in the top bar now links to
+  `roomick-landing` (`NEXT_PUBLIC_LANDING_URL`, a real cross-app URL, not
+  an internal route — the two are separate Next.js apps/ports).
+
+### Decisions & deviations
+1. **The password is the one thing that still never gets persisted**,
+   even under "make our data survive reloads." It's held in a plain,
+   non-persisted `useState` in `page.tsx` for the few seconds between
+   `RegisterForm`'s submit and `AutoLoginStep`'s login call — writing a
+   plaintext password to localStorage, even briefly, is a materially
+   different and worse risk than persisting a short-lived access token
+   (see `authStore.ts`'s note above), and holding the line here was a
+   deliberate choice, not an oversight. Practical effect: a reload in the
+   ~1–2 second window between verify-email succeeding and auto-login
+   completing loses the password, and `AutoLoginStep` falls back to
+   pointing at `/login` rather than silently failing.
+2. **Deferred submission stops at Owner Account, not further back.** Asked
+   directly and confirmed: account creation (Owner Account Form + email
+   verification) stays an immediate step; everything from Organization
+   Structure onward defers. Structurally required, not a compromise — you
+   can't verify an email for an account that doesn't exist yet.
+3. **A failed "Finish" doesn't roll back partial backend state**, by
+   design, not by gap — retrying is supposed to continue from wherever it
+   stopped (see Delivered above), which specifically requires *not*
+   undoing what already succeeded.
+
+### Verified
+`npm run lint` and `npx tsc --noEmit` both clean (frontend and backend).
+Extensive live Playwright testing targeting the actual reported failure
+modes, not just the happy path: confirmed zero `configure-mode`/branch/
+room-type/rooms API calls fire before "Finish" is clicked; went back from
+Room Type all the way to Organization Structure and forward again,
+confirming both the brand-mode choice and the Branch Setup field values
+survived; went back to an already-registered Owner Account Form, confirmed
+it renders read-only, and confirmed clicking "Continue" from there advances
+without attempting (and failing) a re-submit; reloaded mid-wizard on
+Branch Setup and again on Review, confirming the correct step and all
+prior data survived both times (checked `localStorage` directly, not just
+the rendered page); ran "Finish" end to end and confirmed every resource
+(brand, branch, room type, 3 rooms) actually exists in Postgres afterward,
+querying with the tenant's RLS context explicitly set — not just trusting
+that the API calls returned 2xx.
+
+### Carried forward
+- Real backward-editing for Owner Account fields (subdomain, email, etc.)
+  once already created — no backend "update account" endpoint exists;
+  currently read-only-and-continue only, not edit-and-resubmit.
+- A Zustand+persist/Next.js SSR hydration nuance: the very first client
+  render after a hard navigation briefly shows the store's un-hydrated
+  initial state before localStorage loads — didn't surface as a visible
+  bug in testing, but was reported directly the same day. **Fixed — see
+  Phase 8's `useHasHydrated` entry.**
+- Discussion in progress with the user: whether `User.email` should become
+  globally unique (not just unique per tenant, `@@unique([tenantId,
+  email])` today) so login could work by email alone, dropping the
+  subdomain field from `/login` entirely. Explicitly deferred until this
+  phase's work was done — not started.
+
+## Phase 8 — Hydration-flash fix + full cleanup pass (2026-08-23)
+
+Two things in one sitting: the SSR-hydration flash Phase 7 carried
+forward, reported directly the same day it was written down ("I see a
+brief create-your-account screen on reload"), and a full audit of the
+codebase for drift accumulated across Phases 3–7 (dead code, stale
+comments/docs, `wizardStore.reset()`/`authStore.clear()` written but never
+actually wired to anything).
+
+### Delivered
+- **`lib/useHasHydrated.ts`** (new) — the fix for Phase 7's carried-forward
+  hydration nuance. `persist`-wrapped Zustand stores (`wizardStore`,
+  `authStore`) read `localStorage` asynchronously, after the first render;
+  without a guard, `app/signup/page.tsx` briefly rendered the store's
+  *un-hydrated* initial state (`mode === null`, the demo/real choice
+  screen) before snapping to the real persisted step. Always starts
+  `false` on both the server and the client's first render (so server and
+  client agree — no hydration *mismatch*), only ever flips `true` inside
+  `useEffect`. The first version instead read `store.persist.hasHydrated()`
+  in a lazy `useState` initializer — crashed SSR outright
+  (`Cannot read properties of undefined (reading 'hasHydrated')`, since
+  `store.persist` isn't set up yet during the server render pass) and hit
+  the `react-hooks/set-state-in-effect` lint rule. Fixed by deferring the
+  read into a `queueMicrotask()` inside `useEffect` instead — resolves on
+  the next microtask either way, since the store's synchronous
+  `localStorage` read already happened at module-load time by the time any
+  component mounts. `app/signup/page.tsx` and `app/login/page.tsx` both
+  gate their first real render on it now (`wizardHydrated`/`authHydrated`).
+- **Full-codebase cleanup pass** (a dedicated read-only audit agent, then
+  each finding triaged and fixed by hand, not applied blind):
+  - `wizardStore`'s `tenantId` field deleted — written by `ReviewStep` but
+    never read anywhere; `authStore.user.tenantId` is the actual value in
+    use everywhere else. Write-only state is a real bug class (silently
+    drifts from whatever it was supposed to mirror), not just unused code.
+  - `Select.tsx`'s hint and error were still mutually exclusive
+    (`error ? errorText : hint`) — the same bug already fixed on `Input` in
+    Phase 5 for the identical reason, just never carried over to `Select`
+    when it was rewritten into a combobox. Also fixed `aria-describedby` to
+    reference both ids, not just whichever one happened to render.
+  - `wizardStore.reset()` and `authStore.clear()` existed since Phase 3/7
+    but nothing ever called either — `CompleteStep` now has a real "Start
+    a new signup" button wired to both, so finishing the wizard once
+    doesn't permanently strand `localStorage` on `step: 'complete'`.
+  - Doc/comment drift from Phase 7's data-model change: `WizardShell.tsx`'s
+    header comment still said "~10 internal steps" and mentioned the
+    deleted `create-brand` step; `06-state-management.md`,
+    `04-components/buttons.md`, `04-components/forms.md`'s `Select` entry,
+    `BrandRadioCard.tsx`'s own comment, and `register.dto.ts`'s Swagger
+    example (`DELETE /tenants/:id` → the actual `DELETE /tenants/me`) all
+    had the same kind of staleness — each corrected to match current
+    behavior, not rewritten wholesale.
+  - `README.md` had a stale "no env vars needed" paragraph, in a repo that
+    has needed `NEXT_PUBLIC_API_URL` since Phase 2 and
+    `NEXT_PUBLIC_LANDING_URL` since Phase 7 — replaced with a real table.
+
+### Decisions & deviations
+1. **PHASE_NOTES.md's own Phase 5 entry still mentions the (now-deleted)
+   `create-brand` step** — left as-is, deliberately. This file is a build
+   log, not living documentation; correcting past entries to match the
+   present would make it lie about what Phase 5 actually shipped at the
+   time. `06-state-management.md`/`WizardShell.tsx`/etc. describe *current*
+   behavior, so those got fixed; this file describes *history*.
+2. **The register-rate-limit finding wasn't a bug.** Verifying "Start a new
+   signup" hit `429 Too Many Requests` on `/auth/register` — traced to
+   Phase 2's own `@nestjs/throttler` limit (5 requests/15 min), reached
+   from this session's own volume of test registrations, not a real
+   defect. Verified the fix a different way instead of waiting out the
+   throttle window: seeded `localStorage` directly (`roomick-signup-draft`
+   at `step: 'complete'` + a fake `roomick-auth` token) rather than driving
+   a fresh registration through the UI, then drove the actual "Start a new
+   signup" click and confirmed both stores reset and the demo/real choice
+   screen re-renders. Exercises the same code path (`reset()` + `clear()`
+   and the components that read their output) without needing a real
+   account.
+
+### Verified
+`npm run lint` and `npx tsc --noEmit` clean (frontend and backend) after
+the cleanup pass. Hydration fix verified by sampling the DOM every 100ms
+across a full page reload — zero frames show the demo/real choice screen
+before the real persisted step renders. `useHasHydrated` confirmed to not
+crash SSR (a full page load, not just client-side navigation, is the actual
+test — client-side nav never exercised the crashing path). "Start a new
+signup" verified via the seeded-localStorage approach above: wizard step
+resets to `register`, `mode`/`owner` clear to `null`, `authStore`'s
+`accessToken`/`user` clear to `null`, and the demo/real choice screen
+re-renders.
+
+### Carried forward
+- Real backward-editing for Owner Account fields once already created —
+  unchanged from Phase 7.
+- Email-global-uniqueness discussion — still deferred, not started.
+- Encryption at rest for sensitive fields — still deferred, not started.

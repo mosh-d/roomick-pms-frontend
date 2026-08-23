@@ -1,17 +1,13 @@
 'use client';
 
-import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Section } from '@/components/ui/Section';
 import { Input } from '@/components/ui/Input';
 import { MultiSelectTagInput } from '@/components/ui/MultiSelectTagInput';
 import { Button } from '@/components/ui/Button';
-import { apiFetch, ApiError } from '@/lib/api';
 import { roomTypeSchema, type RoomTypeFormValues } from '@/lib/schemas/onboarding';
-import { useAuthStore } from '@/lib/store/authStore';
-
-export type RoomTypeResponse = { id: string; name: string; baseRate: string };
+import { useWizardStore } from '@/lib/store/wizardStore';
 
 const AMENITY_OPTIONS = [
   { value: 'wifi', label: 'Wi-Fi' },
@@ -21,11 +17,15 @@ const AMENITY_OPTIONS = [
   { value: 'balcony', label: 'Balcony' },
 ];
 
-/** Onboarding step 4a (Roomick-UI.pdf "Room Types") — property/dto/room-type.dto.ts's CreateRoomTypeDto. */
-export function RoomTypeForm({ branchId, onSuccess }: { branchId: string; onSuccess: (roomType: RoomTypeResponse) => void }) {
-  const accessToken = useAuthStore((state) => state.accessToken);
-  const tenantId = useAuthStore((state) => state.user?.tenantId);
-  const [formError, setFormError] = useState<string | null>(null);
+/**
+ * Onboarding step 4a (Roomick-UI.pdf "Room Types") —
+ * property/dto/room-type.dto.ts's CreateRoomTypeDto. Purely local, like
+ * every step from Organization Structure onward — see PHASE_NOTES.md's
+ * "deferred submission" entry and BranchSetupForm's header comment.
+ */
+export function RoomTypeForm({ onNext }: { onNext: () => void }) {
+  const roomType = useWizardStore((state) => state.roomType);
+  const patch = useWizardStore((state) => state.patch);
   const {
     register,
     handleSubmit,
@@ -33,30 +33,13 @@ export function RoomTypeForm({ branchId, onSuccess }: { branchId: string; onSucc
     formState: { errors, isSubmitting },
   } = useForm<RoomTypeFormValues>({
     resolver: zodResolver(roomTypeSchema),
-    defaultValues: { adults: 2, children: 0, amenities: [] },
-    mode: 'onBlur',
+    defaultValues: roomType ?? { adults: 2, children: 0, amenities: [] },
+    mode: 'onTouched',
   });
 
-  async function onSubmit(values: RoomTypeFormValues) {
-    setFormError(null);
-    try {
-      const roomType = await apiFetch<RoomTypeResponse>(`/branches/${branchId}/room-types`, {
-        method: 'POST',
-        accessToken: accessToken ?? undefined,
-        tenantId,
-        body: {
-          name: values.name,
-          baseRate: values.baseRate,
-          capacity: { adults: values.adults, children: values.children },
-          bedType: values.bedType || undefined,
-          sizeM2: values.sizeM2,
-          amenities: values.amenities,
-        },
-      });
-      onSuccess(roomType);
-    } catch (error) {
-      setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
-    }
+  function onSubmit(values: RoomTypeFormValues) {
+    patch({ roomType: values });
+    onNext();
   }
 
   return (
@@ -112,8 +95,6 @@ export function RoomTypeForm({ branchId, onSuccess }: { branchId: string; onSucc
           )}
         />
       </Section>
-
-      {formError ? <p className="text-small text-red-600">{formError}</p> : null}
 
       <Button type="submit" loading={isSubmitting}>
         Continue

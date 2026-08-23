@@ -11,19 +11,24 @@ body {
 
 /* Chromium/WebKit paint a hardcoded pale-blue (or yellow) background behind
    an autofilled input, overriding Input.tsx's `bg-transparent` — visible as
-   a color band clashing with whatever surface the field sits on (a plain
-   white page, a Section's primary-light tint, etc.). Two techniques
-   stacked together, since the transition-delay trick alone isn't reliably
-   honored across every Chromium version:
+   a color band clashing with whatever surface the field sits on. Two
+   techniques stacked together, since the transition-delay trick alone
+   isn't reliably honored across every Chromium version:
    1. An absurdly long transition delay/duration on background-color: the
       browser's own color change technically happens, but never visibly
       completes, so the field keeps whatever background it already had.
    2. A same-color inset box-shadow (1000px spread, so it fully covers the
       field) as a belt-and-braces fallback for versions that ignore #1 and
-      paint the autofill background anyway — `white` isn't a perfect match
-      against a Section's pale-cream tint, but it's much closer than
-      Chrome's default light blue, and this only ever shows for browsers
-      where #1 didn't already suppress the repaint.
+      paint the autofill background anyway. The fallback color is
+      `color-mix(in srgb, var(--color-primary-light) 15%, white)` — the
+      flat color `Section`'s own `bg-primary-light/15` renders to — not
+      plain white, because nearly every `Input` in this app sits inside a
+      `Section`; a plain-white fallback showed as a visible mismatched band
+      against that pale-cream surface, confirmed visually, not just
+      predicted. It's still an approximation for the (rarer) inputs that
+      sit directly on the plain white page — a flat color can't perfectly
+      match every surface an autofilled input might be on, but this is the
+      dominant case.
    `-webkit-text-fill-color` is set alongside both because autofill
    overrides text color the same way and needs the same treatment. */
 input:-webkit-autofill,
@@ -32,8 +37,41 @@ input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   transition: background-color 9999s ease-in-out 9999s, color 9999s ease-in-out 9999s;
   -webkit-text-fill-color: var(--color-secondary);
-  -webkit-box-shadow: 0 0 0px 1000px var(--color-white) inset;
-  box-shadow: 0 0 0px 1000px var(--color-white) inset;
+  --autofill-surface: color-mix(in srgb, var(--color-primary-light) 15%, white);
+  -webkit-box-shadow: 0 0 0px 1000px var(--autofill-surface) inset;
+  box-shadow: 0 0 0px 1000px var(--autofill-surface) inset;
+}
+
+/* The tint reported as "still there" after the fix above turned out to be
+   a different bug entirely, not a failure of the fix above: it covered the
+   field's *label* too, which `:-webkit-autofill` styling structurally
+   can't do (it only ever paints the `<input>` element itself, never a
+   separate label above it). Input.tsx's own `focus-within:bg-secondary-
+   light/15` wrapper — covering label + input together, by design, for
+   real keyboard/mouse focus — was what was actually rendering; Chrome
+   fires a focus-like event on a field as part of autofilling it, which
+   `:focus-within` can't distinguish from a real click. `:has()` can:
+   explicitly force the wrapper transparent whenever it contains an
+   autofilled input, regardless of the focus-within state. */
+.focus-within\:bg-secondary-light\/15:has(input:-webkit-autofill) {
+  background-color: transparent !important;
+}
+
+/* Chrome shows its own key/reveal icon inside a password field once it
+   detects saved credentials or offers a generated strong password —
+   stacking with Input.tsx's own controlled show/hide toggle as two eye
+   icons side by side. `autocomplete="new-password"`/`"current-password"`
+   (set on every password field) already tells Chrome's password manager
+   which of its own behaviors actually applies here, which suppresses most
+   of this; these two pseudo-elements are the belt-and-braces fallback for
+   whatever that doesn't catch. */
+input[type='password']::-webkit-strong-password-auto-fill-button,
+input[type='password']::-webkit-credentials-auto-fill-button {
+  display: none !important;
+}
+input[type='password']::-ms-reveal,
+input[type='password']::-ms-clear {
+  display: none;
 }
 
 /* Respect the user's OS-level motion preference. Roomick's own motion

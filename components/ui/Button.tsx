@@ -40,8 +40,11 @@ const variantClasses: Record<ButtonVariant, Record<ButtonTone, string>> = {
     // look different depending on what's rendered behind the button,
     // brightness doesn't. brightness-125 (not the original -110, which read
     // as too subtle a hover state against the already-bright gold fill).
-    onLight: 'bg-primary text-white hover:brightness-125 disabled:opacity-50',
-    onDark: 'bg-primary text-white hover:brightness-125 disabled:opacity-50',
+    // Brightening the fill pushed white text's already-marginal contrast
+    // even lower, so hover also switches text to `secondary` (near-black) —
+    // verified visually, not just by the numbers.
+    onLight: 'bg-primary text-white hover:brightness-125 hover:text-secondary disabled:opacity-50',
+    onDark: 'bg-primary text-white hover:brightness-125 hover:text-secondary disabled:opacity-50',
   },
   secondary: {
     // Much bigger brightness delta than primary's (200 vs 125): `secondary`

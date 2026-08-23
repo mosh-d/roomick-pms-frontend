@@ -11,35 +11,34 @@ import { XIcon, PlusIcon } from '@/components/ui/Icons';
 import { apiFetch, ApiError } from '@/lib/api';
 import { staffInviteSchema, type StaffInviteFormValues } from '@/lib/schemas/onboarding';
 import { useAuthStore } from '@/lib/store/authStore';
+import { useWizardStore } from '@/lib/store/wizardStore';
 
 type Role = { id: string; name: string };
-export type InvitedStaff = { email: string; roleName: string };
 
 /**
  * Onboarding step (Roomick-UI.pdf "Branch Setup" — Staff Invite section).
- * Real, working endpoint (`POST /branches/:branchId/staff/invite` +
- * `GET /auth/roles` to resolve role names to the roleId the DTO needs) —
- * unlike Tax Rule Configuration and Logo Upload shown on the same
- * reference pages, which have no backend support at all yet (no
- * tax-rules controller, no file-upload endpoint) and stay out of this
- * wizard for that reason, not by oversight. See PHASE_NOTES.md.
+ * `GET /auth/roles` still loads live here (a read, not a mutation — no
+ * reason to defer it), but the actual invites are no longer sent
+ * immediately: like every step from Organization Structure onward (see
+ * PHASE_NOTES.md's "deferred submission" entry), "Send Invites" just
+ * validates and saves `{email, roleId}` rows to `wizardStore`, advancing
+ * to Review — the real `POST /branches/:branchId/staff/invite` call only
+ * fires once, as part of Review's "Finish" chain, once a real `branchId`
+ * exists. Role *names* (for Review's display) are resolved from the
+ * already-loaded roles list and stored alongside the raw rows, so Review
+ * doesn't need its own `GET /auth/roles` call just to show them.
  *
  * "Invite Staff Later" in the reference maps to `onSkip` here — invites
  * are optional, matching the reference's own radio choice between
  * configuring now and skipping.
  */
-export function StaffInviteStep({
-  branchId,
-  onDone,
-}: {
-  branchId: string;
-  onDone: (invited: InvitedStaff[]) => void;
-}) {
+export function StaffInviteStep({ onNext }: { onNext: () => void }) {
   const accessToken = useAuthStore((state) => state.accessToken);
   const tenantId = useAuthStore((state) => state.user?.tenantId);
+  const staffInvites = useWizardStore((state) => state.staffInvites);
+  const patch = useWizardStore((state) => state.patch);
   const [roles, setRoles] = useState<Role[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
 
   const {
     register,
@@ -48,8 +47,8 @@ export function StaffInviteStep({
     formState: { errors, isSubmitting },
   } = useForm<StaffInviteFormValues>({
     resolver: zodResolver(staffInviteSchema),
-    defaultValues: { invites: [{ email: '', roleId: '' }] },
-    mode: 'onBlur',
+    defaultValues: { invites: staffInvites.length > 0 ? staffInvites : [{ email: '', roleId: '' }] },
+    mode: 'onTouched',
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'invites' });
 
@@ -67,23 +66,13 @@ export function StaffInviteStep({
     };
   }, [accessToken, tenantId]);
 
-  async function onSubmit(values: StaffInviteFormValues) {
-    setFormError(null);
-    try {
-      await apiFetch(`/branches/${branchId}/staff/invite`, {
-        method: 'POST',
-        accessToken: accessToken ?? undefined,
-        tenantId,
-        body: values,
-      });
-      const invited = values.invites.map((row) => ({
-        email: row.email,
-        roleName: roles?.find((role) => role.id === row.roleId)?.name ?? row.roleId,
-      }));
-      onDone(invited);
-    } catch (error) {
-      setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
-    }
+  function onSubmit(values: StaffInviteFormValues) {
+    const invitedStaff = values.invites.map((row) => ({
+      email: row.email,
+      roleName: roles?.find((role) => role.id === row.roleId)?.name ?? row.roleId,
+    }));
+    patch({ staffInvites: values.invites, invitedStaff });
+    onNext();
   }
 
   const roleOptions = (roles ?? []).map((role) => ({ value: role.id, label: role.name }));
@@ -144,15 +133,16 @@ export function StaffInviteStep({
         </button>
       </Section>
 
-      {formError ? <p className="text-small text-red-600">{formError}</p> : null}
-
       <div className="flex items-center gap-3">
         <Button type="submit" loading={isSubmitting} disabled={roles === null}>
-          Send Invites
+          Continue
         </Button>
         <button
           type="button"
-          onClick={() => onDone([])}
+          onClick={() => {
+            patch({ staffInvites: [], invitedStaff: [] });
+            onNext();
+          }}
           className="text-body text-secondary-light hover:text-secondary underline cursor-pointer"
         >
           Skip for now
