@@ -130,8 +130,13 @@ export function BranchSetupForm({ onBack, onNext }: { onBack: () => void; onNext
   // correct: the old zone generally isn't even a valid option anymore.
   const country = watch('country');
   useEffect(() => {
-    setValue('timezone', defaultTimezoneFor(country) ?? '', { shouldValidate: false });
-    setValue('currency', defaultCurrencyFor(country) ?? '', { shouldValidate: false });
+    // `shouldValidate: true`, not false — a plain value-only `setValue`
+    // doesn't touch error state, so a stale "Required" from an earlier
+    // empty-field validation pass (e.g. Continue clicked before a country
+    // was chosen) would otherwise sit there forever even once this
+    // auto-fills a real value. Revalidating here clears it immediately.
+    setValue('timezone', defaultTimezoneFor(country) ?? '', { shouldValidate: true });
+    setValue('currency', defaultCurrencyFor(country) ?? '', { shouldValidate: true });
   }, [country, setValue]);
   const timezoneOptions = timezoneOptionsFor(country);
 

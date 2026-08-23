@@ -52,7 +52,7 @@ export function YesNoToggle({
               <label
                 htmlFor={inputId}
                 className={`inline-flex items-center justify-center min-h-11 min-w-16 px-4 rounded-pill border text-body font-semibold cursor-pointer transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 peer-disabled:opacity-50 peer-disabled:pointer-events-none ${
-                  isSelected ? 'bg-primary text-secondary border-primary' : 'border-accent/40 text-secondary'
+                  isSelected ? 'bg-primary text-secondary border-primary' : 'border-secondary-light/40 text-secondary'
                 }`}
               >
                 {option.text}

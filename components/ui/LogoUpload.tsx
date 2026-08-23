@@ -88,7 +88,7 @@ export function LogoUpload({
           onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
           className={`flex flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed p-6 text-center transition-colors ${
-            isDragging ? 'border-primary bg-primary/10' : error ? 'border-red-600' : 'border-accent'
+            isDragging ? 'border-primary bg-primary/10' : error ? 'border-red-600' : 'border-secondary-light'
           }`}
         >
           <UploadCloudIcon className="size-6 text-accent-dark" />

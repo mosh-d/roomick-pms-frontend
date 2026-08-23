@@ -1,5 +1,6 @@
 import { forwardRef, type TextareaHTMLAttributes } from 'react';
 import { InfoCircleIcon } from './Icons';
+import { FIELD_PLACEHOLDER_CLASS, FIELD_UNDERLINE_CLASS } from './Input';
 
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label: string;
@@ -28,8 +29,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
         rows={rows}
         aria-describedby={errorId ?? hintId}
         aria-invalid={Boolean(error)}
-        className={`w-full resize-y bg-transparent border-0 border-b pb-1 text-body placeholder:text-accent focus:outline-none disabled:opacity-50 disabled:pointer-events-none ${
-          error ? 'border-red-600' : 'border-accent/40 focus:border-secondary'
+        className={`w-full resize-y bg-transparent border-0 border-b pb-1 text-body ${FIELD_PLACEHOLDER_CLASS} focus:outline-none disabled:opacity-50 disabled:pointer-events-none ${
+          error ? 'border-red-600' : FIELD_UNDERLINE_CLASS
         } ${className}`}
         {...rest}
       />

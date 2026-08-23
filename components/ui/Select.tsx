@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { ChevronDownIcon, CheckIcon, InfoCircleIcon } from './Icons';
+import { FIELD_PLACEHOLDER_CLASS, FIELD_UNDERLINE_CLASS } from './Input';
 
 export type SelectOption = { value: string; label: string };
 
@@ -175,8 +176,8 @@ export function Select({
             setActiveIndex(0);
           }}
           onKeyDown={handleKeyDown}
-          className={`w-full bg-transparent border-0 border-b pb-1 pr-6 text-body placeholder:text-accent focus:outline-none cursor-pointer disabled:opacity-50 disabled:pointer-events-none disabled:cursor-default ${
-            error ? 'border-red-600' : open ? 'border-secondary' : 'border-accent/40'
+          className={`w-full bg-transparent border-0 border-b pb-1 pr-6 text-body ${FIELD_PLACEHOLDER_CLASS} focus:outline-none cursor-pointer disabled:opacity-50 disabled:pointer-events-none disabled:cursor-default ${
+            error ? 'border-red-600' : open ? 'border-secondary' : FIELD_UNDERLINE_CLASS
           }`}
         />
         <ChevronDownIcon

@@ -3,6 +3,18 @@
 import { forwardRef, useState, type InputHTMLAttributes } from 'react';
 import { EyeIcon, EyeOffIcon, InfoCircleIcon } from './Icons';
 
+/**
+ * The underline field's at-rest tone — shared, not re-tuned per component:
+ * `Select.tsx`'s trigger, `Textarea.tsx`, and `MultiSelectTagInput.tsx`'s
+ * free-text row all import these two exact strings rather than keeping
+ * their own copy. They used to each hand-roll the same pair independently
+ * and drifted (all three briefly styled it with `accent`, the "quiet,
+ * non-interactive" token, on a field you're meant to type into) — caught
+ * live, fixed in one place instead of three separate ones this time.
+ */
+export const FIELD_PLACEHOLDER_CLASS = 'placeholder:text-secondary-light';
+export const FIELD_UNDERLINE_CLASS = 'border-secondary-light/40 focus:border-secondary';
+
 type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   /** Shown as a small info-icon row below the field (hover/focus reveals the text via `title`) — matches the reference product's field anatomy, present on nearly every field. */
@@ -79,9 +91,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           // present, not just one.
           aria-describedby={describedBy}
           aria-invalid={Boolean(error)}
-          className={`w-full bg-transparent border-0 border-b pb-1 text-body placeholder:text-accent focus:outline-none disabled:opacity-50 disabled:pointer-events-none ${
+          className={`w-full bg-transparent border-0 border-b pb-1 text-body ${FIELD_PLACEHOLDER_CLASS} focus:outline-none disabled:opacity-50 disabled:pointer-events-none ${
             isPassword ? 'pr-7' : ''
-          } ${error ? 'border-red-600' : 'border-accent/40 focus:border-secondary'} ${className}`}
+          } ${error ? 'border-red-600' : FIELD_UNDERLINE_CLASS} ${className}`}
           {...rest}
         />
         {suffix ? (

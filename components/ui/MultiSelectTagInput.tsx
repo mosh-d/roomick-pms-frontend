@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { XIcon, PlusIcon, CheckIcon, ChevronDownIcon } from './Icons';
 import { SELECTED_OPTION_CLASSES, UNSELECTED_OPTION_CLASSES, type SelectOption } from './Select';
+import { FIELD_PLACEHOLDER_CLASS, FIELD_UNDERLINE_CLASS } from './Input';
 
 /**
  * One component, not two, covering both behaviors the reference image
@@ -142,8 +143,8 @@ export function MultiSelectTagInput({
             onKeyDown={handleDraftKeyDown}
             placeholder="Text Input..."
             aria-describedby={errorId ?? hintId}
-            className={`flex-1 bg-transparent border-0 border-b pb-1 text-body placeholder:text-accent focus:outline-none ${
-              error ? 'border-red-600' : 'border-accent/40 focus:border-secondary'
+            className={`flex-1 bg-transparent border-0 border-b pb-1 text-body ${FIELD_PLACEHOLDER_CLASS} focus:outline-none ${
+              error ? 'border-red-600' : FIELD_UNDERLINE_CLASS
             }`}
           />
           <button
@@ -183,7 +184,7 @@ export function MultiSelectTagInput({
             : { 'aria-labelledby': `${fieldId}-label`, 'aria-describedby': errorId ?? hintId })}
           onClick={() => setOpen((o) => !o)}
           className={`${allowCustom ? 'mt-3' : ''} w-full flex items-center justify-between gap-2 bg-transparent border-0 border-b pb-1 text-body text-left cursor-pointer focus:outline-none ${
-            !allowCustom && error ? 'border-red-600' : open ? 'border-secondary' : 'border-accent/40'
+            !allowCustom && error ? 'border-red-600' : open ? 'border-secondary' : FIELD_UNDERLINE_CLASS
           }`}
         >
           {allowCustom ? 'Pick from common options' : 'Tick an option'}
