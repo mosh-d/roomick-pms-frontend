@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { SpinnerIcon } from './Icons';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline';
+export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger';
 export type ButtonTone = 'onLight' | 'onDark';
 export type ButtonSize = 'sm' | 'md';
 
@@ -65,6 +65,17 @@ const variantClasses: Record<ButtonVariant, Record<ButtonTone, string>> = {
       'border border-black text-black bg-transparent hover:bg-black hover:text-white disabled:border-accent disabled:text-accent',
     onDark:
       'border border-white text-white bg-transparent hover:bg-white hover:text-secondary disabled:border-accent disabled:text-accent',
+  },
+  // Not in the reference imagery — this app's own addition for "confirm a
+  // destructive action" (e.g. deleting a branch), first needed once real
+  // multi-branch/multi-floor setup meant there was actual work to lose.
+  // Reuses `red-600`, not a new color: that's already this design system's
+  // established "something's wrong here" token (every field's own error
+  // state uses it), so this reads as "dangerous" for the same reason a
+  // form error does, not a one-off invented hue.
+  danger: {
+    onLight: 'bg-red-600 text-white hover:brightness-110 disabled:opacity-50',
+    onDark: 'bg-red-600 text-white hover:brightness-110 disabled:opacity-50',
   },
 };
 

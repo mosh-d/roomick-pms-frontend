@@ -9,12 +9,12 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Select, type SelectOption } from '@/components/ui/Select';
 import { YesNoToggle } from '@/components/ui/YesNoToggle';
 import { MultiSelectTagInput } from '@/components/ui/MultiSelectTagInput';
-import { BrandRadioCard, type BrandMode } from '@/components/ui/BrandRadioCard';
-import { RadioCard } from '@/components/ui/RadioCard';
+import { RadioCard, type RadioCardOption } from '@/components/ui/RadioCard';
 import { LogoUpload } from '@/components/ui/LogoUpload';
 import { FormSection } from '@/components/ui/FormSection';
 import { Section } from '@/components/ui/Section';
 import { Button } from '@/components/ui/Button';
+import type { BrandMode } from '@/lib/store/wizardStore';
 
 const ROOM_TYPE_OPTIONS: SelectOption[] = [
   { value: 'standard', label: 'Standard' },
@@ -39,6 +39,11 @@ const ID_TYPE_OPTIONS: SelectOption[] = [
   { value: 'student_id', label: 'Student ID card' },
 ];
 
+const BRAND_MODE_OPTIONS: RadioCardOption<BrandMode>[] = [
+  { value: 'single', title: 'Single-Brand Structure' },
+  { value: 'multi', title: 'Multi-Brand Structure' },
+];
+
 // Illustrative only — the real Check-In ID-capture flow is a later phase.
 // This just proves RadioCard's variant="toggle" swaps content correctly.
 function DigitalCaptureDemo() {
@@ -59,7 +64,7 @@ function ManualCaptureDemo() {
  * Demonstrates the RHF + Zod pattern documented in
  * design-system/04-components/forms.md: one schema, defined once, powering
  * real-time client validation. `brandMode` is wired through RHF's
- * `Controller` (BrandRadioCard is a controlled component, not a
+ * `Controller` (`RadioCard` is a controlled component, not a
  * plain-ref-forwarding native input, so `register()` alone can't drive it)
  * while `hotelName` uses plain `register()` since Input forwards its ref
  * directly to a native <input>.
@@ -72,7 +77,7 @@ const onboardingSchema = z.object({
 type OnboardingFormValues = z.infer<typeof onboardingSchema>;
 
 /**
- * BrandRadioCard is a controlled component (value/onChange props), not a
+ * `RadioCard` is a controlled component (value/onChange props), not a
  * ref-forwarding native input, so plain `register()` can't drive it —
  * `useController` is RHF's hook for exactly this: it wires a field into
  * RHF's validation/state machinery while giving back plain value/onChange
@@ -81,7 +86,15 @@ type OnboardingFormValues = z.infer<typeof onboardingSchema>;
 function BrandFields({ control }: { control: Control<OnboardingFormValues> }) {
   const brandMode = useController({ name: 'brandMode', control });
 
-  return <BrandRadioCard name="brandMode" value={brandMode.field.value as BrandMode} onChange={brandMode.field.onChange} />;
+  return (
+    <RadioCard
+      tone="secondary"
+      name="brandMode"
+      options={BRAND_MODE_OPTIONS}
+      value={brandMode.field.value as BrandMode}
+      onChange={brandMode.field.onChange}
+    />
+  );
 }
 
 function OnboardingDemoForm() {
@@ -177,7 +190,7 @@ export function FormsSection() {
         </h3>
         <div className="max-w-sm">
           <Section label="Organization Structure">
-            <BrandRadioCard name="standaloneBrandMode" value={standaloneMode} onChange={setStandaloneMode} />
+            <RadioCard tone="secondary" name="standaloneBrandMode" options={BRAND_MODE_OPTIONS} value={standaloneMode} onChange={setStandaloneMode} />
           </Section>
         </div>
       </div>

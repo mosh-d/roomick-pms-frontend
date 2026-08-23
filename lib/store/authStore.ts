@@ -17,6 +17,16 @@ interface AuthState {
   refreshToken: string | null;
   user: AuthUser | null;
   login: (email: string, password: string, subdomain: string) => Promise<LoginResult>;
+  /**
+   * Exchanges the stored refresh token for a fresh pair via `POST
+   * /auth/refresh` (backend: `auth.controller.ts`) and writes it back to
+   * the store. Returns the new access token, or `null` if there's no
+   * refresh token to use or the backend rejects it (expired/revoked) —
+   * callers treat `null` as "the session is actually over," not retryable.
+   * Failure also clears the store, same as `clear()`: a rejected refresh
+   * means every other stored credential is stale too.
+   */
+  refreshAccessToken: () => Promise<string | null>;
   clear: () => void;
 }
 
@@ -42,7 +52,7 @@ interface AuthState {
  */
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       accessToken: null,
       refreshToken: null,
       user: null,
@@ -53,6 +63,21 @@ export const useAuthStore = create<AuthState>()(
         });
         set({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
         return result;
+      },
+      async refreshAccessToken() {
+        const { refreshToken } = get();
+        if (!refreshToken) return null;
+        try {
+          const result = await apiFetch<LoginResult>('/auth/refresh', {
+            method: 'POST',
+            body: { refreshToken },
+          });
+          set({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
+          return result.accessToken;
+        } catch {
+          set({ accessToken: null, refreshToken: null, user: null });
+          return null;
+        }
       },
       clear: () => set({ accessToken: null, refreshToken: null, user: null }),
     }),

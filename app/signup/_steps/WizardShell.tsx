@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { BranchDraft } from '@/lib/store/wizardStore';
 import { XIcon, PlusIcon } from '@/components/ui/Icons';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export type WizardPhaseKey = 'owner' | 'org' | 'branch' | 'review';
 
@@ -204,7 +205,16 @@ function BranchTree({
   onAddBranch?: () => void;
   onRemoveBranch?: (branchLocalId: string) => void;
 }) {
+  // Deleting a branch discards every building/floor/room type/room
+  // configured under it — real work, not a trivial undo — so the "×"
+  // opens a confirmation instead of removing it immediately. Holds the
+  // branch's own localId + display name (not just a boolean) so the
+  // dialog can name what's about to be deleted and `onConfirm` knows
+  // which one, even though `branches` itself may re-render in between.
+  const [pendingDelete, setPendingDelete] = useState<{ localId: string; name: string } | null>(null);
+
   return (
+    <>
     <div className="flex flex-col gap-1 pl-3 border-l border-accent/20 ml-3">
       {branches.map((branch) => {
         const isActiveBranch = focus?.branchLocalId === branch.localId;
@@ -214,7 +224,11 @@ function BranchTree({
               label={branch.name || 'Untitled branch'}
               active={isActiveBranch && focus?.kind === 'branch'}
               onClick={() => onSelectBranch?.(branch.localId)}
-              onRemove={branches.length > 1 ? () => onRemoveBranch?.(branch.localId) : undefined}
+              onRemove={
+                branches.length > 1
+                  ? () => setPendingDelete({ localId: branch.localId, name: branch.name || 'Untitled branch' })
+                  : undefined
+              }
               emphasize
             />
             {isActiveBranch ? (
@@ -263,6 +277,18 @@ function BranchTree({
         <PlusIcon className="size-3" /> Add branch
       </button>
     </div>
+    <ConfirmDialog
+      open={pendingDelete !== null}
+      title="Delete branch?"
+      description={`This will permanently delete "${pendingDelete?.name}" and everything configured under it — buildings, floors, room types, and rooms. This can't be undone.`}
+      confirmLabel="Delete branch"
+      onCancel={() => setPendingDelete(null)}
+      onConfirm={() => {
+        if (pendingDelete) onRemoveBranch?.(pendingDelete.localId);
+        setPendingDelete(null);
+      }}
+    />
+    </>
   );
 }
 

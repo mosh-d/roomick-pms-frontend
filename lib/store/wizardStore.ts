@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { BrandMode } from '@/components/ui/BrandRadioCard';
 import type { RegisterFormValues } from '@/lib/schemas/auth';
 import type { BranchSetupFormValues, RoomTypeFormValues, BuildingFormValues } from '@/lib/schemas/onboarding';
 
 export type SignupMode = 'demo' | 'real';
+/** Maps directly to the backend's BrandMode enum ('single' | 'multi', confirmed in roomick-pms-backend/prisma/schema.prisma). */
+export type BrandMode = 'single' | 'multi';
 export type WizardStep =
   | 'register'
   | 'verify'

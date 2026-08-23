@@ -209,19 +209,44 @@ export function defaultCurrencyFor(country: string | null | undefined): string |
   return DEFAULT_CURRENCY_BY_COUNTRY[country] ?? null;
 }
 
+// Reverse of DEFAULT_CURRENCY_BY_COUNTRY (currency -> its first matching
+// country), built once and cached rather than a second hand-authored table.
+// Exists purely so currencySymbolFor can ask Intl for a *region-qualified*
+// locale ('en-NG', not plain 'en') — real, verified difference: plain 'en'
+// resolves NGN/KES/GHS/ZAR/PKR to their bare ISO code, while 'en-NG',
+// 'en-KE', 'en-GH', 'en-ZA', 'en-PK' correctly resolve to ₦/Ksh/GH₵/R/Rs.
+// ICU's currency-symbol data is keyed by region for a lot of non-Western
+// currencies, not just language, so "English" alone isn't enough context.
+let currencyToCountry: Record<string, string> | null = null;
+function countryForCurrency(currency: string): string | undefined {
+  if (!currencyToCountry) {
+    currencyToCountry = {};
+    for (const [country, code] of Object.entries(DEFAULT_CURRENCY_BY_COUNTRY)) {
+      if (!(code in currencyToCountry)) currencyToCountry[code] = country;
+    }
+  }
+  return currencyToCountry[currency];
+}
+
 /**
  * The actual glyph for a currency code (`NGN` → `₦`, `USD` → `$`, ...) —
  * via `Intl.NumberFormat`, not a second hand-authored ~190-row table.
- * Many currencies here don't have a distinct symbol at all (several
- * African/Central Asian codes just render as the code itself) — that's the
- * platform's own answer for "what does this currency look like", not a gap
- * in this function. Falls back to the raw code if `currency` isn't a real
- * ISO 4217 value `Intl` recognizes (e.g. still empty, mid-typing).
+ * Locale is `en-{country}` (via `countryForCurrency` above) when a country
+ * is known for this currency, not plain `en` — verified directly: `Intl`
+ * only resolves several real currency symbols (NGN, KES, GHS, ZAR, PKR,
+ * ...) under a region-qualified locale, falling back to the bare ISO code
+ * under plain `en` even though the symbol genuinely exists. Some
+ * currencies still have no distinct glyph at all even region-qualified
+ * (e.g. EGP, THB, BDT) — that's the platform's own answer for "what does
+ * this currency look like", not a gap in this function. Falls back to the
+ * raw code if `currency` isn't a real ISO 4217 value `Intl` recognizes
+ * (e.g. still empty, mid-typing).
  */
 export function currencySymbolFor(currency: string | null | undefined): string {
   if (!currency) return '';
+  const locale = countryForCurrency(currency);
   try {
-    const parts = new Intl.NumberFormat('en', { style: 'currency', currency, currencyDisplay: 'symbol' }).formatToParts(0);
+    const parts = new Intl.NumberFormat(locale ? `en-${locale}` : 'en', { style: 'currency', currency, currencyDisplay: 'symbol' }).formatToParts(0);
     return parts.find((part) => part.type === 'currency')?.value ?? currency;
   } catch {
     return currency;

@@ -63,6 +63,8 @@ type ApiFetchOptions = Omit<RequestInit, 'body'> & {
   body?: unknown;
   tenantId?: string;
   accessToken?: string;
+  /** Internal only — set by apiFetch's own 401 retry so it can't loop forever if the refreshed token *also* comes back unauthorized. Callers never pass this. */
+  _isRetry?: boolean;
 };
 
 /**
@@ -70,9 +72,22 @@ type ApiFetchOptions = Omit<RequestInit, 'body'> & {
  * endpoints are wired up so far (see PHASE_NOTES.md). Every backend route
  * lives under /api/v1 (global prefix + URI versioning, see main.ts), so
  * `path` here is relative to that, e.g. `apiFetch('/auth/register', ...)`.
+ *
+ * A 401 on a call that *did* carry an access token gets exactly one
+ * transparent retry: refresh via `authStore.refreshAccessToken()` (which
+ * exchanges the already-stored, still-live 30-day refresh token — issued
+ * at login but never actually used for anything until this), then re-run
+ * the original request with the new token. Real bug this fixes, not a
+ * hypothetical: the access token's own TTL is 15 minutes
+ * (`JWT_ACCESS_TTL=900s`), well under how long a multi-branch onboarding
+ * wizard can reasonably take to fill in and review — every caller up to
+ * now got a raw "Unauthorized" the moment that clock ran out, mid-review,
+ * with no recovery but a fresh login. `authStore` is imported dynamically,
+ * not at module top level: `authStore.ts` already imports `apiFetch` from
+ * this file, so a static import here would be circular.
  */
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
-  const { body, tenantId, accessToken, headers, ...rest } = options;
+  const { body, tenantId, accessToken, headers, _isRetry, ...rest } = options;
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...rest,
@@ -84,6 +99,14 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
+
+  if (response.status === 401 && accessToken && !_isRetry) {
+    const { useAuthStore } = await import('./store/authStore');
+    const newToken = await useAuthStore.getState().refreshAccessToken();
+    if (newToken) {
+      return apiFetch<T>(path, { ...options, accessToken: newToken, _isRetry: true });
+    }
+  }
 
   // 204 No Content and similar bodiless responses — nothing to parse.
   if (response.status === 204) return undefined as T;

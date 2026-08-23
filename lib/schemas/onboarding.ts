@@ -3,7 +3,7 @@ import { z } from 'zod';
 // No zod schema for Organization Structure (single/multi-brand mode) — it's
 // a single required radio choice (`OrgStructureForm` just checks `brandMode
 // !== null`), and there's no separate "Brand Name" field to validate here
-// anymore (see BrandRadioCard.tsx and PHASE_NOTES.md — it's collected once,
+// anymore (see OrgStructureForm.tsx and PHASE_NOTES.md — it's collected once,
 // at signup, and reused as the head brand's name for either mode). The
 // actual `POST /tenants/configure-mode` call only fires once, as part of
 // Review's "Finish" submission chain — see page.tsx.

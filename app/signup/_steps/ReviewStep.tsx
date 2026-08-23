@@ -5,7 +5,7 @@ import { Section } from '@/components/ui/Section';
 import { Button } from '@/components/ui/Button';
 import { apiFetch, ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
-import { useWizardStore, type BranchDraft, type RoomCardDraft } from '@/lib/store/wizardStore';
+import { useWizardStore, type BranchDraft, type RoomCardDraft, type RoomTypeDraft } from '@/lib/store/wizardStore';
 import { currencySymbolFor } from '@/lib/currencies';
 import { displayWithCommas } from '@/lib/numberFormat';
 
@@ -92,7 +92,7 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
 
   return (
     <div className="flex flex-col gap-4">
-      <Section label="Organization">
+      <Section label="Organization" tone="accent">
         <Row label="Subdomain" value={owner.subdomain} />
         <Row label="Structure" value={brandMode === 'single' ? 'Single-Brand' : 'Multi-Brand'} />
       </Section>
@@ -121,7 +121,7 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
         </div>
       ) : null}
 
-      <Section label={branch.name || 'Branch'}>
+      <Section label={branch.name || 'Branch'} tone="accent">
         <Row label="Name" value={branch.name} />
         {branch.category ? <Row label="Category" value={branch.category} /> : null}
         <Row label="Currency" value={branch.currency} />
@@ -129,7 +129,7 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
       </Section>
 
       {branch.roomTypes.length > 0 ? (
-        <Section label="Room Types">
+        <Section label="Room Types" tone="accent">
           {branch.roomTypes.map((rt) => (
             <Row key={rt.localId} label={rt.name || 'Untitled'} value={`${currencySymbol}${displayWithCommas(rt.baseRate)}`} />
           ))}
@@ -137,18 +137,31 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
       ) : null}
 
       {branch.buildings.length > 0 ? (
-        <Section label="Buildings">
+        <Section label="Buildings" tone="accent">
           {branch.buildings.map((building) => (
             <div key={building.localId} className="flex flex-col gap-2">
               <span className="text-small font-semibold text-secondary">{building.name || 'Untitled building'}</span>
               {building.floors.map((floor) => {
                 const roomsOnFloor = branch.rooms.filter((r) => r.floorLocalId === floor.localId);
+                const floorLabel = `Floor ${floor.floorNumber}`;
                 return (
-                  <div key={floor.localId} className="pl-4 flex items-center justify-between gap-4">
-                    <span className="text-small text-secondary-light">Floor {floor.floorNumber}</span>
-                    <span className="text-small text-secondary">
-                      {roomsOnFloor.length} room{roomsOnFloor.length === 1 ? '' : 's'}
-                    </span>
+                  <div key={floor.localId} className="pl-4 flex flex-col gap-1.5">
+                    <span className="text-small text-accent-dark">{floorLabel}</span>
+                    {roomsOnFloor.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {roomsOnFloor.map((room) => (
+                          <RoomChip
+                            key={room.localId}
+                            room={room}
+                            roomType={branch.roomTypes.find((rt) => rt.localId === room.roomTypeLocalId)}
+                            floorLabel={floorLabel}
+                            currencySymbol={currencySymbol}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-small text-accent-dark pl-1">No rooms yet</span>
+                    )}
                   </div>
                 );
               })}
@@ -157,12 +170,12 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
         </Section>
       ) : null}
 
-      <Section label="Rooms">
+      <Section label="Rooms" tone="accent">
         <Row label="Total Room Count" value={String(roomCount)} />
       </Section>
 
       {invitedStaff.length > 0 ? (
-        <Section label="Staff Invited">
+        <Section label="Staff Invited" tone="accent">
           {invitedStaff.map((staff) => (
             <Row key={staff.email} label={staff.email} value={staff.roleName} />
           ))}
@@ -294,11 +307,91 @@ async function createRooms(branch: BranchDraft, branchId: string, accessToken: s
   }
 }
 
+/** Always rendered inside a `tone="accent"` Section (see this file's other usages) — the label uses `text-accent-dark`, not `text-secondary-light`, to stay in the same slate family as the card itself rather than mixing in secondary's purple hue. The value keeps `text-secondary` regardless of tone, matching Card.tsx's own documented convention: value text needs the contrast, not a tone-matched color. */
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-small text-secondary-light">{label}</span>
+      <span className="text-small text-accent-dark">{label}</span>
       <span className="text-body font-semibold text-secondary">{value}</span>
+    </div>
+  );
+}
+
+/**
+ * A room-number pill (Roomick-UI.pdf's Review page: Buildings → Floors →
+ * room chips, each popping its own detail card on interaction) — reads
+ * `room.number` alone at rest, revealing the room's full type/rate/size/
+ * bed/view/amenities in a floating card on hover, focus, or click (click
+ * as an explicit toggle, not just a hover side effect, since hover alone
+ * doesn't exist on touch).
+ *
+ * Deliberately recolored off the reference: the mockup renders this pair
+ * as a gold chip + a purple detail card — two different hue families. This
+ * screen's own review cards are already `tone="accent"` throughout (a
+ * direct correction, not the mockup's own choice — see Section.tsx), so
+ * both the chip and its popup stay in that same accent/slate family. The
+ * popup is solid white, not translucent-accent, on purpose: it's a
+ * floating overlay meant to sit *above* the room grid, not tint through
+ * it — a translucent card here would let the chips underneath bleed
+ * through and read as smudged rather than layered.
+ */
+function RoomChip({
+  room,
+  roomType,
+  floorLabel,
+  currencySymbol,
+}: {
+  room: RoomCardDraft;
+  roomType: RoomTypeDraft | undefined;
+  floorLabel: string;
+  currencySymbol: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative inline-block">
+      <button
+        type="button"
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onClick={() => setOpen((o) => !o)}
+        className="rounded-pill bg-accent-dark/10 border border-accent-dark/20 px-3 py-1 text-small font-semibold text-secondary cursor-pointer hover:bg-accent-dark/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
+        {room.number}
+      </button>
+      {open ? (
+        <div className="absolute z-20 top-full left-0 mt-1 w-64 rounded-card border border-accent-dark/30 bg-white shadow-lg p-3 flex flex-col gap-1.5 text-left">
+          <RoomDetailRow label="Floor" value={floorLabel} />
+          <RoomDetailRow label="Room Type" value={roomType?.name || 'Untitled'} />
+          <RoomDetailRow
+            label="Base Price (per night)"
+            value={roomType ? `${currencySymbol}${displayWithCommas(roomType.baseRate)}` : '—'}
+          />
+          {roomType?.sizeM2 ? <RoomDetailRow label="Room Size" value={`${roomType.sizeM2} m²`} /> : null}
+          {roomType?.bedType ? <RoomDetailRow label="Bed Type" value={roomType.bedType} /> : null}
+          <RoomDetailRow label="View" value={room.view || 'No view'} />
+          {roomType?.amenities && roomType.amenities.length > 0 ? (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {roomType.amenities.map((amenity) => (
+                <span key={amenity} className="rounded-pill bg-accent-dark/10 text-accent-dark text-tiny px-2 py-0.5">
+                  {amenity}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function RoomDetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-tiny text-accent-dark">{label}</span>
+      <span className="text-small font-semibold text-secondary">{value}</span>
     </div>
   );
 }
