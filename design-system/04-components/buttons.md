@@ -9,8 +9,8 @@ variant, row = default/hover/disabled):
 
 | Variant | Default | Hover | Disabled |
 |---|---|---|---|
-| `primary` | `bg-primary text-white` | `hover:brightness-110` | `opacity-50` |
-| `secondary` | `bg-secondary text-white` | `hover:brightness-125` | `opacity-50` |
+| `primary` | `bg-primary text-white` | `hover:brightness-125` | `opacity-50` |
+| `secondary` | `bg-secondary text-white` | `hover:brightness-200` | `opacity-50` |
 | `outline` (`tone: onLight\|onDark`) | bordered, transparent fill | inverts to a solid fill | muted (`border-accent text-accent`) |
 
 ## Decisions worth knowing
@@ -33,7 +33,17 @@ variant, row = default/hover/disabled):
   brightness-filter hover is surface-agnostic — it looks the same
   regardless of what's rendered behind or around the button. An
   opacity-over-background hover would visually shift depending on that
-  background, which a fixed color token can't account for.
+  background, which a fixed color token can't account for. The default
+  colors are unchanged from the reference; only the hover delta was tuned
+  (up from `-110`/`-125`) — the original values read as too subtle a hover
+  state, especially against the already-bright gold `primary` fill.
+  `secondary`'s delta is much bigger (`-200` vs. `-125`) for a specific
+  reason, not just "darker needs more": `secondary` (`#160029`) has a zero
+  green channel, and `brightness()` is a linear per-channel multiplier — 0 ×
+  anything is still 0, so no multiplier shifts the hue, only how far R/B
+  scale up. `brightness-150` was verified visually and was still barely
+  perceptible against the near-black base; `-200` is the first step that
+  reads clearly as "hovered."
 - **`outline`'s disabled state reuses `accent`**, not a dimmed version of
   black — matching the reference image's visibly muted-gray disabled row
   with zero new hex values.

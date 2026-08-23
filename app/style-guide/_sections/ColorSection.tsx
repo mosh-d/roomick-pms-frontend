@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { CARD_TONE_CLASSES } from '@/components/ui/Card';
 
 const BASE_SWATCHES = [
   { name: 'Primary', className: 'bg-primary', hex: '#CCA000' },
@@ -83,14 +84,15 @@ export function ColorSection() {
           {(() => {
             function renderLevel(depth: number): ReactNode {
               if (depth > NESTING_DEPTHS.length) return null;
-              // Matches Card.tsx's actual tone classes exactly (dark-variant
-              // bases, text-secondary labels) rather than reimplementing
-              // its own — see Card.tsx's TONE_CLASSES comment for why: a
-              // lighter base color compounds toward a pastel that collides
-              // with text-secondary-light at depth, which is exactly the
-              // bug this demo used to (accidentally) illustrate.
+              // Imports Card.tsx's actual CARD_TONE_CLASSES rather than
+              // hand-copying the class strings — see that constant's own
+              // comment for why sharing it (not reimplementing it) matters:
+              // a lighter base color compounds toward a pastel that
+              // collides with text-secondary-light at depth, which is
+              // exactly the bug this demo used to (accidentally) illustrate
+              // before the dark-variant fix.
               return (
-                <div className="bg-secondary/10 border border-secondary/20 rounded-card p-4">
+                <div className={`${CARD_TONE_CLASSES.secondary} border rounded-card p-4`}>
                   <span className="text-tiny text-secondary block mb-2">
                     depth {depth} — {effectiveTint(depth).toFixed(1)}%
                   </span>
@@ -100,9 +102,12 @@ export function ColorSection() {
             }
             return renderLevel(1);
           })()}
-          <div className="bg-primary-dark/10 border border-primary-dark/20 rounded-card p-4">
-            <span className="text-tiny text-secondary block mb-2">mixed tone — primary-dark/10</span>
-            <div className="bg-secondary/10 border border-secondary/20 rounded-card p-4">
+          <div className={`${CARD_TONE_CLASSES.primary} border rounded-card p-4`}>
+            <span className="text-tiny text-secondary block mb-2">
+              mixed tone — primary/15 (the one tone that doesn&apos;t use the dark-variant/10 formula — see
+              CARD_TONE_CLASSES)
+            </span>
+            <div className={`${CARD_TONE_CLASSES.secondary} border rounded-card p-4`}>
               <span className="text-tiny text-secondary">secondary/10 nested inside</span>
             </div>
           </div>

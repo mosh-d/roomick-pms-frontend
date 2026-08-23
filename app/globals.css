@@ -9,6 +9,33 @@ body {
   color: var(--color-secondary);
 }
 
+/* Chromium/WebKit paint a hardcoded pale-blue (or yellow) background behind
+   an autofilled input, overriding Input.tsx's `bg-transparent` — visible as
+   a color band clashing with whatever surface the field sits on (a plain
+   white page, a Section's primary-light tint, etc.). Two techniques
+   stacked together, since the transition-delay trick alone isn't reliably
+   honored across every Chromium version:
+   1. An absurdly long transition delay/duration on background-color: the
+      browser's own color change technically happens, but never visibly
+      completes, so the field keeps whatever background it already had.
+   2. A same-color inset box-shadow (1000px spread, so it fully covers the
+      field) as a belt-and-braces fallback for versions that ignore #1 and
+      paint the autofill background anyway — `white` isn't a perfect match
+      against a Section's pale-cream tint, but it's much closer than
+      Chrome's default light blue, and this only ever shows for browsers
+      where #1 didn't already suppress the repaint.
+   `-webkit-text-fill-color` is set alongside both because autofill
+   overrides text color the same way and needs the same treatment. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  transition: background-color 9999s ease-in-out 9999s, color 9999s ease-in-out 9999s;
+  -webkit-text-fill-color: var(--color-secondary);
+  -webkit-box-shadow: 0 0 0px 1000px var(--color-white) inset;
+  box-shadow: 0 0 0px 1000px var(--color-white) inset;
+}
+
 /* Respect the user's OS-level motion preference. Roomick's own motion
    budget is already minimal (functional micro-transitions only — see
    05-imagery-motion.md), but this is the belt-and-braces guarantee. */

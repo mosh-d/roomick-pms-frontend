@@ -1,5 +1,7 @@
-import { forwardRef, type InputHTMLAttributes } from 'react';
-import { InfoCircleIcon } from './Icons';
+'use client';
+
+import { forwardRef, useState, type InputHTMLAttributes } from 'react';
+import { EyeIcon, EyeOffIcon, InfoCircleIcon } from './Icons';
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
@@ -33,44 +35,72 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
  * `focus-within`, and the matching negative margin cancels the padding's
  * visual indent at rest — so the field doesn't jump or reflow when it
  * gains the tinted focus box.
+ *
+ * `type="password"` gets a built-in reveal toggle (own `useState`, hence
+ * this file needing `'use client'` now) rather than relying on the
+ * browser's native reveal icon — Chrome's native one is inconsistent about
+ * when it reappears after a field loses and regains focus, which read as a
+ * bug ("I can't see what I typed anymore"). Controlling it ourselves means
+ * it behaves the same way every time.
  */
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, hint, error, id, name, className = '', ...rest },
+  { label, hint, error, id, name, type, className = '', ...rest },
   ref,
 ) {
+  const [revealed, setRevealed] = useState(false);
+  const isPassword = type === 'password';
   const fieldId = id ?? name;
   const hintId = hint ? `${fieldId}-hint` : undefined;
   const errorId = error ? `${fieldId}-error` : undefined;
+  const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined;
 
   return (
     <div className="flex flex-col gap-1 rounded-control px-3 -mx-3 py-2 transition-colors focus-within:bg-secondary-light/15">
       <label htmlFor={fieldId} className="text-small font-semibold text-secondary">
         {label}
       </label>
-      <input
-        ref={ref}
-        id={fieldId}
-        name={name}
-        // aria-describedby links the field to its hint/error text so
-        // screen readers announce them — error takes priority when both
-        // are present since it's the more urgent message.
-        aria-describedby={errorId ?? hintId}
-        aria-invalid={Boolean(error)}
-        className={`w-full bg-transparent border-0 border-b pb-1 text-body placeholder:text-accent focus:outline-none disabled:opacity-50 disabled:pointer-events-none ${
-          error ? 'border-red-600' : 'border-accent/40 focus:border-secondary'
-        } ${className}`}
-        {...rest}
-      />
-      {error ? (
-        <p id={errorId} className="text-small text-red-600 mt-1">
-          {error}
-        </p>
-      ) : hint ? (
-        <span className="mt-1 inline-flex text-accent-dark" title={hint}>
-          <InfoCircleIcon />
-          <span id={hintId} className="sr-only">
-            {hint}
-          </span>
+      <div className="relative flex items-center">
+        <input
+          ref={ref}
+          id={fieldId}
+          name={name}
+          type={isPassword ? (revealed ? 'text' : 'password') : type}
+          // aria-describedby links the field to its hint/error text so
+          // screen readers announce them — both are included when both are
+          // present, not just one.
+          aria-describedby={describedBy}
+          aria-invalid={Boolean(error)}
+          className={`w-full bg-transparent border-0 border-b pb-1 text-body placeholder:text-accent focus:outline-none disabled:opacity-50 disabled:pointer-events-none ${
+            isPassword ? 'pr-7' : ''
+          } ${error ? 'border-red-600' : 'border-accent/40 focus:border-secondary'} ${className}`}
+          {...rest}
+        />
+        {isPassword ? (
+          <button
+            type="button"
+            onClick={() => setRevealed((r) => !r)}
+            aria-label={revealed ? 'Hide password' : 'Show password'}
+            className="absolute right-0 text-accent-dark hover:text-secondary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
+          >
+            {revealed ? <EyeOffIcon /> : <EyeIcon />}
+          </button>
+        ) : null}
+      </div>
+      {hint || error ? (
+        <span className="mt-1 inline-flex items-start gap-1.5">
+          {hint ? (
+            <span className="inline-flex shrink-0 text-accent-dark" title={hint}>
+              <InfoCircleIcon />
+              <span id={hintId} className="sr-only">
+                {hint}
+              </span>
+            </span>
+          ) : null}
+          {error ? (
+            <span id={errorId} className="text-small text-red-600">
+              {error}
+            </span>
+          ) : null}
         </span>
       ) : null}
     </div>

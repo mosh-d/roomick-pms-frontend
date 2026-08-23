@@ -16,6 +16,7 @@ import { RoomTypeForm, type RoomTypeResponse } from './_steps/RoomTypeForm';
 import { RoomsForm } from './_steps/RoomsForm';
 import { StaffInviteStep, type InvitedStaff } from './_steps/StaffInviteStep';
 import { ReviewStep, type ReviewSummary } from './_steps/ReviewStep';
+import { WizardShell, type WizardPhaseKey } from './_steps/WizardShell';
 
 type SignupMode = 'demo' | 'real';
 type WizardStep =
@@ -30,6 +31,27 @@ type WizardStep =
   | 'staff-invite'
   | 'review'
   | 'complete';
+
+/**
+ * Maps this wizard's ~10 fine-grained internal steps onto the 4 named
+ * phases the reference's sidebar actually shows — its own "Branch Setup"
+ * page bundles Property Details + Tax Rules + Staff Invite into one phase,
+ * for example, so several internal steps legitimately collapse into one
+ * sidebar entry. See WizardShell.tsx's header comment.
+ */
+const PHASE_FOR_STEP: Record<WizardStep, WizardPhaseKey> = {
+  register: 'owner',
+  verify: 'owner',
+  'auto-login': 'owner',
+  'org-structure': 'org',
+  'create-brand': 'org',
+  'branch-setup': 'branch',
+  'room-type': 'branch',
+  rooms: 'branch',
+  'staff-invite': 'branch',
+  review: 'review',
+  complete: 'review',
+};
 
 const STEP_LABELS: Record<WizardStep, string> = {
   register: 'Set up your organization and owner account.',
@@ -80,14 +102,13 @@ function SignupPageInner() {
   const [roomCount, setRoomCount] = useState(0);
   const [invitedStaff, setInvitedStaff] = useState<InvitedStaff[]>([]);
 
-  return (
-    <Container className="max-w-xl py-16">
-      <h1 className="text-title font-bold text-secondary mb-2">Create your Roomick account</h1>
-      <p className="text-body text-secondary-light mb-8">
-        {mode === null ? 'Try it out risk-free, or get started for real — same setup either way.' : STEP_LABELS[step]}
-      </p>
-
-      {mode === null ? (
+  if (mode === null) {
+    return (
+      <Container className="max-w-xl py-16">
+        <h1 className="text-title font-bold text-secondary mb-2">Create your Roomick account</h1>
+        <p className="text-body text-secondary-light mb-8">
+          Try it out risk-free, or get started for real — same setup either way.
+        </p>
         <RadioCard
           name="signupMode"
           tone="secondary"
@@ -98,117 +119,126 @@ function SignupPageInner() {
             { value: 'real', title: 'Get started' },
           ]}
         />
-      ) : null}
+      </Container>
+    );
+  }
 
-      {mode !== null && step === 'register' ? (
-        <RegisterForm
-          isDemo={mode === 'demo'}
-          onSuccess={(result, creds) => {
-            setRegistered(result);
-            setCredentials(creds);
-            setStep('verify');
-          }}
-        />
-      ) : null}
+  return (
+    <WizardShell currentPhase={PHASE_FOR_STEP[step]}>
+      <Container className="max-w-xl py-0">
+        <h1 className="text-title font-bold text-secondary mb-2">Create your Roomick account</h1>
+        <p className="text-body text-secondary-light mb-8">{STEP_LABELS[step]}</p>
 
-      {step === 'verify' && registered ? (
-        <VerifyEmailForm
-          subdomain={registered.subdomain}
-          initialToken={registered.verificationToken}
-          onSuccess={() => setStep('auto-login')}
-        />
-      ) : null}
+        {step === 'register' ? (
+          <RegisterForm
+            isDemo={mode === 'demo'}
+            onSuccess={(result, creds) => {
+              setRegistered(result);
+              setCredentials(creds);
+              setStep('verify');
+            }}
+          />
+        ) : null}
 
-      {step === 'auto-login' && registered && credentials ? (
-        <AutoLoginStep
-          email={credentials.email}
-          password={credentials.password}
-          subdomain={registered.subdomain}
-          onSuccess={() => setStep('org-structure')}
-        />
-      ) : null}
+        {step === 'verify' && registered ? (
+          <VerifyEmailForm
+            subdomain={registered.subdomain}
+            initialToken={registered.verificationToken}
+            onSuccess={() => setStep('auto-login')}
+          />
+        ) : null}
 
-      {step === 'org-structure' ? (
-        <OrgStructureForm
-          onSuccess={({ mode: resolvedMode, brandId: resolvedBrandId }) => {
-            setBrandMode(resolvedMode);
-            if (resolvedBrandId) {
-              setBrandId(resolvedBrandId);
+        {step === 'auto-login' && registered && credentials ? (
+          <AutoLoginStep
+            email={credentials.email}
+            password={credentials.password}
+            subdomain={registered.subdomain}
+            onSuccess={() => setStep('org-structure')}
+          />
+        ) : null}
+
+        {step === 'org-structure' ? (
+          <OrgStructureForm
+            onSuccess={({ mode: resolvedMode, brandId: resolvedBrandId }) => {
+              setBrandMode(resolvedMode);
+              if (resolvedBrandId) {
+                setBrandId(resolvedBrandId);
+                setStep('branch-setup');
+              } else {
+                setStep('create-brand');
+              }
+            }}
+          />
+        ) : null}
+
+        {step === 'create-brand' ? (
+          <CreateBrandStep
+            onSuccess={(id) => {
+              setBrandId(id);
               setStep('branch-setup');
-            } else {
-              setStep('create-brand');
-            }
-          }}
-        />
-      ) : null}
+            }}
+          />
+        ) : null}
 
-      {step === 'create-brand' ? (
-        <CreateBrandStep
-          onSuccess={(id) => {
-            setBrandId(id);
-            setStep('branch-setup');
-          }}
-        />
-      ) : null}
+        {step === 'branch-setup' && brandId ? (
+          <BranchSetupForm
+            brandId={brandId}
+            onSuccess={(result) => {
+              setBranch(result);
+              setStep('room-type');
+            }}
+          />
+        ) : null}
 
-      {step === 'branch-setup' && brandId ? (
-        <BranchSetupForm
-          brandId={brandId}
-          onSuccess={(result) => {
-            setBranch(result);
-            setStep('room-type');
-          }}
-        />
-      ) : null}
+        {step === 'room-type' && branch ? (
+          <RoomTypeForm
+            branchId={branch.id}
+            onSuccess={(result) => {
+              setRoomType(result);
+              setStep('rooms');
+            }}
+          />
+        ) : null}
 
-      {step === 'room-type' && branch ? (
-        <RoomTypeForm
-          branchId={branch.id}
-          onSuccess={(result) => {
-            setRoomType(result);
-            setStep('rooms');
-          }}
-        />
-      ) : null}
+        {step === 'rooms' && branch && roomType ? (
+          <RoomsForm
+            branchId={branch.id}
+            roomTypeId={roomType.id}
+            onSuccess={(rooms) => {
+              setRoomCount(rooms.length);
+              setStep('staff-invite');
+            }}
+          />
+        ) : null}
 
-      {step === 'rooms' && branch && roomType ? (
-        <RoomsForm
-          branchId={branch.id}
-          roomTypeId={roomType.id}
-          onSuccess={(rooms) => {
-            setRoomCount(rooms.length);
-            setStep('staff-invite');
-          }}
-        />
-      ) : null}
+        {step === 'staff-invite' && branch ? (
+          <StaffInviteStep
+            branchId={branch.id}
+            onDone={(invited) => {
+              setInvitedStaff(invited);
+              setStep('review');
+            }}
+          />
+        ) : null}
 
-      {step === 'staff-invite' && branch ? (
-        <StaffInviteStep
-          branchId={branch.id}
-          onDone={(invited) => {
-            setInvitedStaff(invited);
-            setStep('review');
-          }}
-        />
-      ) : null}
+        {step === 'review' && registered && brandMode && branch && roomType ? (
+          <ReviewStep
+            summary={buildSummary(registered, brandMode, branch, roomType, roomCount, invitedStaff)}
+            onFinish={() => setStep('complete')}
+          />
+        ) : null}
 
-      {step === 'review' && registered && brandMode && branch && roomType ? (
-        <ReviewStep
-          summary={buildSummary(registered, brandMode, branch, roomType, roomCount, invitedStaff)}
-          onFinish={() => setStep('complete')}
-        />
-      ) : null}
-
-      {step === 'complete' ? (
-        <Section label="Setup complete">
-          <p className="text-body text-secondary">
-            <span className="font-semibold">{registered?.subdomain}</span> is ready — organization, branch, room
-            type, and {roomCount} room{roomCount === 1 ? '' : 's'} are all set up. A front-desk/operations dashboard
-            is the next phase of this project — see <code className="text-tiny">PHASE_NOTES.md</code>.
-          </p>
-        </Section>
-      ) : null}
-    </Container>
+        {step === 'complete' ? (
+          <Section label="Setup complete">
+            <p className="text-body text-secondary">
+              <span className="font-semibold">{registered?.subdomain}</span> is ready — organization, branch, room
+              type, and {roomCount} room{roomCount === 1 ? '' : 's'} are all set up. A front-desk/operations
+              dashboard is the next phase of this project — see <code className="text-tiny">PHASE_NOTES.md</code>.
+            </p>
+          </Section>
+        ) : null}
+      </Container>
+    </WizardShell>
   );
 }
 

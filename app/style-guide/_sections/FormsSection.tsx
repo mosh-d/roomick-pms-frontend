@@ -117,6 +117,7 @@ function OnboardingDemoForm() {
   } = useForm<OnboardingFormValues>({
     resolver: zodResolver(onboardingSchema),
     defaultValues: { hotelName: '', brandMode: 'single', brandName: '' },
+    mode: 'onBlur',
   });
 
   async function onSubmit(values: OnboardingFormValues) {

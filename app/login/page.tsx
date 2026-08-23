@@ -33,7 +33,7 @@ export default function LoginPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema) });
+  } = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema), mode: 'onBlur' });
 
   async function onSubmit(values: LoginFormValues) {
     setFormError(null);
@@ -77,7 +77,7 @@ export default function LoginPage() {
           <Input label="Password" type="password" {...register('password')} error={errors.password?.message} />
           <Input
             label="Subdomain"
-            hint="Your account's address — e.g. acme → acme.roomick.com"
+            hint="The unique id you picked at signup (e.g. acme)"
             {...register('subdomain')}
             error={errors.subdomain?.message}
           />

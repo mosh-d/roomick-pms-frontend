@@ -38,15 +38,21 @@ const variantClasses: Record<ButtonVariant, Record<ButtonTone, string>> = {
     // here). hover:brightness is used instead of a second hover-only color
     // token because it's surface-agnostic — an opacity-based hover would
     // look different depending on what's rendered behind the button,
-    // brightness doesn't.
-    onLight: 'bg-primary text-white hover:brightness-110 disabled:opacity-50',
-    onDark: 'bg-primary text-white hover:brightness-110 disabled:opacity-50',
+    // brightness doesn't. brightness-125 (not the original -110, which read
+    // as too subtle a hover state against the already-bright gold fill).
+    onLight: 'bg-primary text-white hover:brightness-125 disabled:opacity-50',
+    onDark: 'bg-primary text-white hover:brightness-125 disabled:opacity-50',
   },
   secondary: {
-    // Bigger brightness delta (125 vs 110) because a dark fill needs more
-    // change to read as "hovered" than a light one does.
-    onLight: 'bg-secondary text-white hover:brightness-125 disabled:opacity-50',
-    onDark: 'bg-secondary text-white hover:brightness-125 disabled:opacity-50',
+    // Much bigger brightness delta than primary's (200 vs 125): `secondary`
+    // (#160029) has a zero green channel, and `brightness()` is a linear
+    // per-channel multiplier — 0 × anything is still 0, so no multiplier
+    // can shift the hue, only how far R/B scale up. Verified visually
+    // (not just by the numbers): brightness-150 was barely perceptible
+    // against the near-black base; 200 is the first step that reads
+    // clearly as "hovered" in a real screenshot.
+    onLight: 'bg-secondary text-white hover:brightness-200 disabled:opacity-50',
+    onDark: 'bg-secondary text-white hover:brightness-200 disabled:opacity-50',
   },
   outline: {
     // Reference image: default = bordered, hover = inverts to a solid

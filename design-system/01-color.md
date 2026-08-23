@@ -67,22 +67,25 @@ directly (see `04-components/status-tags.md`).
 ## The card-nesting mechanic
 
 Roomick's card hierarchy comes from one rule: **every `Card`, at every
-nesting depth, uses the identical `bg-{tone}/10` opacity fill.** There is no
+nesting depth, uses the identical opacity fill for its tone.** There is no
 "level 1 card" / "level 2 card" token — depth alone produces the visual
-hierarchy, because stacking N identical 10%-opacity layers of the same tint
+hierarchy, because stacking N identical opacity layers of the same tint
 doesn't add linearly, it *compounds* (alpha-over compositing):
 
 ```
-effective_tint(N) = 1 − 0.9^N
+effective_tint(N) = 1 − (1 − tint)^N
 ```
 
-| Nesting depth (N) | Effective tint |
-|---|---|
-| 1 | 10.0% |
-| 2 | 19.0% |
-| 3 | 27.1% |
-| 4 | 34.4% |
-| 5 | 41.0% |
+`secondary`/`accent` use a 10% base tint; `primary` is the one exception at
+15% (see below for why):
+
+| Nesting depth (N) | secondary / accent (10%) | primary (15%) |
+|---|---|---|
+| 1 | 10.0% | 15.0% |
+| 2 | 19.0% | 27.8% |
+| 3 | 27.1% | 38.6% |
+| 4 | 34.4% | 47.8% |
+| 5 | 41.0% | 55.6% |
 
 The curve flattens out — each additional layer adds less than the one
 before — which is why depth 1–3 is the practically useful range; beyond that
@@ -92,17 +95,31 @@ the visual difference between consecutive depths gets hard to perceive.
 route's color section computes this same formula live (not hand-typed
 percentages) so the demo can never drift from the number above.
 
-### Cards tint with the dark variant, not the base color
+### `secondary`/`accent` tint with the dark variant, not the base color
 
-`Card`'s `tone` prop maps to `primary-dark`, `secondary`, or `accent-dark` —
-**not** raw `primary`/`accent` — even though `secondary` needs no separate
-dark variant (`#160029` already is one). This was a real bug, not a
-stylistic choice: the first version of this component tinted with the base
-colors, and at 4 levels of nesting the compounded background converged on a
-pastel close enough in perceived lightness to `text-secondary-light` that
-depth-4 text was nearly invisible (caught visually in the `/style-guide`
-nesting demo). Dark-variant bases converge on a visibly deeper tint instead,
-which stays reliably legible under plain `text-secondary` (the app's default
-near-black body text) at every practical nesting depth — **always use
-`text-secondary` for text placed directly on a `Card`, never
-`text-secondary-light`.**
+`secondary`/`accent` map to `secondary`/`accent-dark` — **not** raw
+`accent` — even though `secondary` needs no separate dark variant (`#160029`
+already is one). This was a real bug, not a stylistic choice: the first
+version of this component tinted with the base colors, and at 4 levels of
+nesting the compounded background converged on a pastel close enough in
+perceived lightness to `text-secondary-light` that depth-4 text was nearly
+invisible (caught visually in the `/style-guide` nesting demo). Dark-variant
+bases converge on a visibly deeper tint instead, which stays reliably
+legible under plain `text-secondary` (the app's default near-black body
+text) at every practical nesting depth — **always use `text-secondary` for
+text placed directly on a `Card`, never `text-secondary-light`.**
+
+### `primary` is the one tone that doesn't follow that rule
+
+`primary` uses `bg-primary-light/15 border-primary/40` instead of a
+dark-variant/10 tint — the same pairing `Section` already uses for its own
+background (see `04-components/cards.md`). Checked directly against the UI
+reference, which renders a primary-toned highlight as a pale warm-gold box,
+not a muddy tan — the dark-variant/10 formula (`bg-primary-dark/10`, an
+earlier version of this token) didn't match it. `primary-light` (`#FFF0B9`)
+is already pale, so diluting it to 10% over white is nearly invisible; 15%
+is the minimum that reads clearly, which is why `primary`'s nesting math
+uses a different base rate than `secondary`/`accent`. Accepted trade-off: a
+primary-toned box is meant as a one-off highlight (matching `Section`), not
+deep neutral hierarchy, so nesting it several levels deep isn't a real usage
+pattern the way `secondary`/`accent` nesting is.

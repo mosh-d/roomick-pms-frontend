@@ -25,7 +25,7 @@ export function CreateBrandStep({ onSuccess }: { onSuccess: (brandId: string) =>
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<CreateBrandFormValues>({ resolver: zodResolver(createBrandSchema) });
+  } = useForm<CreateBrandFormValues>({ resolver: zodResolver(createBrandSchema), mode: 'onBlur' });
 
   async function onSubmit(values: CreateBrandFormValues) {
     setFormError(null);

@@ -8,15 +8,20 @@ color math: `01-color.md`.
 `Card` has a `tone` prop (`primary | secondary | accent`) selecting *which*
 brand color it's tinted with — but no `level` or `depth` prop. Visual
 hierarchy comes purely from DOM nesting: put a `Card` inside a `Card` of the
-same tone, and the two `/10`-opacity layers compound (see `01-color.md`'s
-formula) into a visibly darker/richer fill, with zero extra markup or props
-beyond just... nesting the component.
+same tone, and the opacity layers compound (see `01-color.md`'s formula)
+into a visibly darker/richer fill, with zero extra markup or props beyond
+just... nesting the component.
 
-Each tone tints with its **dark-variant** hex (`primary-dark`, `secondary`,
-`accent-dark`) rather than the base color — see `01-color.md`'s "Cards tint
-with the dark variant, not the base color" for why (a real legibility bug,
-not a style preference). Text placed directly on a `Card` should use
-`text-secondary`, never `text-secondary-light`.
+`secondary`/`accent` tint with their **dark-variant** hex (`secondary`,
+`accent-dark`) rather than the base color — see `01-color.md`'s "`secondary`/
+`accent` tint with the dark variant, not the base color" for why (a real
+legibility bug, not a style preference). `primary` is the one tone that
+doesn't follow this: it uses `bg-primary-light/15 border-primary/40`,
+reusing `Section`'s own pale-gold pairing, checked directly against the UI
+reference (see `01-color.md`'s "`primary` is the one tone that doesn't
+follow that rule" for the full reasoning and why it's a 15% base tint, not
+10%). Text placed directly on a `Card` should use `text-secondary`, never
+`text-secondary-light`.
 
 ```tsx
 <Card tone="secondary">

@@ -14,6 +14,15 @@ class-validator DTOs; sharing one schema across that language/framework
 boundary is future work, not this phase.) See `/style-guide`'s
 `FormsSection` for a working `zodResolver` example.
 
+**Every `useForm()` call uses `mode: 'onBlur'`.** The default (`onSubmit`)
+means a field never shows its error until the whole form is submitted once
+— on a multi-field form that reads as "nothing happened" the first few
+times a user tabs past an invalid field. `onBlur` validates a field the
+moment it loses focus (then re-validates live once it's been touched, RHF's
+built-in behavior), so a mistake is flagged immediately, not after a failed
+submit. This isn't optional per-form — treat it as part of the pattern, not
+a per-field judgment call.
+
 ## Field anatomy — underline, not a bordered box
 
 Corrected after reviewing the actual product reference (`Roomick-UI.pdf`)
@@ -40,14 +49,24 @@ Account Form. Implemented with a padding/negative-margin pair
 (`px-3 -mx-3`) so the tinted box appears with zero layout shift: the
 padding is always reserved, only its background is conditional.
 
-Error state: `border-red-600` on the underline (overrides the focus color
-too) + one line of error text below, wired via `aria-describedby`.
+**Error state**: `border-red-600` on the underline (overrides the focus
+color too) + red error text on the icon row — **beside the info icon, not
+replacing it**. An earlier version of `Input` showed the icon *or* the
+error text, never both, which meant a field with a hint lost its hint the
+moment it also had an error. Both render together now: icon (if `hint` is
+set) then error text (if `error` is set) in the same row, `aria-describedby`
+pointing at whichever (or both) exist.
 
 ## Per-component notes
 
 - **`Input`** / **`Textarea`** — the underline anatomy above. Textarea
   keeps the same underline (not a full box) for consistency, just
-  multi-row.
+  multi-row. `Input` with `type="password"` gets a built-in show/hide
+  toggle (an eye icon inside the field, own `useState`) rather than relying
+  on the browser's native reveal control — Chrome's native one doesn't
+  reliably reappear after the field loses and regains focus, which read as
+  a real bug ("I can't see what I typed anymore"), not a cosmetic one.
+  Controlling it in-component means it behaves the same way every time.
 - **`Select`** — a hand-rolled listbox, not a native `<select>` (the
   reference's open-state styling isn't reproducible on a native element
   cross-browser). Two things distinguish it from a typical custom select:

@@ -34,6 +34,7 @@ export function VerifyEmailForm({
   } = useForm<VerifyEmailFormValues>({
     resolver: zodResolver(verifyEmailSchema),
     defaultValues: { token: initialToken },
+    mode: 'onBlur',
   });
 
   async function onSubmit(values: VerifyEmailFormValues) {

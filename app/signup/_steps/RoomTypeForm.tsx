@@ -34,6 +34,7 @@ export function RoomTypeForm({ branchId, onSuccess }: { branchId: string; onSucc
   } = useForm<RoomTypeFormValues>({
     resolver: zodResolver(roomTypeSchema),
     defaultValues: { adults: 2, children: 0, amenities: [] },
+    mode: 'onBlur',
   });
 
   async function onSubmit(values: RoomTypeFormValues) {

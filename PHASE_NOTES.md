@@ -107,3 +107,116 @@ Real Playwright run against the live backend + local Postgres (not a mock): fill
 - Real session strategy — still the same open item from Phase 3; a `/login` page existing doesn't change that decision, it just gives `authStore` a second caller.
 - A destination for a successful login (dashboard) — see decision 1.
 - Password reset — backend has no endpoint for it yet.
+
+## Phase 5 — Design-system corrections + wizard chrome + form UX (2026-08-23)
+
+Two batches of direct feedback in one sitting: visual/token corrections
+caught by inspecting the running `/style-guide`, then a much larger set
+caught by comparing the live `/signup` wizard against the actual
+`Roomick-UI.pdf` pages side by side (not the HTML text summary — the pages
+themselves).
+
+### Delivered — design tokens
+- `Card`'s `primary` tone now uses `bg-primary-light/15 border-primary/40`
+  (reusing `Section`'s own pairing) instead of `bg-primary-dark/10` — the
+  old formula rendered as a muddy tan; the reference shows a pale warm-gold
+  highlight. This is a deliberate exception to the dark-variant/10%-per-
+  layer rule the other two tones still follow (`primary`'s base tint is
+  15%, since `primary-light` is already too pale for 10% to read at all) —
+  see `01-color.md`.
+- `Button`'s hover states: `primary` `brightness-110` → `-125`, `secondary`
+  `brightness-125` → `-200`. Both were too subtle to read as "hovered" —
+  verified by actually hovering in a screenshot, not just picking bigger
+  numbers. `secondary` needed a much bigger jump for a specific reason:
+  `#160029` has a zero green channel, and `brightness()` is a linear
+  per-channel multiplier, so `-150` was still barely perceptible.
+- A global fix for the browser's native autofill background (Chrome's
+  default pale blue) bleeding through `Input`'s transparent styling —
+  two stacked techniques (transition-delay suppression + inset box-shadow
+  fallback) in `app/globals.css`, since the delay trick alone isn't
+  reliably honored across every Chromium version. **Not fully verified**:
+  headless Playwright doesn't replicate Chrome's real saved-profile
+  autofill, so this needs a real-browser check, not just a passing test.
+
+### Delivered — wizard chrome and form UX
+- `app/signup/_steps/WizardShell.tsx` — the wizard's persistent top bar
+  (wordmark, breadcrumb, Cancel) and left sidebar (4 numbered phases),
+  replicated from the reference's onboarding pages, which this wizard
+  previously had none of — every step rendered as a bare centered form,
+  which made the (already-correct) step separation invisible. This wizard's
+  ~10 internal `WizardStep`s collapse into the reference's 4 named phases
+  (`register`/`verify`/`auto-login` → "Owner Account Form",
+  `org-structure`/`create-brand` → "Organization Structure",
+  `branch-setup`/`room-type`/`rooms`/`staff-invite` → "Branch Setup",
+  `review`/`complete` → "Review") via `page.tsx`'s `PHASE_FOR_STEP` map —
+  the reference's own "Branch Setup" page bundles Property Details + Tax
+  Rules + Staff Invite into one phase the same way.
+- `Input` gained a built-in password show/hide toggle (own `useState`, an
+  eye icon inside the field) — fixes a real bug, not a nice-to-have: the
+  browser's native reveal icon didn't reliably reappear after the field
+  lost and regained focus, which read as "I typed a password and now I
+  can't see it anymore."
+- `Input`'s hint icon and error text now render **together**, not
+  either/or — a field with both a hint and a validation error used to lose
+  the hint icon the moment it had an error; now the red error text sits
+  beside the icon, matching the reference's per-field `ⓘ` anatomy.
+- Every `useForm()` call across the app now sets `mode: 'onBlur'` — errors
+  used to only appear after a failed full-form submit; now a field
+  validates the moment it loses focus.
+- `RegisterForm`'s Owner Account step now matches the reference field-for-
+  field where the backend allows: First Name + Last Name (not one "Full
+  Name" field) — joined into the single `name` string `RegisterDto`
+  actually wants right before the API call, so the DTO itself didn't need
+  to change.
+
+### Decisions & deviations
+1. **`Country` (shown on the reference's Owner Account Form) is not built.**
+   `RegisterDto` has no matching field at all — a fourth reference/backend
+   mismatch, same shape as the three already documented in Phases 2–3.
+   Worse than the others: the global `ValidationPipe`'s
+   `forbidNonWhitelisted: true` means sending an undeclared field doesn't
+   get silently dropped, it fails the whole request. Building a UI control
+   with nowhere real to send its value would be a half-finished
+   implementation, not a shortcut — omitted until the backend has a field
+   for it (a small, real addition if wanted: flag it rather than assume).
+2. **Group/Hotel Name and Subdomain still live on the Owner Account step**,
+   even though the reference's Step 1 mockup doesn't show either. Not an
+   oversight — `POST /auth/register` creates the tenant in this one call
+   and genuinely needs both then; there's no later point in the flow where
+   they could be collected instead without restructuring when the backend
+   creates the tenant record. Kept in their own "Organization" section
+   below "Owner account" rather than pretending they belong to Step 1's
+   reference layout.
+3. **The reference's top-right "Continue" button isn't duplicated in
+   `WizardShell`.** Every step already has its own working submit button;
+   wiring a second trigger for it would mean either threading a submit
+   handler up through every step component or faking a button with no way
+   to know if the current step's form is submit-ready. `Cancel` (a real
+   link home) is the one top-bar action simple enough to wire honestly, so
+   that's what's there.
+4. **The sidebar shows 4 flat phases, not the reference's nested per-branch
+   sub-list** (page 3 of the reference shows "Branch Setup" expanding into
+   multiple named branches, e.g. "Caritas Inn Ilasan" / "Caritas Inn
+   Lekki"). This wizard only creates one branch per signup pass (see Phase
+   3's decision 2 on one-room-type/one-batch) — replicating multi-branch
+   sidebar nesting for a flow that can't create a second branch yet would
+   be UI with nothing behind it.
+
+### Verified
+`npm run lint` and `npx tsc --noEmit` both clean. Full live Playwright
+re-run of the entire wizard end to end (register with split name fields →
+verify → auto-login → org structure → branch setup → room type → rooms →
+staff invite → review → finish) — still passes after all of the above.
+Separately verified: the password reveal toggle actually switches the
+input's `type`; a deliberately weak password shows the red error beside the
+`ⓘ` icon on blur (screenshotted, not just asserted); the wizard shell's
+sidebar highlights the correct phase at each step (screenshotted).
+Autofill fix could not be verified this way — see the note above.
+
+### Carried forward
+- `Country` field — needs a backend DTO change first; not attempted here.
+- Real building/floor/multi-branch UI — same "Full onboarding mode" item
+  from Phase 3, now additionally confirmed to need matching sidebar nesting
+  if it's ever built.
+- Verify the autofill fix against a real Chrome profile, not just headless
+  Playwright.

@@ -49,6 +49,7 @@ export function StaffInviteStep({
   } = useForm<StaffInviteFormValues>({
     resolver: zodResolver(staffInviteSchema),
     defaultValues: { invites: [{ email: '', roleId: '' }] },
+    mode: 'onBlur',
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'invites' });
 

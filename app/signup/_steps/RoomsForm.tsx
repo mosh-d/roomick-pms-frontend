@@ -36,7 +36,7 @@ export function RoomsForm({
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<RoomsBulkFormValues>({ resolver: zodResolver(roomsBulkSchema) });
+  } = useForm<RoomsBulkFormValues>({ resolver: zodResolver(roomsBulkSchema), mode: 'onBlur' });
 
   async function onSubmit(values: RoomsBulkFormValues) {
     setFormError(null);

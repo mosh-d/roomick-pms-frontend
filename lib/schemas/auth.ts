@@ -7,6 +7,12 @@ import { z } from 'zod';
  * the same inputs the server would, before a round-trip. Kept in sync by
  * hand (no shared-types package between the two repos yet) — if the DTO
  * changes, this needs a matching edit.
+ *
+ * One deliberate exception: the DTO's `name` is a single field, but the UI
+ * reference (Owner Account Form) shows separate First Name/Last Name
+ * inputs — split here for the form, joined back into one `name` string in
+ * RegisterForm's submit handler right before the API call. The DTO itself
+ * isn't changing; this is presentation only.
  */
 export const registerSchema = z.object({
   subdomain: z
@@ -17,7 +23,10 @@ export const registerSchema = z.object({
     .max(63, 'At most 63 characters')
     .regex(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/, 'Lowercase letters, numbers, and inner hyphens only'),
   groupName: z.string().trim().min(2, 'Required').max(200),
-  name: z.string().trim().min(2, 'Required').max(200),
+  // Max 99 each, not 100 — combined with the joining space, guarantees the
+  // backend's 200-char `name` limit can never be exceeded (100+1+100=201).
+  firstName: z.string().trim().min(1, 'Required').max(99),
+  lastName: z.string().trim().min(1, 'Required').max(99),
   email: z.string().trim().toLowerCase().email('Enter a valid email').max(320),
   // class-validator's @IsStrongPassword({ minSymbols: 0 }) — a symbol is
   // welcome but never required, matched here with the same 3 regex checks.

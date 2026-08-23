@@ -13,9 +13,22 @@ import { registerSchema, type RegisterFormValues } from '@/lib/schemas/auth';
 export type RegisterResponse = { tenantId: string; userId: string; subdomain: string; verificationToken: string };
 
 /**
- * Step 1 of the onboarding wizard (Roomick-UI.pdf) — Owner Account Form.
- * Built against the real backend DTO (auth/dto/register.dto.ts), not the
- * reference doc's payload example — they disagree (see PHASE_NOTES.md).
+ * Step 1 of the onboarding wizard (Roomick-UI.pdf "Owner Account Form") —
+ * two-column field layout (First/Last Name, Email/Phone) matching the
+ * reference exactly. Built against the real backend DTO
+ * (auth/dto/register.dto.ts), not the reference doc's payload example —
+ * they disagree (see PHASE_NOTES.md).
+ *
+ * The reference's Step 1 has no Group/Hotel Name or Subdomain field —
+ * those only appear here (in an "Organization" section below Owner
+ * Account) because `POST /auth/register` genuinely requires both in the
+ * same call to create the tenant; there's no later point in the flow where
+ * they could be collected instead without restructuring the backend's
+ * registration sequence. A `Country` field is also on the reference's Step
+ * 1 and isn't built here — `RegisterDto` has no matching field for it at
+ * all (a fourth reference/backend field mismatch), and the global
+ * `ValidationPipe`'s `forbidNonWhitelisted: true` means sending it would
+ * make the request fail outright, not just get silently ignored.
  *
  * `onSuccess` also hands back the raw email/password the owner just typed —
  * not stored anywhere past this step, just threaded forward in memory so
@@ -35,14 +48,22 @@ export function RegisterForm({
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterFormValues>({ resolver: zodResolver(registerSchema) });
+  } = useForm<RegisterFormValues>({ resolver: zodResolver(registerSchema), mode: 'onBlur' });
 
   async function onSubmit(values: RegisterFormValues) {
     setFormError(null);
     try {
       const result = await apiFetch<RegisterResponse>('/auth/register', {
         method: 'POST',
-        body: { ...values, phone: values.phone || undefined, isDemo },
+        body: {
+          subdomain: values.subdomain,
+          groupName: values.groupName,
+          name: `${values.firstName} ${values.lastName}`.trim(),
+          email: values.email,
+          password: values.password,
+          phone: values.phone || undefined,
+          isDemo,
+        },
       });
       onSuccess(result, { email: values.email, password: values.password });
     } catch (error) {
@@ -64,8 +85,14 @@ export function RegisterForm({
           </p>
         ) : null}
         <Section label="Owner account">
-          <Input label="Full Name" {...register('name')} error={errors.name?.message} />
-          <Input label="Email" type="email" {...register('email')} error={errors.email?.message} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+            <Input label="First Name" {...register('firstName')} error={errors.firstName?.message} />
+            <Input label="Last Name" {...register('lastName')} error={errors.lastName?.message} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+            <Input label="Email" type="email" {...register('email')} error={errors.email?.message} />
+            <Input label="Phone" {...register('phone')} error={errors.phone?.message} />
+          </div>
           <Input
             label="Password"
             type="password"
@@ -73,14 +100,13 @@ export function RegisterForm({
             {...register('password')}
             error={errors.password?.message}
           />
-          <Input label="Phone" {...register('phone')} error={errors.phone?.message} />
         </Section>
 
         <Section label="Organization">
           <Input label="Group / Hotel Name" {...register('groupName')} error={errors.groupName?.message} />
           <Input
             label="Subdomain"
-            hint="Your account's address — e.g. acme → acme.roomick.com"
+            hint="A short, unique id for your account — you'll use it to log in (e.g. acme)"
             {...register('subdomain')}
             error={errors.subdomain?.message}
           />

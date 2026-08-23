@@ -53,6 +53,7 @@ export function BranchSetupForm({ brandId, onSuccess }: { brandId: string; onSuc
   } = useForm<BranchSetupFormValues>({
     resolver: zodResolver(branchSetupSchema),
     defaultValues: { checkInTime: '14:00', checkOutTime: '11:00' },
+    mode: 'onBlur',
   });
 
   async function onSubmit(values: BranchSetupFormValues) {
