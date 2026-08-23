@@ -731,3 +731,58 @@ blur.
   still doesn't let you change them.
 - Email-global-uniqueness discussion, encryption at rest — still deferred,
   unchanged.
+
+## Phase 11 — Country-derived Timezone/Currency, Branch Setup's Country as a real dropdown (2026-08-23)
+
+### Delivered
+- **`BranchSetupForm`'s Country field is now a real dropdown** (`Select` +
+  `lib/countries.ts`, the same static list `RegisterForm`'s Country field
+  already uses), not free text — caught directly: typing "Nigeria" into
+  the old free-text field failed `branchSetupSchema`'s 2-letter-code
+  validation, a real usability trap for anyone who doesn't already know to
+  type "NG".
+- **Timezone and Currency removed from this form entirely** — both are now
+  derived silently from whichever Country is picked
+  (`lib/timezones.ts`/`lib/currencies.ts`, two new static per-country
+  lookup tables, same "small static dataset, no network dependency"
+  pattern as `lib/countries.ts`) and written straight into the form's state
+  via `setValue`, with no input for either. Direct request: asking
+  separately for two things a country selection already implies was
+  judged unnecessary friction, matching the same philosophy behind the
+  auto-suggested subdomain.
+
+### Decisions & deviations
+1. **Currency is a safe silent default for nearly every country** — one
+   official currency each (eurozone members all map to `EUR`); no real
+   accuracy trade-off is being made by not showing a field for it.
+2. **Timezone is a genuine, accepted trade-off, not a safe one** —
+   confirmed directly against the schema (`Branch.timezone`'s own comment:
+   "IANA tz — night audit depends on it") that this is operationally
+   load-bearing, not cosmetic, and that it's correctly modeled at the
+   *branch* level, not brand or tenant (`grep`ped the whole schema — no
+   `timezone` column exists anywhere except `Branch`), so one brand with
+   properties in different real-world timezones was never at risk from
+   this change. A multi-timezone country (the US, Russia, Canada, ...)
+   still gets one representative zone with no way to correct it from this
+   screen — accepted as-is, a real product decision made explicitly, not
+   a bug. `defaultTimezoneFor`/`defaultCurrencyFor` both have confirmed
+   100% coverage against every code in `lib/countries.ts` (scripted check,
+   not eyeballed) — the "derive silently" design only holds together if
+   there's no code that quietly falls through to an empty value.
+3. **`branchSetupSchema`'s `timezone`/`currency` fields are unchanged** —
+   still required strings the backend DTO expects; only the *UI* for them
+   was removed. Validation still runs on submit exactly as before, it's
+   just now certain to already be filled in by the time Country itself
+   validates as chosen (`country` is a required, non-optional field in the
+   same schema).
+
+### Verified
+`npm run lint` and `npx tsc --noEmit` clean. Live Playwright check:
+selecting a country writes both a correctly-grouped display value nowhere
+visible on screen but a real `timezone`/`currency` pair into the saved
+draft (`Africa/Lagos`/`NGN` for Nigeria, confirmed by reading
+`wizardStore`'s persisted state directly, not just trusting the code) —
+and the form still advances cleanly with zero validation errors on submit.
+
+### Carried forward
+- Everything else already carried forward from Phase 10 — unchanged.

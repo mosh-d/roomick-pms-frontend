@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Section } from '@/components/ui/Section';
@@ -9,6 +10,9 @@ import { Button } from '@/components/ui/Button';
 import { branchSetupSchema, type BranchSetupFormValues } from '@/lib/schemas/onboarding';
 import { useWizardStore } from '@/lib/store/wizardStore';
 import { useAutosaveDraft } from '@/lib/useAutosaveDraft';
+import { COUNTRIES } from '@/lib/countries';
+import { defaultTimezoneFor } from '@/lib/timezones';
+import { defaultCurrencyFor } from '@/lib/currencies';
 
 const CATEGORY_OPTIONS = [
   { value: 'hotel', label: 'Hotel' },
@@ -32,11 +36,21 @@ const CATEGORY_OPTIONS = [
  * branches` call here. That call only happens once, as part of Review's
  * "Finish" chain, once a real `brandId` actually exists.
  *
- * Country/timezone/currency are free-text fields with format hints, not
- * proper pickers (a full IANA-timezone or ISO-4217-currency dropdown is
- * real data-entry work deferred to later — see PHASE_NOTES.md); check-in/
- * check-out use a native `<input type="time">` via Input's HTML passthrough
- * rather than a custom time-picker component.
+ * Country is a real dropdown (`lib/countries.ts`, the same static ISO
+ * 3166-1 list `RegisterForm`'s Country field already uses — reused, not a
+ * second copy). Timezone and currency have **no field in this form at
+ * all** — both are derived silently from the chosen Country
+ * (`lib/timezones.ts`, `lib/currencies.ts`) and written straight into RHF
+ * state via `setValue`, direct request: asking separately for two things a
+ * country selection already implies was judged unnecessary friction.
+ * Currency is a safe silent default for nearly every country (one official
+ * currency each); timezone is a genuine, accepted compromise for
+ * multi-zone countries (a US hotel outside `America/New_York` gets the
+ * "wrong" one with no way to correct it from this screen — the DB column
+ * is required and night-audit-critical, so it still needs *some* valid
+ * value, just not a user-facing field for it here). Check-in/check-out use
+ * a native `<input type="time">` via Input's HTML passthrough rather than
+ * a custom time-picker component.
  */
 export function BranchSetupForm({ onNext }: { onNext: () => void }) {
   const branch = useWizardStore((state) => state.branch);
@@ -46,6 +60,7 @@ export function BranchSetupForm({ onNext }: { onNext: () => void }) {
     handleSubmit,
     control,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<BranchSetupFormValues>({
     resolver: zodResolver(branchSetupSchema),
@@ -57,6 +72,16 @@ export function BranchSetupForm({ onNext }: { onNext: () => void }) {
   // submitted values — a reload mid-edit resumes from here instead of
   // losing whatever hadn't been submitted yet. See useAutosaveDraft.ts.
   useAutosaveDraft(watch, (values) => patch({ branch: values }));
+
+  // Both derived silently from Country, no field of their own — see this
+  // file's header comment. Runs on every Country change, unconditionally
+  // (no "has the owner edited this" tracking needed, since there's nothing
+  // for them to edit).
+  const country = watch('country');
+  useEffect(() => {
+    setValue('timezone', defaultTimezoneFor(country) ?? '', { shouldValidate: false });
+    setValue('currency', defaultCurrencyFor(country) ?? '', { shouldValidate: false });
+  }, [country, setValue]);
 
   function onSubmit(values: BranchSetupFormValues) {
     patch({ branch: values });
@@ -87,28 +112,24 @@ export function BranchSetupForm({ onNext }: { onNext: () => void }) {
         <Input label="Street" {...register('street')} error={errors.street?.message} />
         <Input label="City" {...register('city')} error={errors.city?.message} />
         <Input label="State / Region" {...register('state')} error={errors.state?.message} />
-        <Input
-          label="Country"
-          hint="ISO 3166-1 alpha-2 code, e.g. NG, US, GB"
-          {...register('country')}
-          error={errors.country?.message}
+        <Controller
+          control={control}
+          name="country"
+          render={({ field }) => (
+            <Select
+              name="country"
+              label="Country"
+              options={COUNTRIES}
+              value={field.value || null}
+              onChange={field.onChange}
+              error={errors.country?.message}
+            />
+          )}
         />
         <Input label="Postal Code" {...register('zip')} error={errors.zip?.message} />
       </Section>
 
       <Section label="Operations">
-        <Input
-          label="Timezone"
-          hint="IANA timezone, e.g. Africa/Lagos"
-          {...register('timezone')}
-          error={errors.timezone?.message}
-        />
-        <Input
-          label="Currency"
-          hint="ISO 4217 code, e.g. NGN, USD"
-          {...register('currency')}
-          error={errors.currency?.message}
-        />
         <Input label="Check-in Time" type="time" {...register('checkInTime')} error={errors.checkInTime?.message} />
         <Input label="Check-out Time" type="time" {...register('checkOutTime')} error={errors.checkOutTime?.message} />
       </Section>
