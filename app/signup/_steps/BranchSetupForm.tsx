@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { branchSetupSchema, type BranchSetupFormValues } from '@/lib/schemas/onboarding';
-import { useWizardStore } from '@/lib/store/wizardStore';
+import { useWizardStore, type BranchDraft } from '@/lib/store/wizardStore';
 import { useAutosaveDraft } from '@/lib/useAutosaveDraft';
 import { COUNTRIES } from '@/lib/countries';
 import { defaultTimezoneFor, timezoneOptionsFor } from '@/lib/timezones';
@@ -22,19 +22,48 @@ const CATEGORY_OPTIONS = [
   { value: 'hostel', label: 'Hostel' },
 ];
 
+export function emptyBranchDraft(): BranchDraft {
+  return {
+    localId: crypto.randomUUID(),
+    id: null,
+    name: '',
+    street: '',
+    city: '',
+    state: '',
+    country: '',
+    zip: '',
+    timezone: '',
+    currency: '',
+    checkInTime: '14:00',
+    checkOutTime: '11:00',
+    category: undefined,
+    roomTypes: [],
+    buildings: [],
+    rooms: [],
+  };
+}
+
 /**
- * Onboarding step 3 (Roomick-UI.pdf "Branch Setup") — the physical
- * property. Built directly against property/dto/branch.dto.ts's
- * CreateBranchDto + AddressDto — no star rating (not a DTO field despite
- * the reference image showing one), no tax-rule/staff-invite sections here
- * (staff invite is its own later step; tax rules have no backend support
- * at all yet — see PHASE_NOTES.md).
+ * Onboarding step (Roomick-UI.pdf "Branch Setup") — the physical property.
+ * Built directly against property/dto/branch.dto.ts's CreateBranchDto +
+ * AddressDto — no star rating (not a DTO field despite the reference image
+ * showing one), no tax-rule/staff-invite sections here (staff invite is
+ * its own later step; tax rules have no backend support at all yet — see
+ * PHASE_NOTES.md).
  *
- * Purely local now, like every step from Organization Structure through
- * Rooms/Staff Invite (see PHASE_NOTES.md's "deferred submission" entry):
- * validates, saves to `wizardStore`, advances — no `POST /brands/:id/
- * branches` call here. That call only happens once, as part of Review's
- * "Finish" chain, once a real `brandId` actually exists.
+ * One of potentially several branches now (`wizardStore.branches`, "Full"
+ * onboarding mode — see PHASE_NOTES.md): this component always edits
+ * whichever branch `activeBranchLocalId` points at, creating a fresh one
+ * on mount if there's no active branch yet (the very first time this step
+ * is reached). Adding a *second* branch is triggered from `WizardShell`'s
+ * sidebar tree, not from a button on this form — the tree is where every
+ * other "+" affordance in the Full-mode wizard already lives.
+ *
+ * Purely local, like every step from Organization Structure onward (see
+ * PHASE_NOTES.md's "deferred submission" entry): validates, saves to
+ * `wizardStore`, advances — no `POST /brands/:id/branches` call here.
+ * That call only happens once per branch, as part of Review's "Finish"
+ * chain, once a real `brandId` actually exists.
  *
  * Country is a real dropdown (`lib/countries.ts`, the same static ISO
  * 3166-1 list `RegisterForm`'s Country field already uses — reused, not a
@@ -59,8 +88,18 @@ const CATEGORY_OPTIONS = [
  * time-picker component.
  */
 export function BranchSetupForm({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
-  const branch = useWizardStore((state) => state.branch);
+  const activeBranchLocalId = useWizardStore((state) => state.activeBranchLocalId);
+  const branches = useWizardStore((state) => state.branches);
   const patch = useWizardStore((state) => state.patch);
+  const branch = branches.find((b) => b.localId === activeBranchLocalId);
+
+  useEffect(() => {
+    if (branch) return;
+    const draft = emptyBranchDraft();
+    patch({ branches: [...branches, draft], activeBranchLocalId: draft.localId });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap-once guard, see comment above
+  }, [branch]);
+
   const {
     register,
     handleSubmit,
@@ -77,7 +116,10 @@ export function BranchSetupForm({ onBack, onNext }: { onBack: () => void; onNext
   // Mirrors every keystroke into wizardStore (debounced), not just
   // submitted values — a reload mid-edit resumes from here instead of
   // losing whatever hadn't been submitted yet. See useAutosaveDraft.ts.
-  useAutosaveDraft(watch, (values) => patch({ branch: values }));
+  useAutosaveDraft(watch, (values) => {
+    if (!branch) return;
+    patch({ branches: branches.map((b) => (b.localId === branch.localId ? { ...b, ...values } : b)) });
+  });
 
   // Currency: derived silently, no field of its own — see this file's
   // header comment. Timezone: only *pre-selects* here — the field itself
@@ -93,8 +135,10 @@ export function BranchSetupForm({ onBack, onNext }: { onBack: () => void; onNext
   }, [country, setValue]);
   const timezoneOptions = timezoneOptionsFor(country);
 
+  if (!branch) return null;
+
   function onSubmit(values: BranchSetupFormValues) {
-    patch({ branch: values });
+    patch({ branches: branches.map((b) => (b.localId === branch!.localId ? { ...b, ...values } : b)) });
     onNext();
   }
 

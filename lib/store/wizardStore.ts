@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { BrandMode } from '@/components/ui/BrandRadioCard';
 import type { RegisterFormValues } from '@/lib/schemas/auth';
-import type { BranchSetupFormValues, RoomTypeFormValues, RoomsBulkFormValues } from '@/lib/schemas/onboarding';
+import type { BranchSetupFormValues, RoomTypeFormValues, BuildingFormValues } from '@/lib/schemas/onboarding';
 
 export type SignupMode = 'demo' | 'real';
 export type WizardStep =
@@ -11,6 +11,7 @@ export type WizardStep =
   | 'auto-login'
   | 'org-structure'
   | 'branch-setup'
+  | 'buildings-floors'
   | 'room-type'
   | 'rooms'
   | 'staff-invite'
@@ -22,9 +23,6 @@ export type WizardStep =
 // interfaces — importing them means this file can't quietly drift out of
 // sync with the schema that actually validates the data.
 export type OwnerAccountDraft = Omit<RegisterFormValues, 'password'>;
-export type BranchDraft = BranchSetupFormValues;
-export type RoomTypeDraft = RoomTypeFormValues;
-export type RoomsDraft = RoomsBulkFormValues;
 export interface StaffInviteDraft {
   email: string;
   roleId: string;
@@ -33,6 +31,53 @@ export interface StaffInviteDraft {
 export interface InvitedStaff {
   email: string;
   roleName: string;
+}
+
+// `localId` (client-generated, `crypto.randomUUID()`) is what the sidebar
+// tree, React `key`s, and cross-references between drafts (a room card
+// pointing at "this floor" / "this room type") use before a node has a real
+// backend id. `id` starts `null` and is written the moment Finish's chain
+// actually creates that node — the same "id set on success, so a retry
+// after a partial failure only creates what's still missing" pattern
+// Phase 7 established for the single-branch case, now per-node.
+export interface RoomTypeDraft extends RoomTypeFormValues {
+  localId: string;
+  id: string | null;
+}
+
+export interface FloorDraft {
+  localId: string;
+  id: string | null;
+  floorNumber: number;
+  label?: string;
+}
+
+export interface BuildingDraft extends Pick<BuildingFormValues, 'name' | 'views'> {
+  localId: string;
+  id: string | null;
+  floors: FloorDraft[];
+}
+
+// A single room card — "Add room" appends one directly; "Generate" (the
+// Setup Pattern modal) computes and appends many at once. Both end up as
+// plain entries in the same list; nothing downstream needs to know which
+// path created a given card. Grouped by (floorLocalId, roomTypeLocalId,
+// view) at Finish time into `rooms/bulk` calls — see ReviewStep.
+export interface RoomCardDraft {
+  localId: string;
+  id: string | null;
+  floorLocalId: string;
+  roomTypeLocalId: string;
+  number: string;
+  view?: string;
+}
+
+export interface BranchDraft extends BranchSetupFormValues {
+  localId: string;
+  id: string | null;
+  roomTypes: RoomTypeDraft[];
+  buildings: BuildingDraft[];
+  rooms: RoomCardDraft[];
 }
 
 export interface WizardData {
@@ -66,26 +111,22 @@ export interface WizardData {
   // but never sent to the backend until Review's "Finish" fires the whole
   // chain at once. Going back to re-edit any of these is just changing
   // local state; nothing has been created on the backend to conflict with.
+  //
+  // One head brand per signup (unchanged, still singular) — multiple
+  // *branches* under it, each carrying its own room types/buildings/rooms.
+  // `activeBranchLocalId`/`activeBuildingLocalId`/`activeFloorLocalId` track
+  // which node the wizard is currently editing, driving both the sidebar
+  // tree's highlight and which branch's forms are actually shown — set
+  // whenever the sidebar or an "Add"/"Continue" action moves focus.
   brandMode: BrandMode | null;
-  branch: BranchDraft | null;
-  roomType: RoomTypeDraft | null;
-  rooms: RoomsDraft | null;
+  branches: BranchDraft[];
+  activeBranchLocalId: string | null;
+  activeBuildingLocalId: string | null;
+  activeFloorLocalId: string | null;
   staffInvites: StaffInviteDraft[];
 
   // Set only once Review's "Finish" actually runs the submission chain.
-  // Tracked individually (not just a single "submitted" boolean) so a
-  // failure partway through — e.g. branch creation succeeds but room-type
-  // creation fails — can be retried without re-running the steps that
-  // already succeeded.
   brandId: string | null;
-  branchId: string | null;
-  roomTypeId: string | null;
-  createdRoomCount: number;
-  // `invitedStaff` is populated at StaffInviteStep time already (resolved
-  // role names for Review's preview, before anything is actually sent) —
-  // this flag is what actually distinguishes "previewed" from "sent",
-  // since `invitedStaff.length > 0` can no longer be used for that once
-  // it's set before submission too.
   invitedStaff: InvitedStaff[];
   staffInvitesSent: boolean;
 }
@@ -100,14 +141,12 @@ const initialData: WizardData = {
   emailVerified: false,
   loggedIn: false,
   brandMode: null,
-  branch: null,
-  roomType: null,
-  rooms: null,
+  branches: [],
+  activeBranchLocalId: null,
+  activeBuildingLocalId: null,
+  activeFloorLocalId: null,
   staffInvites: [],
   brandId: null,
-  branchId: null,
-  roomTypeId: null,
-  createdRoomCount: 0,
   invitedStaff: [],
   staffInvitesSent: false,
 };

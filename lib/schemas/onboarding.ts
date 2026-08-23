@@ -42,7 +42,7 @@ export const roomTypeSchema = z.object({
   // number input's string value before this schema ever sees it — plain
   // z.number(), not z.coerce.number(), so useForm's generic and the
   // resolver's inferred type agree (coerce's input/output type split
-  // otherwise breaks RHF's <T> inference; see RoomsForm/roomsBulkSchema).
+  // otherwise breaks RHF's <T> inference; see setupPatternSchema below).
   baseRate: z.number().positive('Must be greater than 0'),
   adults: z.number().int().min(1).max(20),
   children: z.number().int().min(0).max(20),
@@ -52,6 +52,52 @@ export const roomTypeSchema = z.object({
 });
 
 export type RoomTypeFormValues = z.infer<typeof roomTypeSchema>;
+
+/**
+ * Mirrors property/dto/structure.dto.ts's CreateBuildingDto + CreateFloorDto
+ * — one building at a time (`BuildingsFloorsForm`'s "+ Add building" stacks
+ * another). Floors are a plain count (`CreateFloorDto.floorNumber` is just
+ * an int, `label` optional and unused here), not individually authored —
+ * matches the reference mockup exactly: a "Number of floors" stepper, no
+ * per-floor name field anywhere. `isMultiFloor: false` means exactly one
+ * floor (floorNumber 0), skipping the stepper.
+ */
+export const buildingSchema = z.object({
+  name: z.string().trim().min(1, 'Required').max(100),
+  isMultiFloor: z.boolean(),
+  floorCount: z.number().int().min(1).max(200),
+  views: z.array(z.string()).optional(),
+});
+
+export type BuildingFormValues = z.infer<typeof buildingSchema>;
+
+/** One room card in `RoomsForm`'s list — `roomTypeLocalId` refs a `RoomTypeDraft` already configured for this branch, not a real backend id yet. */
+export const roomCardSchema = z.object({
+  roomTypeLocalId: z.string().min(1, 'Choose a room type'),
+  number: z.string().trim().min(1, 'Required').max(20),
+  view: z.string().trim().max(50).optional().or(z.literal('')),
+});
+
+export type RoomCardFormValues = z.infer<typeof roomCardSchema>;
+
+/**
+ * The "Setup Pattern" modal (`RoomsForm`'s "Generate") — computes a batch of
+ * `RoomCardDraft`s client-side rather than calling the backend directly
+ * (still deferred submission, same as everything else from Organization
+ * Structure onward). `startingNumber` is numeric, not the free-text
+ * `Room.number` shape the rest of this app uses — an increment *pattern*
+ * (+1, +2, ...) only makes sense arithmetically, so this field is
+ * deliberately narrower than a general room number.
+ */
+export const setupPatternSchema = z.object({
+  roomTypeLocalId: z.string().min(1, 'Choose a room type'),
+  startingNumber: z.number().int().min(0),
+  count: z.number().int().min(1).max(500),
+  increment: z.number().int().min(1).max(100),
+  view: z.string().trim().max(50).optional().or(z.literal('')),
+});
+
+export type SetupPatternFormValues = z.infer<typeof setupPatternSchema>;
 
 /** Mirrors users/dto/bulk-invite.dto.ts's BulkInviteDto + InviteRowDto. roleId comes from GET /auth/roles, not a free-text role name. */
 export const staffInviteSchema = z.object({
@@ -67,24 +113,3 @@ export const staffInviteSchema = z.object({
 });
 
 export type StaffInviteFormValues = z.infer<typeof staffInviteSchema>;
-
-/**
- * Mirrors property/dto/rooms.dto.ts's BulkCreateRoomsDto — the `range`
- * variant only (numeric from/to, e.g. 301-320). The DTO also supports an
- * explicit `numbers` array; not built here, same MVP-scoping reasoning as
- * skipping buildings/floors (see PHASE_NOTES.md) — the range path covers
- * the common case and floorId is intentionally omitted (the backend
- * auto-creates a hidden default building/floor, its own documented "Rooms
- * Only" onboarding mode).
- */
-export const roomsBulkSchema = z
-  .object({
-    // Plain z.number() — see roomTypeSchema's comment on why not z.coerce.number().
-    from: z.number().int().min(0),
-    to: z.number().int().min(0).max(99999),
-    prefix: z.string().trim().max(10).optional().or(z.literal('')),
-    view: z.string().trim().max(50).optional().or(z.literal('')),
-  })
-  .refine((data) => data.to >= data.from, { message: 'Must be ≥ the starting number', path: ['to'] });
-
-export type RoomsBulkFormValues = z.infer<typeof roomsBulkSchema>;

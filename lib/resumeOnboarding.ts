@@ -1,6 +1,6 @@
 import { apiFetch } from './api';
 import type { AuthUser } from './store/authStore';
-import type { WizardData, WizardStep } from './store/wizardStore';
+import type { WizardData, WizardStep, BranchDraft } from './store/wizardStore';
 import type { BranchSetupFormValues } from './schemas/onboarding';
 
 interface OnboardingStatus {
@@ -40,12 +40,18 @@ interface OnboardingStatus {
  * backend never stored them separately, there's no way to recover the
  * original split exactly.
  *
- * The `rooms` draft is a placeholder (`{ from: 1, to: roomCount }`), not a
- * reconstruction of whatever range actually created those rooms — Review
- * only uses it to compute a display count and to satisfy its "did every
- * step finish" render guard; Finish's own `createdRoomCount === 0` check
- * (already populated here) is what actually prevents re-creating rooms, so
- * the placeholder's from/to numbers are never sent to the backend.
+ * **Known gap, carried forward on purpose (see PHASE_NOTES.md's "Full"
+ * onboarding mode entry)**: this only ever reconstructs *one* branch, with
+ * no buildings/floors and no individual room cards — `GET /tenants/me/
+ * onboarding-status` (built before buildings/floors/multi-branch existed)
+ * only reports a single branch/room-type pair and a room *count*, not a
+ * tree. A returning owner past the Rooms step resumes onto Review with
+ * that branch's room type showing but an empty Buildings section and a
+ * room count of 0 locally, even though real rooms exist on the backend —
+ * cosmetically wrong, not functionally unsafe: Finish's per-node
+ * `if (!id)` guards mean nothing gets recreated, since no local room cards
+ * exist to (re)submit in the first place. Extending the probe endpoint to
+ * return the full tree is real, separate backend work, not attempted here.
  */
 export async function resumeOnboardingDraft(
   accessToken: string,
@@ -76,16 +82,18 @@ export async function resumeOnboardingDraft(
   };
 
   if (!status.brand) {
-    return { ...patch, step: 'org-structure' };
+    return { ...patch, step: 'org-structure', branches: [] };
   }
   patch.brandMode = status.tenant.brandMode;
   patch.brandId = status.brand.id;
 
   if (!status.branch) {
-    return { ...patch, step: 'branch-setup' };
+    return { ...patch, step: 'branch-setup', branches: [] };
   }
-  patch.branchId = status.branch.id;
-  patch.branch = {
+
+  const branch: BranchDraft = {
+    localId: crypto.randomUUID(),
+    id: status.branch.id,
     name: status.branch.name,
     // The DB column is a free-form VARCHAR (schema.prisma's own comment
     // notes it's a convention, not a real enum) — cast, not validated,
@@ -101,27 +109,29 @@ export async function resumeOnboardingDraft(
     currency: status.branch.currency,
     checkInTime: status.branch.checkInTime,
     checkOutTime: status.branch.checkOutTime,
+    roomTypes: [],
+    buildings: [],
+    rooms: [],
   };
+  patch.branches = [branch];
+  patch.activeBranchLocalId = branch.localId;
 
   if (!status.roomType) {
-    return { ...patch, step: 'room-type' };
+    return { ...patch, step: 'branch-setup' };
   }
-  patch.roomTypeId = status.roomType.id;
-  patch.roomType = {
-    name: status.roomType.name,
-    baseRate: status.roomType.baseRate,
-    adults: status.roomType.capacity.adults,
-    children: status.roomType.capacity.children,
-    bedType: status.roomType.bedType ?? '',
-    sizeM2: status.roomType.sizeM2 ?? undefined,
-    amenities: status.roomType.amenities,
-  };
-
-  if (status.roomCount === 0) {
-    return { ...patch, step: 'rooms' };
-  }
-  patch.createdRoomCount = status.roomCount;
-  patch.rooms = { from: 1, to: status.roomCount };
+  branch.roomTypes = [
+    {
+      localId: crypto.randomUUID(),
+      id: status.roomType.id,
+      name: status.roomType.name,
+      baseRate: status.roomType.baseRate,
+      adults: status.roomType.capacity.adults,
+      children: status.roomType.capacity.children,
+      bedType: status.roomType.bedType ?? '',
+      sizeM2: status.roomType.sizeM2 ?? undefined,
+      amenities: status.roomType.amenities,
+    },
+  ];
 
   const step: WizardStep = 'review';
   return { ...patch, step };

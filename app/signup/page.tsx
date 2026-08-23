@@ -9,22 +9,22 @@ import { RegisterForm } from './_steps/RegisterForm';
 import { VerifyEmailForm } from './_steps/VerifyEmailForm';
 import { AutoLoginStep } from './_steps/AutoLoginStep';
 import { OrgStructureForm } from './_steps/OrgStructureForm';
-import { BranchSetupForm } from './_steps/BranchSetupForm';
+import { BranchSetupForm, emptyBranchDraft } from './_steps/BranchSetupForm';
+import { BuildingsFloorsForm } from './_steps/BuildingsFloorsForm';
 import { RoomTypeForm } from './_steps/RoomTypeForm';
 import { RoomsForm } from './_steps/RoomsForm';
 import { StaffInviteStep } from './_steps/StaffInviteStep';
 import { ReviewStep } from './_steps/ReviewStep';
-import { WizardShell, type WizardPhaseKey } from './_steps/WizardShell';
-import { useWizardStore, type WizardStep, type SignupMode } from '@/lib/store/wizardStore';
+import { WizardShell, type WizardPhaseKey, type BranchTreeFocus } from './_steps/WizardShell';
+import { useWizardStore, type WizardStep, type SignupMode, type BranchDraft } from '@/lib/store/wizardStore';
 import { useAuthStore } from '@/lib/store/authStore';
 import { useHasHydrated } from '@/lib/useHasHydrated';
 
 /**
- * Maps this wizard's ~10 fine-grained internal steps onto the 4 named
- * phases the reference's sidebar actually shows — its own "Branch Setup"
- * page bundles Property Details + Tax Rules + Staff Invite into one phase,
- * for example, so several internal steps legitimately collapse into one
- * sidebar entry. See WizardShell.tsx's header comment.
+ * Maps this wizard's internal steps onto the 4 named phases the
+ * reference's sidebar actually shows — see WizardShell.tsx's header
+ * comment for why "Branch Setup" specifically is no longer a single flat
+ * row (it's a real expandable tree now that "Full" onboarding mode exists).
  */
 const PHASE_FOR_STEP: Record<WizardStep, WizardPhaseKey> = {
   register: 'owner',
@@ -32,6 +32,7 @@ const PHASE_FOR_STEP: Record<WizardStep, WizardPhaseKey> = {
   'auto-login': 'owner',
   'org-structure': 'org',
   'branch-setup': 'branch',
+  'buildings-floors': 'branch',
   'room-type': 'branch',
   rooms: 'branch',
   'staff-invite': 'branch',
@@ -39,7 +40,7 @@ const PHASE_FOR_STEP: Record<WizardStep, WizardPhaseKey> = {
   complete: 'review',
 };
 
-/** The step `WizardShell`'s sidebar navigates to when a passed phase is clicked — always that phase's first internal step. */
+/** The step `WizardShell`'s sidebar navigates to when a passed phase's plain row (not one of the branch tree's own rows) is clicked. */
 const FIRST_STEP_FOR_PHASE: Record<WizardPhaseKey, WizardStep> = {
   owner: 'register',
   org: 'org-structure',
@@ -53,61 +54,59 @@ const STEP_LABELS: Record<WizardStep, string> = {
   'auto-login': 'Signing you in…',
   'org-structure': 'How is your organization structured?',
   'branch-setup': 'Tell us about your property.',
-  'room-type': 'Add your first room type.',
-  rooms: 'Create your first rooms.',
+  'buildings-floors': 'Set up buildings and floors for this property.',
+  'room-type': 'Set up room types for this property.',
+  rooms: 'Set up individual rooms.',
   'staff-invite': 'Invite your first staff members, or skip for now.',
   review: 'Review everything before you finish.',
   complete: "You're all set.",
 };
 
+/** Every floor across every building of a branch, in building/floor order — what "Continue" from Rooms walks through, and what a fresh branch needs at least one of before Room Types can lead anywhere. */
+function flattenFloors(branch: BranchDraft): { buildingLocalId: string; floorLocalId: string }[] {
+  return branch.buildings.flatMap((building) => building.floors.map((floor) => ({ buildingLocalId: building.localId, floorLocalId: floor.localId })));
+}
+
 /**
  * The full onboarding wizard (Roomick-UI.pdf), one screen at a time:
  * demo/real choice → Owner Account → Verify Email → (silent auto-login,
- * see AutoLoginStep) → Organization Structure → Branch Setup → Room Type →
- * Rooms → Staff Invite → Review → done.
+ * see AutoLoginStep) → Organization Structure → Branch Setup → Buildings/
+ * Floors → Room Types → Rooms (once per floor) → Staff Invite → Review →
+ * done. "Full" onboarding mode (see PHASE_NOTES.md) — multiple branches,
+ * real buildings/floors, multiple room types per branch, individual room
+ * cards — replaces the earlier "Rooms Only" single-branch shortcut.
  *
  * Deferred submission (see PHASE_NOTES.md for the full write-up): Owner
  * Account + Verify Email + auto-login still submit immediately — creating
  * a real account is a real gate, there's no verifying an email for an
  * account that doesn't exist. Everything from Organization Structure
  * onward is pure local state (`wizardStore`, persisted to localStorage)
- * until Review's "Finish" fires the whole remaining chain at once. That's
- * what fixes the two problems the previous "submit every step immediately"
- * design had: going back to re-check or fix something no longer
- * re-triggers an already-succeeded API call (there's nothing to conflict
- * with — nothing's been created yet), and a page reload doesn't lose
- * anything either.
+ * until Review's "Finish" fires the whole remaining chain at once.
  *
- * Buildings/floors ("Full" onboarding mode) and multiple room types/room
- * batches are deliberately not built here — the backend's rooms/bulk
- * endpoint has a documented "Rooms Only" mode (skip floorId entirely, a
- * hidden default building/floor is auto-created) that this wizard uses, and
- * managing more than one room type is future Room Types management screen
- * work, not first-run onboarding. Tax rule configuration and logo upload
- * are skipped for a different reason — no backend endpoint exists for
- * either yet, confirmed by checking, not assumed. See PHASE_NOTES.md.
+ * Staff invite and Review stay singular, not per-branch — the reference
+ * shows Staff Invite once per onboarding pass and a paginated Review, but
+ * multi-branch staff invites would need `staffInvites` nested per branch
+ * too, a further data-model change not required by the actual request
+ * ("multiple branches and room types"); the first branch created is the
+ * one Finish sends any invites against. See PHASE_NOTES.md's carried-
+ * forward note.
  */
 function SignupPageInner() {
   const searchParams = useSearchParams();
   const demoParam = searchParams.get('demo');
 
-  // `persist` hydrates from localStorage asynchronously, after the first
-  // render — without this guard, a reload briefly renders `mode === null`
-  // (the demo/real choice screen) using the store's un-hydrated initial
-  // state before snapping to whatever step was actually saved, which reads
-  // as a real bug ("I see a brief create-your-account screen on reload"),
-  // not just a cosmetic flicker. See useHasHydrated.ts.
   const wizardHydrated = useHasHydrated(useWizardStore);
   const authHydrated = useHasHydrated(useAuthStore);
 
   const mode = useWizardStore((state) => state.mode);
   const step = useWizardStore((state) => state.step);
   const ownerEmail = useWizardStore((state) => state.owner?.email);
+  const branches = useWizardStore((state) => state.branches);
+  const activeBranchLocalId = useWizardStore((state) => state.activeBranchLocalId);
+  const activeBuildingLocalId = useWizardStore((state) => state.activeBuildingLocalId);
+  const activeFloorLocalId = useWizardStore((state) => state.activeFloorLocalId);
   const patch = useWizardStore((state) => state.patch);
 
-  // Never persisted (see wizardStore.ts's header comment on why the
-  // password specifically stays out of the store) — held here just long
-  // enough to hand off from RegisterForm to AutoLoginStep.
   const [password, setPassword] = useState('');
 
   useEffect(() => {
@@ -122,6 +121,54 @@ function SignupPageInner() {
 
   function goTo(next: WizardStep) {
     patch({ step: next });
+  }
+
+  function goToBranch(branchLocalId: string) {
+    patch({ step: 'branch-setup', activeBranchLocalId: branchLocalId });
+  }
+
+  function goToRoomTypes(branchLocalId: string) {
+    patch({ step: 'room-type', activeBranchLocalId: branchLocalId });
+  }
+
+  function goToBuildings(branchLocalId: string) {
+    patch({ step: 'buildings-floors', activeBranchLocalId: branchLocalId });
+  }
+
+  function goToFloor(branchLocalId: string, buildingLocalId: string, floorLocalId: string) {
+    patch({ step: 'rooms', activeBranchLocalId: branchLocalId, activeBuildingLocalId: buildingLocalId, activeFloorLocalId: floorLocalId });
+  }
+
+  function addBranch() {
+    const draft = emptyBranchDraft();
+    patch({ branches: [...branches, draft], step: 'branch-setup', activeBranchLocalId: draft.localId });
+  }
+
+  function removeBranch(branchLocalId: string) {
+    const remaining = branches.filter((b) => b.localId !== branchLocalId);
+    const stillActive = activeBranchLocalId === branchLocalId ? (remaining[0]?.localId ?? null) : activeBranchLocalId;
+    patch({ branches: remaining, activeBranchLocalId: stillActive });
+  }
+
+  /**
+   * After a floor's rooms are saved: move to the next floor in this
+   * branch if one exists, otherwise this branch's room setup is done —
+   * the *first* branch created continues on to Staff Invite (still a
+   * once-per-onboarding step, not per-branch); any branch added after
+   * that goes straight back to Review, since Staff Invite was already
+   * handled once.
+   */
+  function afterRoomsSaved() {
+    const branch = branches.find((b) => b.localId === activeBranchLocalId);
+    const floors = branch ? flattenFloors(branch) : [];
+    const currentIndex = floors.findIndex((f) => f.floorLocalId === activeFloorLocalId);
+    const next = floors[currentIndex + 1];
+    if (next) {
+      patch({ activeBuildingLocalId: next.buildingLocalId, activeFloorLocalId: next.floorLocalId });
+      return;
+    }
+    const isFirstBranch = branches[0]?.localId === activeBranchLocalId;
+    goTo(isFirstBranch ? 'staff-invite' : 'review');
   }
 
   if (!wizardHydrated || !authHydrated) return null;
@@ -147,8 +194,30 @@ function SignupPageInner() {
     );
   }
 
+  const branchTreeFocus: BranchTreeFocus =
+    step === 'branch-setup' && activeBranchLocalId
+      ? { kind: 'branch', branchLocalId: activeBranchLocalId }
+      : step === 'room-type' && activeBranchLocalId
+        ? { kind: 'room-types', branchLocalId: activeBranchLocalId }
+        : step === 'buildings-floors' && activeBranchLocalId
+          ? { kind: 'buildings', branchLocalId: activeBranchLocalId }
+          : step === 'rooms' && activeBranchLocalId && activeBuildingLocalId && activeFloorLocalId
+            ? { kind: 'floor', branchLocalId: activeBranchLocalId, buildingLocalId: activeBuildingLocalId, floorLocalId: activeFloorLocalId }
+            : null;
+
   return (
-    <WizardShell currentPhase={PHASE_FOR_STEP[step]} onNavigate={(phase) => goTo(FIRST_STEP_FOR_PHASE[phase])}>
+    <WizardShell
+      currentPhase={PHASE_FOR_STEP[step]}
+      onNavigate={(phase) => goTo(FIRST_STEP_FOR_PHASE[phase])}
+      branches={branches}
+      branchTreeFocus={branchTreeFocus}
+      onSelectBranch={goToBranch}
+      onSelectRoomTypes={goToRoomTypes}
+      onSelectBuildings={goToBuildings}
+      onSelectFloor={goToFloor}
+      onAddBranch={addBranch}
+      onRemoveBranch={removeBranch}
+    >
       <Container className="max-w-xl py-0">
         <h1 className="text-title font-bold text-secondary mb-2">Create your Roomick account</h1>
         <p className="text-body text-secondary-light mb-8">{STEP_LABELS[step]}</p>
@@ -172,14 +241,29 @@ function SignupPageInner() {
         {step === 'org-structure' ? <OrgStructureForm onNext={() => goTo('branch-setup')} /> : null}
 
         {step === 'branch-setup' ? (
-          <BranchSetupForm onBack={() => goTo('org-structure')} onNext={() => goTo('room-type')} />
+          <BranchSetupForm onBack={() => goTo('org-structure')} onNext={() => goTo('buildings-floors')} />
+        ) : null}
+
+        {step === 'buildings-floors' ? (
+          <BuildingsFloorsForm onBack={() => goTo('branch-setup')} onNext={() => goTo('room-type')} />
         ) : null}
 
         {step === 'room-type' ? (
-          <RoomTypeForm onBack={() => goTo('branch-setup')} onNext={() => goTo('rooms')} />
+          <RoomTypeForm
+            onBack={() => goTo('buildings-floors')}
+            onNext={() => {
+              const branch = branches.find((b) => b.localId === activeBranchLocalId);
+              const firstFloor = branch ? flattenFloors(branch)[0] : undefined;
+              if (firstFloor) {
+                patch({ step: 'rooms', activeBuildingLocalId: firstFloor.buildingLocalId, activeFloorLocalId: firstFloor.floorLocalId });
+              } else {
+                goTo('staff-invite');
+              }
+            }}
+          />
         ) : null}
 
-        {step === 'rooms' ? <RoomsForm onBack={() => goTo('room-type')} onNext={() => goTo('staff-invite')} /> : null}
+        {step === 'rooms' ? <RoomsForm onBack={() => goTo('room-type')} onNext={afterRoomsSaved} /> : null}
 
         {step === 'staff-invite' ? (
           <StaffInviteStep onBack={() => goTo('rooms')} onNext={() => goTo('review')} />
@@ -195,16 +279,20 @@ function SignupPageInner() {
 
 function CompleteStep() {
   const owner = useWizardStore((state) => state.owner);
-  const createdRoomCount = useWizardStore((state) => state.createdRoomCount);
+  const branches = useWizardStore((state) => state.branches);
   const resetWizard = useWizardStore((state) => state.reset);
   const clearAuth = useAuthStore((state) => state.clear);
+
+  const roomCount = branches.reduce((sum, b) => sum + b.rooms.length, 0);
 
   return (
     <Section label="Setup complete">
       <p className="text-body text-secondary">
-        <span className="font-semibold">{owner?.subdomain}</span> is ready — organization, branch, room type, and{' '}
-        {createdRoomCount} room{createdRoomCount === 1 ? '' : 's'} are all set up. A front-desk/operations
-        dashboard is the next phase of this project — see <code className="text-tiny">PHASE_NOTES.md</code>.
+        <span className="font-semibold">{owner?.subdomain}</span> is ready — {branches.length} branch
+        {branches.length === 1 ? '' : 'es'}, {branches.reduce((sum, b) => sum + b.roomTypes.length, 0)} room type
+        {branches.reduce((sum, b) => sum + b.roomTypes.length, 0) === 1 ? '' : 's'}, and {roomCount} room
+        {roomCount === 1 ? '' : 's'} are all set up. A front-desk/operations dashboard is the next phase of this
+        project — see <code className="text-tiny">PHASE_NOTES.md</code>.
       </p>
       <button
         type="button"

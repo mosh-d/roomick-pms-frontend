@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import type { BranchDraft } from '@/lib/store/wizardStore';
+import { XIcon, PlusIcon } from '@/components/ui/Icons';
 
 export type WizardPhaseKey = 'owner' | 'org' | 'branch' | 'review';
 
@@ -12,50 +14,70 @@ const PHASES: { key: WizardPhaseKey; label: string }[] = [
   { key: 'review', label: 'Review' },
 ];
 
+/** What's currently focused inside the "Branch Setup" phase — drives the tree's highlight. Mirrors `page.tsx`'s step machine without needing the full `WizardStep` union here. */
+export type BranchTreeFocus =
+  | { kind: 'branch'; branchLocalId: string }
+  | { kind: 'room-types'; branchLocalId: string }
+  | { kind: 'buildings'; branchLocalId: string }
+  | { kind: 'floor'; branchLocalId: string; buildingLocalId: string; floorLocalId: string }
+  | null;
+
 /**
  * The wizard's persistent chrome — top bar (wordmark, breadcrumb, Cancel)
- * and left sidebar (numbered phase list) — replicated from Roomick-UI.pdf's
- * onboarding pages, not approximated. Without this, every step rendered as
- * a bare centered form with no visual separation between them, which read
- * as "everything is one page" even though the underlying step machine
- * (see page.tsx) was already correctly split — the chrome is what makes
- * that separation visible.
+ * and left sidebar — replicated from Roomick-UI.pdf's onboarding pages.
  *
- * The reference's fine-grained screens (this wizard has 10 internal
- * `WizardStep`s — register, verify, auto-login, org-structure,
- * branch-setup, room-type, rooms, staff-invite, review, complete)
- * collapse into the 4 named phases the reference's sidebar actually shows
- * (its own "Branch Setup" page bundles Property Details + Tax Rules +
- * Staff Invite into one phase, for example) — `page.tsx` maps
- * each internal step to one of these 4 via `PHASE_FOR_STEP`.
+ * The reference's fine-grained screens collapse into 4 named phases
+ * (`page.tsx`'s `PHASE_FOR_STEP`), **except** "Branch Setup", which is now
+ * a real expandable tree — Branch → Room Types / Buildings → Floors,
+ * matching the reference exactly (Roomick-UI.pdf pages 3–5) now that "Full"
+ * onboarding mode is built (see PHASE_NOTES.md: every step before this
+ * used the backend's "Rooms Only" shortcut, one implicit branch/building/
+ * floor, nothing to show a tree of). Room Types sits directly under the
+ * branch, not nested under a building — the reference frames it per-
+ * building in its own breadcrumb, but `RoomType.branchId` (confirmed
+ * against the schema) and the DB reference doc's own stated hierarchy put
+ * it at the branch level; a building-scoped tree row would be a fake
+ * distinction with nothing backing it in storage.
  *
- * The reference also shows a top-right "Continue" button duplicating each
- * form's own submit button — not replicated here: wiring a second submit
- * trigger for every step's form would mean either faking a disabled button
- * on steps with no submit-ready state to check, or threading a submit
- * handler up through every step component. `Cancel` (a real link back to
- * the marketing/home route) is the one top-bar action that's genuinely
- * simple to wire, so that's what's here; each step's own submit button
- * (already present, already working) remains the way to advance.
+ * Only the *active* branch's buildings/floors auto-expand (matching the
+ * reference screenshot itself: "Main Building" expanded, "Annex" and the
+ * second branch collapsed) — driven by `focus`, not separate expand/
+ * collapse UI state, since there's already a single source of truth for
+ * "what's being edited right now".
  *
  * Sidebar phases the wizard has already passed are real, clickable
  * navigation (`onNavigate`) — not just `cursor-pointer` styling with
- * nothing behind it, which would just be a different way of lying about
- * what's interactive. The current phase and any phase still ahead aren't
- * clickable: jumping forward past a step that hasn't run yet has nothing
- * to land on, and re-submitting an already-passed step that already
- * created a real resource (e.g. `register()`, which creates the tenant)
- * will surface the backend's own "already exists" error rather than
- * silently duplicating anything — a rough edge worth knowing about, not
- * hidden, until each step's re-edit semantics are designed properly.
+ * nothing behind it. The current phase and any phase still ahead aren't
+ * clickable (see the `isDone` gate below) with the one deliberate
+ * exception of the branch tree's own internal rows, which are always
+ * navigable amongst themselves once the "Branch Setup" phase has been
+ * reached at all — going from Room Type back to a different floor's Rooms,
+ * or over to a second branch, isn't "skipping ahead" the way jumping to a
+ * whole different *phase* early would be.
  */
 export function WizardShell({
   currentPhase,
   onNavigate,
+  branches,
+  branchTreeFocus,
+  onSelectBranch,
+  onSelectRoomTypes,
+  onSelectBuildings,
+  onSelectFloor,
+  onAddBranch,
+  onRemoveBranch,
   children,
 }: {
   currentPhase: WizardPhaseKey;
   onNavigate?: (phase: WizardPhaseKey) => void;
+  branches?: BranchDraft[];
+  branchTreeFocus?: BranchTreeFocus;
+  onSelectBranch?: (branchLocalId: string) => void;
+  onSelectRoomTypes?: (branchLocalId: string) => void;
+  onSelectBuildings?: (branchLocalId: string) => void;
+  onSelectFloor?: (branchLocalId: string, buildingLocalId: string, floorLocalId: string) => void;
+  onAddBranch?: () => void;
+  onRemoveBranch?: (branchLocalId: string) => void;
   children: ReactNode;
 }) {
   const currentIndex = PHASES.findIndex((phase) => phase.key === currentPhase);
@@ -117,8 +139,8 @@ export function WizardShell({
               isCurrent ? 'border-primary bg-primary-light/20' : 'border-accent/30'
             }`;
 
-            if (isDone && onNavigate) {
-              return (
+            const row =
+              isDone && onNavigate ? (
                 <button
                   key={phase.key}
                   type="button"
@@ -127,18 +149,163 @@ export function WizardShell({
                 >
                   {content}
                 </button>
+              ) : (
+                <div key={phase.key} className={sharedClasses}>
+                  {content}
+                </div>
+              );
+
+            // The branch tree renders once the phase has been reached at
+            // all (current or done) — nothing to show a tree of before
+            // that (no branches exist yet ahead of this phase).
+            if (phase.key === 'branch' && (isCurrent || isDone) && branches) {
+              return (
+                <div key={phase.key} className="flex flex-col gap-1">
+                  {row}
+                  <BranchTree
+                    branches={branches}
+                    focus={branchTreeFocus ?? null}
+                    onSelectBranch={onSelectBranch}
+                    onSelectRoomTypes={onSelectRoomTypes}
+                    onSelectBuildings={onSelectBuildings}
+                    onSelectFloor={onSelectFloor}
+                    onAddBranch={onAddBranch}
+                    onRemoveBranch={onRemoveBranch}
+                  />
+                </div>
               );
             }
-            return (
-              <div key={phase.key} className={sharedClasses}>
-                {content}
-              </div>
-            );
+            return row;
           })}
         </aside>
 
         <main className="flex-1 overflow-y-auto px-6 py-10">{children}</main>
       </div>
+    </div>
+  );
+}
+
+function BranchTree({
+  branches,
+  focus,
+  onSelectBranch,
+  onSelectRoomTypes,
+  onSelectBuildings,
+  onSelectFloor,
+  onAddBranch,
+  onRemoveBranch,
+}: {
+  branches: BranchDraft[];
+  focus: BranchTreeFocus;
+  onSelectBranch?: (branchLocalId: string) => void;
+  onSelectRoomTypes?: (branchLocalId: string) => void;
+  onSelectBuildings?: (branchLocalId: string) => void;
+  onSelectFloor?: (branchLocalId: string, buildingLocalId: string, floorLocalId: string) => void;
+  onAddBranch?: () => void;
+  onRemoveBranch?: (branchLocalId: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1 pl-3 border-l border-accent/20 ml-3">
+      {branches.map((branch) => {
+        const isActiveBranch = focus?.branchLocalId === branch.localId;
+        return (
+          <div key={branch.localId} className="flex flex-col gap-1">
+            <TreeRow
+              label={branch.name || 'Untitled branch'}
+              active={isActiveBranch && focus?.kind === 'branch'}
+              onClick={() => onSelectBranch?.(branch.localId)}
+              onRemove={branches.length > 1 ? () => onRemoveBranch?.(branch.localId) : undefined}
+              emphasize
+            />
+            {isActiveBranch ? (
+              <div className="flex flex-col gap-1 pl-3 border-l border-accent/20 ml-2">
+                <TreeRow
+                  label="Room Types"
+                  active={focus?.kind === 'room-types'}
+                  onClick={() => onSelectRoomTypes?.(branch.localId)}
+                />
+                {branch.buildings.map((building) => (
+                  <div key={building.localId} className="flex flex-col gap-1">
+                    <TreeRow
+                      label={building.name || 'Untitled building'}
+                      active={focus?.kind === 'buildings' && focus.branchLocalId === branch.localId}
+                      onClick={() => onSelectBuildings?.(branch.localId)}
+                    />
+                    <div className="flex flex-col gap-1 pl-3 border-l border-accent/20 ml-2">
+                      {building.floors.map((floor) => (
+                        <TreeRow
+                          key={floor.localId}
+                          label={`Floor ${floor.floorNumber}`}
+                          active={focus?.kind === 'floor' && focus.floorLocalId === floor.localId}
+                          onClick={() => onSelectFloor?.(branch.localId, building.localId, floor.localId)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => onSelectBuildings?.(branch.localId)}
+                  className="inline-flex items-center gap-1 text-tiny font-semibold text-primary-text hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control px-3 py-1"
+                >
+                  <PlusIcon className="size-3" /> Add building
+                </button>
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+      <button
+        type="button"
+        onClick={onAddBranch}
+        className="inline-flex items-center gap-1 text-tiny font-semibold text-primary-text hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control px-3 py-1"
+      >
+        <PlusIcon className="size-3" /> Add branch
+      </button>
+    </div>
+  );
+}
+
+function TreeRow({
+  label,
+  active,
+  onClick,
+  onRemove,
+  emphasize = false,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  onRemove?: () => void;
+  emphasize?: boolean;
+}) {
+  return (
+    <div
+      className={`flex items-center justify-between gap-2 rounded-control px-3 py-1.5 text-tiny ${
+        active ? 'bg-primary text-secondary font-semibold' : emphasize ? 'text-secondary' : 'text-secondary-light'
+      }`}
+    >
+      <button
+        type="button"
+        onClick={onClick}
+        className={`flex-1 text-left cursor-pointer truncate focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control ${
+          active ? '' : 'hover:text-secondary'
+        }`}
+      >
+        {label}
+      </button>
+      {onRemove ? (
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={`Remove ${label}`}
+          className={`shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full ${
+            active ? 'text-secondary/70 hover:text-secondary' : 'text-secondary-light hover:text-secondary'
+          }`}
+        >
+          <XIcon className="size-3" />
+        </button>
+      ) : null}
     </div>
   );
 }
