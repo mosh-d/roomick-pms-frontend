@@ -31,7 +31,7 @@ interface OnboardingStatus {
 
 /**
  * The "log in and continue where you left off" flow (`RegisterForm`'s
- * `SUBDOMAIN_TAKEN`/`EMAIL_TAKEN` handling) needs to rebuild wizardStore's
+ * `EMAIL_TAKEN` handling) needs to rebuild wizardStore's
  * local draft from whatever the backend actually has — a fresh browser
  * session (or one that never got past account creation locally) has no way
  * to know a brand/branch/room type from an *earlier* session already exist.
@@ -70,7 +70,6 @@ export async function resumeOnboardingDraft(
     phone: status.user.phone ?? undefined,
     country: status.tenant.country ?? undefined,
     groupName: status.tenant.groupName,
-    subdomain: status.tenant.subdomain,
   };
 
   const patch: Partial<WizardData> = {

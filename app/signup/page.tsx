@@ -290,7 +290,7 @@ function CompleteStep() {
   return (
     <Section label="Setup complete">
       <p className="text-body text-secondary">
-        <span className="font-semibold">{owner?.subdomain}</span> is ready — {branches.length} branch
+        <span className="font-semibold">{owner?.groupName}</span> is ready — {branches.length} branch
         {branches.length === 1 ? '' : 'es'}, {branches.reduce((sum, b) => sum + b.roomTypes.length, 0)} room type
         {branches.reduce((sum, b) => sum + b.roomTypes.length, 0) === 1 ? '' : 's'}, and {roomCount} room
         {roomCount === 1 ? '' : 's'} are all set up. A front-desk/operations dashboard is the next phase of this

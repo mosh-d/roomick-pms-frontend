@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Section } from '@/components/ui/Section';
@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/Button';
 import { apiFetch, ApiError } from '@/lib/api';
 import { registerSchema, type RegisterFormValues } from '@/lib/schemas/auth';
 import { COUNTRIES } from '@/lib/countries';
-import { slugify } from '@/lib/slug';
 import { callingCodeFor, displayFromE164, formatPhoneAsYouType, formatPhoneDisplay } from '@/lib/phone';
 import { useWizardStore, type OwnerAccountDraft } from '@/lib/store/wizardStore';
 import { useAuthStore } from '@/lib/store/authStore';
@@ -26,28 +25,27 @@ import { resumeOnboardingDraft } from '@/lib/resumeOnboarding';
  * backend can track which countries are onboarding from, reporting only
  * for now).
  *
- * The reference's Step 1 has no Group/Hotel Name or Subdomain field —
- * those only appear here (in an "Organization" section below Owner
- * Account) because `POST /auth/register` genuinely requires both in the
- * same call to create the tenant; there's no later point in the flow where
- * they could be collected instead without restructuring the backend's
- * registration sequence. Subdomain is auto-suggested from Group/Hotel Name
- * as the owner types (slugified live, see the `useEffect` below) rather
- * than asked for cold — still editable, and stops auto-following the
- * moment the owner touches it themselves (a `subdomainEdited` flag, not a
- * one-time default), so a `SUBDOMAIN_TAKEN` conflict is still recoverable
- * by hand.
+ * The reference's Step 1 has no Group/Hotel Name field either — it only
+ * appears here (in an "Organization" section below Owner Account) because
+ * `POST /auth/register` genuinely requires it in the same call to create
+ * the tenant; there's no later point in the flow where it could be
+ * collected instead without restructuring the backend's registration
+ * sequence. No Subdomain field at all anymore — login is plain
+ * email+password now (see `lib/schemas/auth.ts`'s `loginSchema`), so
+ * there's nothing left for a user-typed subdomain to disambiguate;
+ * `Tenant.subdomain` still exists as an internal DB column, generated
+ * server-side from the group name, never shown or asked for here.
  *
  * Unlike every step after email verification, this one still submits
  * immediately (see wizardStore.ts's header comment on why account creation
  * can't be deferred). That means navigating *back* here after the account
  * already exists needs different handling than "just show the form again"
- * — re-submitting the same subdomain/email a second time doesn't create a
- * second account, it fails with SUBDOMAIN_TAKEN/EMAIL_TAKEN, which is
- * exactly the "stuck" bug this read-only mode exists to fix. Once
- * `accountCreated` is true, the fields render read-only with the values
- * that were actually submitted, and "Continue" just navigates forward —
- * no form, no re-submit, nothing to get stuck on.
+ * — re-submitting the same email a second time doesn't create a second
+ * account, it fails with EMAIL_TAKEN, which is exactly the "stuck" bug
+ * this read-only mode exists to fix. Once `accountCreated` is true, the
+ * fields render read-only with the values that were actually submitted,
+ * and "Continue" just navigates forward — no form, no re-submit, nothing
+ * to get stuck on.
  *
  * `onNext` also hands back the raw email/password the owner just typed —
  * not stored anywhere past this step (not even in wizardStore's persisted
@@ -107,12 +105,6 @@ function AlreadyRegistered({
 
       <Section label="Organization">
         <Input label="Group / Hotel Name" value={owner.groupName} readOnly />
-        <Input
-          label="Subdomain"
-          hint="Already created — changing your account's login id isn't supported yet."
-          value={owner.subdomain}
-          readOnly
-        />
       </Section>
 
       <p className="text-small text-secondary-light">Your account already exists — nothing to re-submit here.</p>
@@ -133,7 +125,6 @@ function stripPassword(values: RegisterFormValues): OwnerAccountDraft {
     phone: values.phone,
     country: values.country,
     groupName: values.groupName,
-    subdomain: values.subdomain,
   };
 }
 
@@ -150,27 +141,13 @@ function RegisterFields({
 }) {
   const [formError, setFormError] = useState<string | null>(null);
   // Set when register() fails because this exact account already exists
-  // (SUBDOMAIN_TAKEN/EMAIL_TAKEN) — holds what's needed to offer "log in
-  // and continue where you left off" instead of a dead-end field error.
-  // Cleared on the next real edit so a stale offer can't outlive the
-  // values it was computed from.
-  const [conflict, setConflict] = useState<{ email: string; password: string; subdomain: string } | null>(null);
+  // (EMAIL_TAKEN) — holds what's needed to offer "log in and continue
+  // where you left off" instead of a dead-end field error. Cleared on the
+  // next real edit so a stale offer can't outlive the values it was
+  // computed from.
+  const [conflict, setConflict] = useState<{ email: string; password: string } | null>(null);
   const [resuming, setResuming] = useState(false);
   const authLogin = useAuthStore((state) => state.login);
-  // Already-edited if resuming a draft with a subdomain in it — otherwise
-  // the auto-slugify effect below would immediately overwrite whatever the
-  // owner had typed there before the reload that brought this draft back.
-  const [subdomainEdited, setSubdomainEdited] = useState(() => Boolean(registerDraft?.subdomain));
-  // Collapsed to a one-line "Your login id will be X — customize" summary
-  // by default — direct feedback on an earlier subdomain-discussion thread:
-  // the field still needs to exist and stay correctable (it's the actual
-  // `/login` identifier, not just a cosmetic URL slug — hiding it entirely
-  // risks "I don't know my login id" later), but doesn't need to look like
-  // a normal field the owner has to think about when the auto-suggestion
-  // is almost always fine. Starts expanded if resuming a draft that's
-  // already been customized — once an owner has deliberately picked their
-  // own value, that's not something to re-collapse behind a click.
-  const [subdomainExpanded, setSubdomainExpanded] = useState(() => Boolean(registerDraft?.subdomain));
   const [phoneDisplay, setPhoneDisplay] = useState(() =>
     registerDraft?.phone ? displayFromE164(registerDraft.phone, registerDraft.country) : '',
   );
@@ -178,7 +155,6 @@ function RegisterFields({
     register,
     handleSubmit,
     setError,
-    setValue,
     watch,
     control,
     formState: { errors, isSubmitting },
@@ -193,14 +169,7 @@ function RegisterFields({
   // same gap every later step had. Password is deliberately excluded.
   useAutosaveDraft(watch, (values) => patch({ registerDraft: stripPassword(values) }));
 
-  const groupName = watch('groupName');
   const country = watch('country');
-  const subdomainValue = watch('subdomain');
-  useEffect(() => {
-    if (!subdomainEdited) {
-      setValue('subdomain', slugify(groupName ?? ''), { shouldValidate: false });
-    }
-  }, [groupName, subdomainEdited, setValue]);
 
   async function onSubmit(values: RegisterFormValues) {
     setFormError(null);
@@ -211,7 +180,6 @@ function RegisterFields({
         {
           method: 'POST',
           body: {
-            subdomain: values.subdomain,
             groupName: values.groupName,
             name: `${values.firstName} ${values.lastName}`.trim(),
             email: values.email,
@@ -230,7 +198,6 @@ function RegisterFields({
           phone: values.phone,
           country: values.country,
           groupName: values.groupName,
-          subdomain: result.subdomain,
         },
         accountCreated: true,
         verificationToken: result.verificationToken,
@@ -238,14 +205,9 @@ function RegisterFields({
       });
       onNext({ email: values.email, password: values.password });
     } catch (error) {
-      if (error instanceof ApiError && error.isCode('SUBDOMAIN_TAKEN')) {
-        setError('subdomain', { message: error.message });
-        setConflict({ email: values.email, password: values.password, subdomain: values.subdomain });
-        return;
-      }
       if (error instanceof ApiError && error.isCode('EMAIL_TAKEN')) {
         setError('email', { message: error.message });
-        setConflict({ email: values.email, password: values.password, subdomain: values.subdomain });
+        setConflict({ email: values.email, password: values.password });
         return;
       }
       setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
@@ -253,15 +215,15 @@ function RegisterFields({
   }
 
   /**
-   * "This subdomain/email already belongs to a real account" isn't
-   * necessarily a mistake — it's what happens every time this exact
-   * owner comes back to a signup link after already registering (a fresh
-   * browser session has no local record `accountCreated` was ever true).
-   * Logging in *is* the "do these details actually match that account"
-   * check — a wrong password fails here with the normal INVALID_CREDENTIALS
-   * message, same as `/login` would show, so this can't be used to confirm
-   * someone else's account exists. Once logged in, `resumeOnboardingDraft`
-   * reads how far onboarding actually got on the backend and rehydrates
+   * "This email already belongs to a real account" isn't necessarily a
+   * mistake — it's what happens every time this exact owner comes back to
+   * a signup link after already registering (a fresh browser session has
+   * no local record `accountCreated` was ever true). Logging in *is* the
+   * "do these details actually match that account" check — a wrong
+   * password fails here with the normal INVALID_CREDENTIALS message, same
+   * as `/login` would show, so this can't be used to confirm someone
+   * else's account exists. Once logged in, `resumeOnboardingDraft` reads
+   * how far onboarding actually got on the backend and rehydrates
    * wizardStore to match — no `onNext()` here, since the wizard's `step`
    * (set by that patch) is what actually drives which screen page.tsx
    * renders next, and it's rarely "verify email" from this path.
@@ -271,7 +233,7 @@ function RegisterFields({
     setFormError(null);
     setResuming(true);
     try {
-      const login = await authLogin(conflict.email, conflict.password, conflict.subdomain);
+      const login = await authLogin(conflict.email, conflict.password);
       const resumePatch = await resumeOnboardingDraft(login.accessToken, login.user);
       patch(resumePatch);
     } catch (error) {
@@ -280,8 +242,6 @@ function RegisterFields({
       setResuming(false);
     }
   }
-
-  const subdomainField = register('subdomain');
 
   return (
     <>
@@ -367,29 +327,6 @@ function RegisterFields({
             {...register('groupName')}
             error={errors.groupName?.message}
           />
-          {subdomainExpanded || errors.subdomain ? (
-            <Input
-              label="Subdomain"
-              hint={`Auto-suggested from your hotel name (e.g. "Grand Lagos Hotel" → grand-lagos-hotel). This is your account's login id, not a public web address yet — feel free to change it.`}
-              {...subdomainField}
-              onChange={(event) => {
-                setSubdomainEdited(true);
-                subdomainField.onChange(event);
-              }}
-              error={errors.subdomain?.message}
-            />
-          ) : (
-            <p className="text-small text-secondary-light">
-              Your login id will be <code className="text-secondary font-semibold">{subdomainValue}</code> —{' '}
-              <button
-                type="button"
-                onClick={() => setSubdomainExpanded(true)}
-                className="text-primary-text font-semibold hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
-              >
-                customize
-              </button>
-            </p>
-          )}
         </Section>
 
         {formError ? <p className="text-small text-red-600">{formError}</p> : null}

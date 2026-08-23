@@ -54,7 +54,6 @@ export function AutoLoginStep({
   const login = useAuthStore((state) => state.login);
   const hasAccessToken = useAuthStore((state) => Boolean(state.accessToken));
   const loggedIn = useWizardStore((state) => state.loggedIn) && hasAccessToken;
-  const owner = useWizardStore((state) => state.owner);
   const patch = useWizardStore((state) => state.patch);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
@@ -65,7 +64,7 @@ export function AutoLoginStep({
     // No setState synchronously in the effect body (lint: react-hooks/set-state-in-effect)
     // — `error` only gets set from the async .catch below, and cleared by the
     // Retry button's own click handler before it bumps retryKey, not here.
-    login(email, password, owner?.subdomain ?? '')
+    login(email, password)
       .then(() => {
         if (!cancelled) {
           patch({ loggedIn: true });
@@ -78,8 +77,8 @@ export function AutoLoginStep({
     return () => {
       cancelled = true;
     };
-    // email/password/owner/login/onSuccess/patch intentionally excluded so a
-    // parent re-render doesn't re-trigger the request — only a real retry
+    // email/login/onSuccess/patch intentionally excluded so a parent
+    // re-render doesn't re-trigger the request — only a real retry
     // (bumping retryKey) or the loggedIn/password guard above should.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [retryKey, loggedIn, password]);

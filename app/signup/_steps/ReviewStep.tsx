@@ -110,7 +110,6 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
   return (
     <div className="flex flex-col gap-4">
       <Section label="Organization" tone="accent">
-        <Row label="Subdomain" value={owner.subdomain} />
         <Row label="Structure" value={brandMode === 'single' ? 'Single-Brand' : 'Multi-Brand'} />
       </Section>
 

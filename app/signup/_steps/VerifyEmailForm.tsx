@@ -67,7 +67,7 @@ export function VerifyEmailForm({ onNext }: { onNext: () => void }) {
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       <Section label="Verify email">
         <p className="text-small text-secondary-light">
-          Account created for <span className="font-semibold">{owner?.subdomain}</span>. No email-sending is wired
+          Account created for <span className="font-semibold">{owner?.email}</span>. No email-sending is wired
           up yet (the backend&apos;s own DTO comment says this token is &quot;stubbed in MVP&quot;) — it&apos;s
           pre-filled below so you can continue; a real deployment would require checking your inbox instead.
         </p>

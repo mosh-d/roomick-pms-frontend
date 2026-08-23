@@ -16,7 +16,19 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   user: AuthUser | null;
-  login: (email: string, password: string, subdomain: string) => Promise<LoginResult>;
+  /**
+   * Which branch/property the signed-in user picked, if their roles span
+   * more than one (see `app/login/_components/BranchPicker.tsx`) — `null`
+   * until an actual pick happens; there is deliberately no auto-selection
+   * for the 0-or-1-branch case. Reset on every fresh `login()` and on
+   * `clear()` (never on `refreshAccessToken()`, which re-authenticates the
+   * *same* session, not a new one) — this store persists to localStorage,
+   * so a stale branch id from a previous login would otherwise silently
+   * carry into a different one.
+   */
+  activeBranchId: string | null;
+  setActiveBranchId: (branchId: string) => void;
+  login: (email: string, password: string) => Promise<LoginResult>;
   /**
    * Exchanges the stored refresh token for a fresh pair via `POST
    * /auth/refresh` (backend: `auth.controller.ts`) and writes it back to
@@ -56,12 +68,19 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
       user: null,
-      async login(email, password, subdomain) {
+      activeBranchId: null,
+      setActiveBranchId: (branchId) => set({ activeBranchId: branchId }),
+      async login(email, password) {
         const result = await apiFetch<LoginResult>('/auth/login', {
           method: 'POST',
-          body: { email, password, subdomain },
+          body: { email, password },
         });
-        set({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
+        set({
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          user: result.user,
+          activeBranchId: null,
+        });
         return result;
       },
       async refreshAccessToken() {
@@ -79,7 +98,7 @@ export const useAuthStore = create<AuthState>()(
           return null;
         }
       },
-      clear: () => set({ accessToken: null, refreshToken: null, user: null }),
+      clear: () => set({ accessToken: null, refreshToken: null, user: null, activeBranchId: null }),
     }),
     { name: 'roomick-auth' },
   ),

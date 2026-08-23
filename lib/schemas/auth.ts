@@ -3,10 +3,12 @@ import { z } from 'zod';
 /**
  * Mirrors roomick-pms-backend/src/modules/auth/dto/register.dto.ts field
  * for field (including its exact constraints — min/max lengths, the
- * subdomain regex, the password rule) so client-side validation rejects
- * the same inputs the server would, before a round-trip. Kept in sync by
- * hand (no shared-types package between the two repos yet) — if the DTO
- * changes, this needs a matching edit.
+ * password rule) so client-side validation rejects the same inputs the
+ * server would, before a round-trip. Kept in sync by hand (no shared-types
+ * package between the two repos yet) — if the DTO changes, this needs a
+ * matching edit. No `subdomain` field — the DTO no longer has one either;
+ * `Tenant.subdomain` is generated server-side now (see that DTO's own
+ * comment).
  *
  * One deliberate exception: the DTO's `name` is a single field, but the UI
  * reference (Owner Account Form) shows separate First Name/Last Name
@@ -15,13 +17,6 @@ import { z } from 'zod';
  * isn't changing; this is presentation only.
  */
 export const registerSchema = z.object({
-  subdomain: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .min(3, 'At least 3 characters')
-    .max(63, 'At most 63 characters')
-    .regex(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/, 'Lowercase letters, numbers, and inner hyphens only'),
   groupName: z.string().trim().min(2, 'Required').max(200),
   // Max 99 each, not 100 — combined with the joining space, guarantees the
   // backend's 200-char `name` limit can never be exceeded (100+1+100=201).
@@ -51,21 +46,10 @@ export const verifyEmailSchema = z.object({
 
 export type VerifyEmailFormValues = z.infer<typeof verifyEmailSchema>;
 
-/**
- * Mirrors login.dto.ts's LoginDto. The backend's `subdomain` is optional
- * there ("optional if the request carries an X-Tenant-ID header instead")
- * — but a public /login page has no tenant header to fall back on, so it's
- * required here for the flow to actually work.
- */
+/** Mirrors login.dto.ts's LoginDto — plain email+password, no subdomain (see that DTO's own comment: email is globally unique now, so it alone resolves the account). */
 export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email('Enter a valid email').max(320),
   password: z.string().min(1, 'Required'),
-  subdomain: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .min(1, 'Required')
-    .max(63, 'At most 63 characters'),
 });
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
