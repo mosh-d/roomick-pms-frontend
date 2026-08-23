@@ -12,6 +12,7 @@ import { XIcon, PlusIcon } from '@/components/ui/Icons';
 import { buildingSchema } from '@/lib/schemas/onboarding';
 import { useWizardStore, type BuildingDraft, type FloorDraft } from '@/lib/store/wizardStore';
 import { useAutosaveDraft } from '@/lib/useAutosaveDraft';
+import { toTitleCase } from '@/lib/textFormat';
 
 const formSchema = z.object({ buildings: z.array(buildingSchema).min(1) });
 type FormValues = z.infer<typeof formSchema>;
@@ -146,6 +147,7 @@ export function BuildingsFloorsForm({ onBack, onNext }: { onBack: () => void; on
                   value={viewsField.value ?? []}
                   onChange={viewsField.onChange}
                   allowCustom
+                  formatTag={toTitleCase}
                   hint="Type a view (e.g. sea, garden) and hit Add"
                 />
               )}

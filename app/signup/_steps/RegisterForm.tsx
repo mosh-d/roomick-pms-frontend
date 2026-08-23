@@ -161,6 +161,16 @@ function RegisterFields({
   // the auto-slugify effect below would immediately overwrite whatever the
   // owner had typed there before the reload that brought this draft back.
   const [subdomainEdited, setSubdomainEdited] = useState(() => Boolean(registerDraft?.subdomain));
+  // Collapsed to a one-line "Your login id will be X — customize" summary
+  // by default — direct feedback on an earlier subdomain-discussion thread:
+  // the field still needs to exist and stay correctable (it's the actual
+  // `/login` identifier, not just a cosmetic URL slug — hiding it entirely
+  // risks "I don't know my login id" later), but doesn't need to look like
+  // a normal field the owner has to think about when the auto-suggestion
+  // is almost always fine. Starts expanded if resuming a draft that's
+  // already been customized — once an owner has deliberately picked their
+  // own value, that's not something to re-collapse behind a click.
+  const [subdomainExpanded, setSubdomainExpanded] = useState(() => Boolean(registerDraft?.subdomain));
   const [phoneDisplay, setPhoneDisplay] = useState(() =>
     registerDraft?.phone ? displayFromE164(registerDraft.phone, registerDraft.country) : '',
   );
@@ -185,6 +195,7 @@ function RegisterFields({
 
   const groupName = watch('groupName');
   const country = watch('country');
+  const subdomainValue = watch('subdomain');
   useEffect(() => {
     if (!subdomainEdited) {
       setValue('subdomain', slugify(groupName ?? ''), { shouldValidate: false });
@@ -356,16 +367,29 @@ function RegisterFields({
             {...register('groupName')}
             error={errors.groupName?.message}
           />
-          <Input
-            label="Subdomain"
-            hint={`Auto-suggested from your hotel name (e.g. "Grand Lagos Hotel" → grand-lagos-hotel). This is your account's login id, not a public web address yet — feel free to change it.`}
-            {...subdomainField}
-            onChange={(event) => {
-              setSubdomainEdited(true);
-              subdomainField.onChange(event);
-            }}
-            error={errors.subdomain?.message}
-          />
+          {subdomainExpanded || errors.subdomain ? (
+            <Input
+              label="Subdomain"
+              hint={`Auto-suggested from your hotel name (e.g. "Grand Lagos Hotel" → grand-lagos-hotel). This is your account's login id, not a public web address yet — feel free to change it.`}
+              {...subdomainField}
+              onChange={(event) => {
+                setSubdomainEdited(true);
+                subdomainField.onChange(event);
+              }}
+              error={errors.subdomain?.message}
+            />
+          ) : (
+            <p className="text-small text-secondary-light">
+              Your login id will be <code className="text-secondary font-semibold">{subdomainValue}</code> —{' '}
+              <button
+                type="button"
+                onClick={() => setSubdomainExpanded(true)}
+                className="text-primary-text font-semibold hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
+              >
+                customize
+              </button>
+            </p>
+          )}
         </Section>
 
         {formError ? <p className="text-small text-red-600">{formError}</p> : null}

@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { XIcon, PlusIcon, CheckIcon } from './Icons';
-import type { SelectOption } from './Select';
+import { XIcon, PlusIcon, CheckIcon, ChevronDownIcon } from './Icons';
+import { SELECTED_OPTION_CLASSES, UNSELECTED_OPTION_CLASSES, type SelectOption } from './Select';
 
 /**
  * One component, not two, covering both behaviors the reference image
@@ -31,6 +31,7 @@ export function MultiSelectTagInput({
   value,
   onChange,
   allowCustom = false,
+  formatTag,
   hint,
   error,
   name,
@@ -41,6 +42,8 @@ export function MultiSelectTagInput({
   value: string[];
   onChange: (value: string[]) => void;
   allowCustom?: boolean;
+  /** Normalizes a custom-typed tag before it's stored (e.g. `lib/textFormat.ts`'s `toTitleCase` — "king size" → "King Size") — never applied to `options`' own labels, which are already however they're meant to display. */
+  formatTag?: (raw: string) => string;
   hint?: string;
   error?: string;
   name?: string;
@@ -77,8 +80,10 @@ export function MultiSelectTagInput({
 
   function addCustomTag(tagValue: string) {
     const trimmed = tagValue.trim();
-    if (!trimmed || value.includes(trimmed)) return;
-    onChange([...value, trimmed]);
+    if (!trimmed) return;
+    const formatted = formatTag ? formatTag(trimmed) : trimmed;
+    if (value.includes(formatted)) return;
+    onChange([...value, formatted]);
   }
 
   function handleDraftKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -160,7 +165,13 @@ export function MultiSelectTagInput({
           real `id`/label/hint/error wiring; in combined mode it's a second,
           supplementary control (the free-text input above already owns
           those), so it gets its own id and a plain `aria-label` instead of
-          repeating the same hint/error a screen reader just heard once. */}
+          repeating the same hint/error a screen reader just heard once.
+          Styled to match `Select.tsx`'s own trigger exactly (chevron,
+          spacing, text color) — this *is* a dropdown trigger, not a
+          secondary/muted hint, so it uses the same plain field text color
+          every other interactive control does. `accent` is reserved for
+          non-interactive detail/review cards elsewhere in this design
+          system, never for text or borders on something clickable. */}
       {options.length > 0 ? (
         <button
           type="button"
@@ -171,16 +182,19 @@ export function MultiSelectTagInput({
             ? { 'aria-label': `Pick ${label} from common options` }
             : { 'aria-labelledby': `${fieldId}-label`, 'aria-describedby': errorId ?? hintId })}
           onClick={() => setOpen((o) => !o)}
-          className={`w-full flex items-center justify-between gap-2 bg-transparent border-0 border-b pb-1 text-body text-left text-accent cursor-pointer focus:outline-none ${
+          className={`${allowCustom ? 'mt-3' : ''} w-full flex items-center justify-between gap-2 bg-transparent border-0 border-b pb-1 text-body text-left cursor-pointer focus:outline-none ${
             !allowCustom && error ? 'border-red-600' : open ? 'border-secondary' : 'border-accent/40'
           }`}
         >
           {allowCustom ? 'Pick from common options' : 'Tick an option'}
+          <ChevronDownIcon
+            className={`size-4 shrink-0 text-accent-dark pointer-events-none transition-transform ${open ? 'rotate-180' : ''}`}
+          />
         </button>
       ) : null}
 
       {open && options.length > 0 ? (
-        <ul role="listbox" className="mt-1 flex flex-col max-h-64 overflow-auto">
+        <ul role="listbox" className="mt-1 flex flex-col gap-1 max-h-64 overflow-auto">
           {options.map((option) => {
             const isSelected = value.includes(option.value);
             return (
@@ -190,7 +204,7 @@ export function MultiSelectTagInput({
                 aria-selected={isSelected}
                 onClick={() => toggleTag(option.value)}
                 className={`flex items-center justify-between gap-2 rounded-control px-3 py-2 text-body cursor-pointer ${
-                  isSelected ? 'bg-secondary-light text-secondary font-semibold' : 'hover:bg-secondary-light/30'
+                  isSelected ? SELECTED_OPTION_CLASSES : UNSELECTED_OPTION_CLASSES
                 }`}
               >
                 {option.label}

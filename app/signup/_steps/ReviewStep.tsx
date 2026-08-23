@@ -7,6 +7,7 @@ import { apiFetch, ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 import { useWizardStore, type BranchDraft, type RoomCardDraft } from '@/lib/store/wizardStore';
 import { currencySymbolFor } from '@/lib/currencies';
+import { displayWithCommas } from '@/lib/numberFormat';
 
 /**
  * Onboarding step (Roomick-UI.pdf "Review") — read-only recap, paginated
@@ -130,7 +131,7 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
       {branch.roomTypes.length > 0 ? (
         <Section label="Room Types">
           {branch.roomTypes.map((rt) => (
-            <Row key={rt.localId} label={rt.name || 'Untitled'} value={`${currencySymbol}${rt.baseRate}`} />
+            <Row key={rt.localId} label={rt.name || 'Untitled'} value={`${currencySymbol}${displayWithCommas(rt.baseRate)}`} />
           ))}
         </Section>
       ) : null}

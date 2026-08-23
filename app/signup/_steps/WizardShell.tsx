@@ -282,7 +282,7 @@ function TreeRow({
   return (
     <div
       className={`flex items-center justify-between gap-2 rounded-control px-3 py-1.5 text-tiny ${
-        active ? 'bg-primary text-secondary font-semibold' : emphasize ? 'text-secondary' : 'text-secondary-light'
+        active ? 'bg-primary text-white font-semibold' : emphasize ? 'text-secondary' : 'text-secondary-light'
       }`}
     >
       <button

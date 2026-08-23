@@ -72,8 +72,14 @@ export function Modal({
   if (!open) return null;
 
   return (
+    // Frosted glass, matching the reference mockup's own modal treatment
+    // (Roomick-UI.pdf's "Setup Pattern" popup). Backdrop and panel both
+    // blur what's behind them (`backdrop-blur-*`); the panel keeps a
+    // slight `/90` translucency rather than fully opaque so it still reads
+    // as glass, not a plain white box — tuned down from an earlier, more
+    // transparent pass where background content bled through distractingly.
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-secondary/40 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-secondary/30 backdrop-blur-xs px-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -84,7 +90,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby="modal-title"
         tabIndex={-1}
-        className="w-full max-w-md rounded-card bg-white border border-accent/20 p-6 flex flex-col gap-4 focus:outline-none"
+        className="w-full max-w-md rounded-card bg-white/90 backdrop-blur-sm border border-white shadow-xl p-6 flex flex-col gap-4 focus:outline-none"
       >
         <div className="flex items-center justify-between gap-4">
           <h2 id="modal-title" className="text-header font-bold text-secondary">

@@ -263,7 +263,9 @@ function SignupPageInner() {
           />
         ) : null}
 
-        {step === 'rooms' ? <RoomsForm onBack={() => goTo('room-type')} onNext={afterRoomsSaved} /> : null}
+        {step === 'rooms' ? (
+          <RoomsForm key={activeFloorLocalId} onBack={() => goTo('room-type')} onNext={afterRoomsSaved} />
+        ) : null}
 
         {step === 'staff-invite' ? (
           <StaffInviteStep onBack={() => goTo('rooms')} onNext={() => goTo('review')} />

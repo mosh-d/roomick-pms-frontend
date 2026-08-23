@@ -6,6 +6,17 @@ import { ChevronDownIcon, CheckIcon, InfoCircleIcon } from './Icons';
 export type SelectOption = { value: string; label: string };
 
 /**
+ * Shared listbox-option state classes — design-system level, not
+ * per-component: `MultiSelectTagInput.tsx`'s own option list reuses these
+ * directly rather than keeping a second, separately-tuned copy that could
+ * drift out of sync with this one. `border` is present (transparent) on
+ * the unselected state too, not just added when selected, so picking an
+ * option doesn't shift the row's box size by the border's own width.
+ */
+export const SELECTED_OPTION_CLASSES = 'border border-secondary bg-secondary-light/20 text-secondary font-semibold';
+export const UNSELECTED_OPTION_CLASSES = 'border border-transparent hover:bg-secondary-light/30';
+
+/**
  * A hand-rolled listbox, not a native <select> — the reference product's
  * open-state look (options listed inline below the trigger, selected
  * option highlighted as a solid secondary-light bar, the whole group
@@ -164,7 +175,7 @@ export function Select({
             setActiveIndex(0);
           }}
           onKeyDown={handleKeyDown}
-          className={`w-full bg-transparent border-0 border-b pb-1 pr-6 text-body placeholder:text-accent focus:outline-none disabled:opacity-50 disabled:pointer-events-none disabled:cursor-default ${
+          className={`w-full bg-transparent border-0 border-b pb-1 pr-6 text-body placeholder:text-accent focus:outline-none cursor-pointer disabled:opacity-50 disabled:pointer-events-none disabled:cursor-default ${
             error ? 'border-red-600' : open ? 'border-secondary' : 'border-accent/40'
           }`}
         />
@@ -174,7 +185,7 @@ export function Select({
       </div>
 
       {open ? (
-        <ul id={listboxId} role="listbox" aria-labelledby={fieldId} className="mt-1 flex flex-col max-h-64 overflow-auto">
+        <ul id={listboxId} role="listbox" aria-labelledby={fieldId} className="mt-1 flex flex-col gap-1 max-h-64 overflow-auto">
           {filteredOptions.length === 0 ? (
             <li className="px-3 py-2 text-body text-secondary-light">No matches</li>
           ) : (
@@ -194,7 +205,7 @@ export function Select({
                     inputRef.current?.focus();
                   }}
                   className={`flex items-center justify-between gap-2 rounded-control px-3 py-2 text-body cursor-pointer ${
-                    isSelected ? 'bg-secondary-light text-secondary font-semibold' : isActive ? 'bg-secondary-light/30' : ''
+                    isSelected ? SELECTED_OPTION_CLASSES : isActive ? 'border border-transparent bg-secondary-light/30' : UNSELECTED_OPTION_CLASSES
                   }`}
                 >
                   {option.label}

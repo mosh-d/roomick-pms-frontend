@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Section } from '@/components/ui/Section';
 import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { MultiSelectTagInput } from '@/components/ui/MultiSelectTagInput';
 import { Button } from '@/components/ui/Button';
 import { XIcon, PlusIcon } from '@/components/ui/Icons';
@@ -12,10 +13,11 @@ import { roomTypeSchema } from '@/lib/schemas/onboarding';
 import { useWizardStore, type RoomTypeDraft } from '@/lib/store/wizardStore';
 import { useAutosaveDraft } from '@/lib/useAutosaveDraft';
 import { currencySymbolFor } from '@/lib/currencies';
+import { toTitleCase } from '@/lib/textFormat';
 
 const AMENITY_OPTIONS = [
   { value: 'wifi', label: 'Wi-Fi' },
-  { value: 'ac', label: 'Air conditioning' },
+  { value: 'ac', label: 'Air Conditioning' },
   { value: 'minibar', label: 'Minibar' },
   { value: 'tv', label: 'TV' },
   { value: 'balcony', label: 'Balcony' },
@@ -57,6 +59,7 @@ export function RoomTypeForm({ onBack, onNext }: { onBack: () => void; onNext: (
     handleSubmit,
     control,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -104,18 +107,29 @@ export function RoomTypeForm({ onBack, onNext }: { onBack: () => void; onNext: (
             {...register(`roomTypes.${index}.name`)}
             error={errors.roomTypes?.[index]?.name?.message}
           />
-          <Input
-            label="Base Nightly Rate"
-            type="number"
-            step="0.01"
-            prefix={currencySymbol || undefined}
-            {...register(`roomTypes.${index}.baseRate`, { valueAsNumber: true })}
-            error={errors.roomTypes?.[index]?.baseRate?.message}
+          <Controller
+            control={control}
+            name={`roomTypes.${index}.baseRate`}
+            render={({ field: rateField }) => (
+              <CurrencyInput
+                label="Base Nightly Rate"
+                name={`roomTypes.${index}.baseRate`}
+                prefix={currencySymbol || undefined}
+                value={rateField.value}
+                onChange={(v) => rateField.onChange(v ?? 0)}
+                error={errors.roomTypes?.[index]?.baseRate?.message}
+              />
+            )}
           />
           <Input
             label="Bed Type"
             hint="e.g. king, twin"
-            {...register(`roomTypes.${index}.bedType`)}
+            {...register(`roomTypes.${index}.bedType`, {
+              // Normalized on blur, not every keystroke — forcing
+              // capitalization mid-word while someone's still typing
+              // "king s..." would be actively disruptive, not helpful.
+              onBlur: (event) => setValue(`roomTypes.${index}.bedType`, toTitleCase(event.target.value)),
+            })}
             error={errors.roomTypes?.[index]?.bedType?.message}
           />
           <Input
@@ -154,6 +168,7 @@ export function RoomTypeForm({ onBack, onNext }: { onBack: () => void; onNext: (
                 value={amenitiesField.value ?? []}
                 onChange={amenitiesField.onChange}
                 allowCustom
+                formatTag={toTitleCase}
                 hint="Pick from common amenities or type your own and hit Add"
               />
             )}
