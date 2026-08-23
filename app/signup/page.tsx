@@ -171,15 +171,21 @@ function SignupPageInner() {
 
         {step === 'org-structure' ? <OrgStructureForm onNext={() => goTo('branch-setup')} /> : null}
 
-        {step === 'branch-setup' ? <BranchSetupForm onNext={() => goTo('room-type')} /> : null}
+        {step === 'branch-setup' ? (
+          <BranchSetupForm onBack={() => goTo('org-structure')} onNext={() => goTo('room-type')} />
+        ) : null}
 
-        {step === 'room-type' ? <RoomTypeForm onNext={() => goTo('rooms')} /> : null}
+        {step === 'room-type' ? (
+          <RoomTypeForm onBack={() => goTo('branch-setup')} onNext={() => goTo('rooms')} />
+        ) : null}
 
-        {step === 'rooms' ? <RoomsForm onNext={() => goTo('staff-invite')} /> : null}
+        {step === 'rooms' ? <RoomsForm onBack={() => goTo('room-type')} onNext={() => goTo('staff-invite')} /> : null}
 
-        {step === 'staff-invite' ? <StaffInviteStep onNext={() => goTo('review')} /> : null}
+        {step === 'staff-invite' ? (
+          <StaffInviteStep onBack={() => goTo('rooms')} onNext={() => goTo('review')} />
+        ) : null}
 
-        {step === 'review' ? <ReviewStep onFinish={() => goTo('complete')} /> : null}
+        {step === 'review' ? <ReviewStep onBack={() => goTo('staff-invite')} onFinish={() => goTo('complete')} /> : null}
 
         {step === 'complete' ? <CompleteStep /> : null}
       </Container>

@@ -786,3 +786,95 @@ and the form still advances cleanly with zero validation errors on submit.
 
 ### Carried forward
 - Everything else already carried forward from Phase 10 — unchanged.
+
+## Phase 12 — Timezone dropdown, sub-step Back navigation, rate/amenity field fixes, fixed sidebar (2026-08-23)
+
+### Delivered
+- **Timezone is a real dropdown again, scoped to the selected Country** —
+  `lib/timezones.ts`'s new `timezoneOptionsFor()`: every real IANA zone for
+  the ~15 countries that genuinely span more than one (US, Russia, Canada,
+  Australia, Brazil, Mexico, Indonesia, DRC, Kazakhstan, Mongolia, Chile,
+  Ecuador, Portugal, Spain, New Zealand, Kiribati), pre-selected to that
+  country's most-populous zone but freely correctable from the same list.
+  Direct follow-up to Phase 11 hiding it entirely — that traded away real
+  correctness for multi-timezone countries; this keeps Currency silent
+  (still a safe default almost everywhere) but gives Timezone back its own
+  field since it's night-audit-critical and the trade-off wasn't actually
+  safe there.
+- **Back buttons on every sub-step inside the "Branch Setup" sidebar
+  phase** (`BranchSetupForm` → `RoomTypeForm` → `RoomsForm` →
+  `StaffInviteStep` → `ReviewStep`) — reported directly: these four+
+  internal steps all collapse into one sidebar entry (see `WizardShell`'s
+  header comment), so once past Branch Setup there was no way back to fix
+  something without the sidebar's own back-navigation, which only jumps to
+  a *phase's* first step, not the specific sub-step just left. Safe by
+  construction, not just convenient — every one of these steps is pure
+  local `wizardStore` state until Review's "Finish" (Phase 7), so going
+  back is never re-triggering a real backend call.
+- **`Base Nightly Rate` prefixed with the branch's own currency symbol**
+  (`lib/currencies.ts`'s new `currencySymbolFor()`, via `Intl.NumberFormat`
+  — not a second ~190-row hand-authored table; falls back to the plain
+  code for currencies CLDR's `en` locale doesn't define a distinct glyph
+  for, e.g. `NGN`/`ZAR`/`KES`, which is correct, not a gap). `Input`
+  gained a `suffix` prop (mirroring the existing `prefix` slot from Phase
+  9's phone field) for the second half of this batch: `Room Size` relabeled
+  to "Room Size (in square meters)" with a live `m²` suffix, removing the
+  now-redundant "Square meters, optional" hint.
+- **Fixed: `MultiSelectTagInput`'s Amenities field advertised "pick from
+  common amenities or type your own" but only the typing half actually
+  existed.** `allowCustom={true}` rendered the free-text input/Add button
+  only — `options` was accepted as a prop and used to resolve chip labels,
+  but never rendered as anything pickable. Now shows both together: the
+  free-text row plus a "Pick from common options" trigger reusing the same
+  checklist UI the dropdown-only mode already had, each fully accessible on
+  its own (the trigger gets its own id/`aria-label` in combined mode
+  instead of duplicating the free-text field's hint/error announcement).
+- **The wizard's sidebar is genuinely fixed now, not just visually
+  static.** First attempt was a plain `sticky top-0` — didn't hold up
+  (verified live, not assumed): the flex row's default `align-items:
+  stretch` stretches `aside` to match `main`'s full height, leaving a
+  sticky element with no scroll range to ever "catch" on. Replaced with the
+  standard app-shell pattern instead: the whole shell is capped to
+  `h-screen`/`overflow-hidden` (the browser window itself never scrolls),
+  and `main` alone gets `overflow-y-auto` — sidebar *and* header both stay
+  visually fixed, only the step content scrolls, confirmed by directly
+  reading `main`'s `scrollTop` and the sidebar's bounding box before/after
+  a scroll (identical, not just "close").
+
+### Decisions & deviations
+1. **Currency still has no field of its own, only Timezone got one back.**
+   Re-confirmed the asymmetry is real, not an oversight: one official
+   currency per country covers nearly every case, but several countries
+   genuinely operate more than one real timezone — "derive silently" was
+   never a safe trade-off for the second one.
+2. **The currency-symbol/room-size-suffix work only touches
+   `RoomTypeForm`** — the only screen in the wizard with a rate field or a
+   size-in-a-unit field; nothing else needed the new `Input` `suffix` prop
+   or `currencySymbolFor` this pass.
+
+### Verified
+`npm run lint` and `npx tsc --noEmit` clean throughout (one unrelated `tsc`
+run hit a Node/V8 native crash mid-batch — re-ran clean immediately after;
+not a real compiler error, and lint had already passed in the same batch).
+Live Playwright checks for every item above: US timezone dropdown shows 7
+real zone options and a manual pick (Denver) survives; switching to a
+single-zone country (Nigeria) correctly resets to its one option; the
+full Branch Setup → Room Type → Rooms flow still submits cleanly end to
+end; the amenities picker both adds a predefined option (Wi-Fi, via the
+new trigger) and a typed custom one (Rooftop pool) into the same chip
+list; the sidebar's bounding box is byte-for-byte identical before and
+after scrolling `main` by 300px, with the header still visible throughout.
+
+### Carried forward
+- **Multiple branches per organization, multiple room types per branch,
+  and a richer individual-room-card + bulk-"Generate" Rooms screen** —
+  requested directly, mid-session, not yet started. This is the "Full"
+  onboarding mode already flagged as deferred since Phase 3 (buildings/
+  floors, more than one room type/room batch) — a real data-model change
+  (`wizardStore.branch`/`roomType` go from a single object each to arrays,
+  Review's "Finish" chain needs to loop, not call once per resource type)
+  and UI rebuild, not a quick add. Needs its own scoping pass before
+  implementation, same as every other multi-step architecture change this
+  session paused for first (deferred submission, the resume-onboarding
+  flow) rather than guessing at the shape from a short description.
+- Everything else already carried forward from Phase 11 — unchanged.

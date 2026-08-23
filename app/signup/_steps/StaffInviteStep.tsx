@@ -33,7 +33,7 @@ type Role = { id: string; name: string };
  * are optional, matching the reference's own radio choice between
  * configuring now and skipping.
  */
-export function StaffInviteStep({ onNext }: { onNext: () => void }) {
+export function StaffInviteStep({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
   const accessToken = useAuthStore((state) => state.accessToken);
   const tenantId = useAuthStore((state) => state.user?.tenantId);
   const staffInvites = useWizardStore((state) => state.staffInvites);
@@ -138,6 +138,9 @@ export function StaffInviteStep({ onNext }: { onNext: () => void }) {
       </Section>
 
       <div className="flex items-center gap-3">
+        <Button type="button" variant="secondary" onClick={onBack}>
+          Back
+        </Button>
         <Button type="submit" loading={isSubmitting} disabled={roles === null}>
           Continue
         </Button>

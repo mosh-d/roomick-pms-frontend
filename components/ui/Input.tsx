@@ -10,6 +10,8 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   error?: string;
   /** Fixed, non-editable text before the field's value — e.g. a phone field's `+234` calling-code badge, derived from a country the user already picked elsewhere. */
   prefix?: string;
+  /** Fixed, non-editable text after the field's value — e.g. a room-size field's `m²` unit. */
+  suffix?: string;
 };
 
 /**
@@ -46,7 +48,7 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
  * it behaves the same way every time.
  */
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, hint, error, prefix, id, name, type, className = '', ...rest },
+  { label, hint, error, prefix, suffix, id, name, type, className = '', ...rest },
   ref,
 ) {
   const [revealed, setRevealed] = useState(false);
@@ -82,6 +84,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           } ${error ? 'border-red-600' : 'border-accent/40 focus:border-secondary'} ${className}`}
           {...rest}
         />
+        {suffix ? (
+          <span className="pb-1 pl-1.5 text-body text-secondary-light shrink-0" aria-hidden="true">
+            {suffix}
+          </span>
+        ) : null}
         {isPassword ? (
           <button
             type="button"

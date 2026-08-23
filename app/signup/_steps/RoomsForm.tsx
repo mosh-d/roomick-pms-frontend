@@ -21,7 +21,7 @@ import { useAutosaveDraft } from '@/lib/useAutosaveDraft';
  * PHASE_NOTES.md's "deferred submission" entry and BranchSetupForm's
  * header comment.
  */
-export function RoomsForm({ onNext }: { onNext: () => void }) {
+export function RoomsForm({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
   const rooms = useWizardStore((state) => state.rooms);
   const patch = useWizardStore((state) => state.patch);
   const {
@@ -59,9 +59,14 @@ export function RoomsForm({ onNext }: { onNext: () => void }) {
         <Input label="View" hint="Optional, e.g. sea, garden" {...register('view')} error={errors.view?.message} />
       </Section>
 
-      <Button type="submit" loading={isSubmitting}>
-        Continue
-      </Button>
+      <div className="flex items-center gap-3">
+        <Button type="button" variant="secondary" onClick={onBack}>
+          Back
+        </Button>
+        <Button type="submit" loading={isSubmitting}>
+          Continue
+        </Button>
+      </div>
     </form>
   );
 }

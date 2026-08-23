@@ -25,7 +25,7 @@ import { useWizardStore } from '@/lib/store/wizardStore';
  * created real resources, clicking "Finish" again picks up from step 3
  * instead of re-running (and failing on) the ones that already worked.
  */
-export function ReviewStep({ onFinish }: { onFinish: () => void }) {
+export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish: () => void }) {
   const accessToken = useAuthStore((state) => state.accessToken);
   const tenantId = useAuthStore((state) => state.user?.tenantId);
   const wizard = useWizardStore();
@@ -161,9 +161,14 @@ export function ReviewStep({ onFinish }: { onFinish: () => void }) {
 
       {submitError ? <p className="text-small text-red-600">{submitError}</p> : null}
 
-      <Button type="button" onClick={handleFinish} loading={submitting}>
-        Finish
-      </Button>
+      <div className="flex items-center gap-3">
+        <Button type="button" variant="secondary" onClick={onBack} disabled={submitting}>
+          Back
+        </Button>
+        <Button type="button" onClick={handleFinish} loading={submitting}>
+          Finish
+        </Button>
+      </div>
     </div>
   );
 }

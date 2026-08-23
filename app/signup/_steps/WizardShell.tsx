@@ -63,8 +63,17 @@ export function WizardShell({
   const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL ?? 'http://localhost:3002';
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="flex items-center justify-between gap-4 border-b border-accent/20 px-6 py-4">
+    // `h-screen` + `overflow-hidden` (not `min-h-screen`) caps the whole
+    // shell to exactly one viewport, so the browser window itself never
+    // scrolls — header and sidebar both stay visually fixed in place.
+    // `main` gets its own `overflow-y-auto` below, so it's the only part
+    // that actually scrolls, matching what was asked directly ("only the
+    // main page contents scroll"). A plain `sticky` sidebar was tried
+    // first and didn't hold up: the flex row's default `align-items:
+    // stretch` stretches `aside` to match `main`'s full height (confirmed
+    // live), leaving a sticky element with no room to ever "catch".
+    <div className="h-screen flex flex-col overflow-hidden">
+      <header className="shrink-0 flex items-center justify-between gap-4 border-b border-accent/20 px-6 py-4">
         <div className="flex items-center gap-3 text-small min-w-0">
           <a
             href={landingUrl}
@@ -85,8 +94,8 @@ export function WizardShell({
         </Link>
       </header>
 
-      <div className="flex flex-1">
-        <aside className="w-60 shrink-0 border-r border-accent/20 px-4 py-6 flex flex-col gap-2">
+      <div className="flex flex-1 min-h-0">
+        <aside className="w-60 shrink-0 overflow-y-auto border-r border-accent/20 px-4 py-6 flex flex-col gap-2">
           {PHASES.map((phase, index) => {
             const isCurrent = index === currentIndex;
             const isDone = index < currentIndex;
@@ -128,7 +137,7 @@ export function WizardShell({
           })}
         </aside>
 
-        <main className="flex-1 px-6 py-10">{children}</main>
+        <main className="flex-1 overflow-y-auto px-6 py-10">{children}</main>
       </div>
     </div>
   );

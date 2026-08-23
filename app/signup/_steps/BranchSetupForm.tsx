@@ -11,7 +11,7 @@ import { branchSetupSchema, type BranchSetupFormValues } from '@/lib/schemas/onb
 import { useWizardStore } from '@/lib/store/wizardStore';
 import { useAutosaveDraft } from '@/lib/useAutosaveDraft';
 import { COUNTRIES } from '@/lib/countries';
-import { defaultTimezoneFor } from '@/lib/timezones';
+import { defaultTimezoneFor, timezoneOptionsFor } from '@/lib/timezones';
 import { defaultCurrencyFor } from '@/lib/currencies';
 
 const CATEGORY_OPTIONS = [
@@ -38,21 +38,27 @@ const CATEGORY_OPTIONS = [
  *
  * Country is a real dropdown (`lib/countries.ts`, the same static ISO
  * 3166-1 list `RegisterForm`'s Country field already uses — reused, not a
- * second copy). Timezone and currency have **no field in this form at
- * all** — both are derived silently from the chosen Country
- * (`lib/timezones.ts`, `lib/currencies.ts`) and written straight into RHF
- * state via `setValue`, direct request: asking separately for two things a
- * country selection already implies was judged unnecessary friction.
- * Currency is a safe silent default for nearly every country (one official
- * currency each); timezone is a genuine, accepted compromise for
- * multi-zone countries (a US hotel outside `America/New_York` gets the
- * "wrong" one with no way to correct it from this screen — the DB column
- * is required and night-audit-critical, so it still needs *some* valid
- * value, just not a user-facing field for it here). Check-in/check-out use
- * a native `<input type="time">` via Input's HTML passthrough rather than
- * a custom time-picker component.
+ * second copy). Currency has **no field of its own** — one official
+ * currency per country covers nearly every real case, so it's derived
+ * silently (`lib/currencies.ts`) and written straight into RHF state via
+ * `setValue`, direct request: asking separately for something a country
+ * selection already implies was judged unnecessary friction.
+ *
+ * Timezone *is* its own dropdown (`lib/timezones.ts`'s `timezoneOptionsFor`)
+ * — unlike Currency, "one default per country" isn't good enough here: the
+ * DB column is required and night-audit-critical (confirmed against the
+ * schema, not assumed — `Branch.timezone`'s own comment), and several
+ * countries this app supports genuinely span more than one real zone (the
+ * US, Russia, Canada, Australia, ...). The dropdown's *options* change with
+ * the selected Country (every real zone for the ~15 multi-zone countries,
+ * one option for everyone else), pre-selected to that country's
+ * most-populous zone but freely correctable from the same list — the
+ * actual fix for "which of my country's zones is this property in", not
+ * just a better guess. Check-in/check-out use a native `<input
+ * type="time">` via Input's HTML passthrough rather than a custom
+ * time-picker component.
  */
-export function BranchSetupForm({ onNext }: { onNext: () => void }) {
+export function BranchSetupForm({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
   const branch = useWizardStore((state) => state.branch);
   const patch = useWizardStore((state) => state.patch);
   const {
@@ -73,15 +79,19 @@ export function BranchSetupForm({ onNext }: { onNext: () => void }) {
   // losing whatever hadn't been submitted yet. See useAutosaveDraft.ts.
   useAutosaveDraft(watch, (values) => patch({ branch: values }));
 
-  // Both derived silently from Country, no field of their own — see this
-  // file's header comment. Runs on every Country change, unconditionally
-  // (no "has the owner edited this" tracking needed, since there's nothing
-  // for them to edit).
+  // Currency: derived silently, no field of its own — see this file's
+  // header comment. Timezone: only *pre-selects* here — the field itself
+  // is a real, freely-correctable dropdown below. Both effects only fire
+  // when Country itself changes (not on every render), so a manual
+  // Timezone pick from that same country's own option list is never
+  // clobbered — only picking a *different* country resets it, which is
+  // correct: the old zone generally isn't even a valid option anymore.
   const country = watch('country');
   useEffect(() => {
     setValue('timezone', defaultTimezoneFor(country) ?? '', { shouldValidate: false });
     setValue('currency', defaultCurrencyFor(country) ?? '', { shouldValidate: false });
   }, [country, setValue]);
+  const timezoneOptions = timezoneOptionsFor(country);
 
   function onSubmit(values: BranchSetupFormValues) {
     patch({ branch: values });
@@ -130,13 +140,34 @@ export function BranchSetupForm({ onNext }: { onNext: () => void }) {
       </Section>
 
       <Section label="Operations">
+        <Controller
+          control={control}
+          name="timezone"
+          render={({ field }) => (
+            <Select
+              name="timezone"
+              label="Timezone"
+              hint="Pre-filled from Country above — correct it if this property is in a different zone."
+              options={timezoneOptions}
+              value={field.value || null}
+              onChange={field.onChange}
+              disabled={timezoneOptions.length === 0}
+              error={errors.timezone?.message}
+            />
+          )}
+        />
         <Input label="Check-in Time" type="time" {...register('checkInTime')} error={errors.checkInTime?.message} />
         <Input label="Check-out Time" type="time" {...register('checkOutTime')} error={errors.checkOutTime?.message} />
       </Section>
 
-      <Button type="submit" loading={isSubmitting}>
-        Continue
-      </Button>
+      <div className="flex items-center gap-3">
+        <Button type="button" variant="secondary" onClick={onBack}>
+          Back
+        </Button>
+        <Button type="submit" loading={isSubmitting}>
+          Continue
+        </Button>
+      </div>
     </form>
   );
 }

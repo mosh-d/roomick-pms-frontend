@@ -208,3 +208,22 @@ export function defaultCurrencyFor(country: string | null | undefined): string |
   if (!country) return null;
   return DEFAULT_CURRENCY_BY_COUNTRY[country] ?? null;
 }
+
+/**
+ * The actual glyph for a currency code (`NGN` → `₦`, `USD` → `$`, ...) —
+ * via `Intl.NumberFormat`, not a second hand-authored ~190-row table.
+ * Many currencies here don't have a distinct symbol at all (several
+ * African/Central Asian codes just render as the code itself) — that's the
+ * platform's own answer for "what does this currency look like", not a gap
+ * in this function. Falls back to the raw code if `currency` isn't a real
+ * ISO 4217 value `Intl` recognizes (e.g. still empty, mid-typing).
+ */
+export function currencySymbolFor(currency: string | null | undefined): string {
+  if (!currency) return '';
+  try {
+    const parts = new Intl.NumberFormat('en', { style: 'currency', currency, currencyDisplay: 'symbol' }).formatToParts(0);
+    return parts.find((part) => part.type === 'currency')?.value ?? currency;
+  } catch {
+    return currency;
+  }
+}

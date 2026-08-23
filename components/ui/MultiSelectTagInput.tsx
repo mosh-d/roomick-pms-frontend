@@ -10,8 +10,16 @@ import type { SelectOption } from './Select';
  * with checkmarks for already-chosen values — see the "Applies to"
  * field in the reference's Tax Rule Builder) and a free-text tag input
  * (type anything, hit Add/Enter — see "Views"/"Amenities"). The
- * `allowCustom` prop switches between them rather than shipping two
- * near-duplicate components.
+ * `allowCustom` prop switches which free-entry affordance is available,
+ * not whether `options` shows at all — pass both `allowCustom` and a
+ * non-empty `options` (as `RoomTypeForm`'s Amenities field does) to get
+ * free text *and* a "pick from common options" list together; the picker
+ * trigger only renders when `options` is actually non-empty either way, so
+ * a pure free-text field (`options={[]}`) doesn't show a pointless empty
+ * list. Caught directly: this field's own hint said "pick from common
+ * amenities or type your own" while only the typing half actually worked —
+ * `options` was accepted as a prop and used for chip labels, but never
+ * rendered as anything pickable once `allowCustom` was true.
  *
  * Matches Select.tsx's inline (not floating) open-list pattern and its
  * `bg-secondary-light/15` open-state box, for the same reasons — see that
@@ -117,7 +125,9 @@ export function MultiSelectTagInput({
 
       {allowCustom ? (
         // Free-text mode: underline field + Add button/Enter-to-add,
-        // matching Input.tsx's field anatomy.
+        // matching Input.tsx's field anatomy. hint/error are announced from
+        // here (not the picker trigger below) — this is the field the
+        // `label` is actually `htmlFor`-linked to.
         <div className="flex items-end gap-3">
           <input
             id={fieldId}
@@ -142,27 +152,34 @@ export function MultiSelectTagInput({
             <PlusIcon className="size-4" /> Add
           </button>
         </div>
-      ) : (
-        // Dropdown-constrained mode: underline trigger + inline checklist
-        // (checkmarks toggle membership, chips above are the source of
-        // truth for what's selected).
+      ) : null}
+
+      {/* Picker trigger — shown whenever there's actually a predefined
+          list to pick from, in *both* modes. In pure dropdown mode
+          (`!allowCustom`) this is the field's only control, so it owns the
+          real `id`/label/hint/error wiring; in combined mode it's a second,
+          supplementary control (the free-text input above already owns
+          those), so it gets its own id and a plain `aria-label` instead of
+          repeating the same hint/error a screen reader just heard once. */}
+      {options.length > 0 ? (
         <button
           type="button"
-          id={fieldId}
+          id={allowCustom ? `${fieldId}-picker` : fieldId}
           aria-haspopup="listbox"
           aria-expanded={open}
-          aria-labelledby={`${fieldId}-label`}
+          {...(allowCustom
+            ? { 'aria-label': `Pick ${label} from common options` }
+            : { 'aria-labelledby': `${fieldId}-label`, 'aria-describedby': errorId ?? hintId })}
           onClick={() => setOpen((o) => !o)}
-          aria-describedby={errorId ?? hintId}
           className={`w-full flex items-center justify-between gap-2 bg-transparent border-0 border-b pb-1 text-body text-left text-accent cursor-pointer focus:outline-none ${
-            error ? 'border-red-600' : open ? 'border-secondary' : 'border-accent/40'
+            !allowCustom && error ? 'border-red-600' : open ? 'border-secondary' : 'border-accent/40'
           }`}
         >
-          Tick an option
+          {allowCustom ? 'Pick from common options' : 'Tick an option'}
         </button>
-      )}
+      ) : null}
 
-      {!allowCustom && open ? (
+      {open && options.length > 0 ? (
         <ul role="listbox" className="mt-1 flex flex-col max-h-64 overflow-auto">
           {options.map((option) => {
             const isSelected = value.includes(option.value);

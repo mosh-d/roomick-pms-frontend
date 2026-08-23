@@ -1,14 +1,13 @@
+import type { SelectOption } from '@/components/ui/Select';
+
 /**
  * One representative IANA timezone per `lib/countries.ts` entry — the
  * capital/most-populous zone for countries that span more than one (e.g.
  * `US` → `America/New_York`, not every US zone; `RU` → `Europe/Moscow`).
- * Purely a *default suggestion* for `BranchSetupForm`'s Timezone field, the
- * same "auto-fill, stay editable" pattern as the subdomain suggestion in
- * `RegisterForm` — a hotel in Denver still needs to correct this by hand,
- * and can. Never used to validate; `branchSetupSchema`'s `timezone` stays
- * free text (a full country → *every* zone picker is real, separate work,
- * same reasoning `BranchSetupForm`'s header comment already gives for not
- * building IANA-timezone/ISO-4217-currency pickers yet).
+ * Drives the *default* selection in `BranchSetupForm`'s Timezone dropdown
+ * (see `timezoneOptionsFor` below for the actual list of choices) — a
+ * hotel outside the default zone still picks the right one from that same
+ * dropdown, it's not stuck with this guess.
  */
 export const DEFAULT_TIMEZONE_BY_COUNTRY: Record<string, string> = {
   AF: 'Asia/Kabul',
@@ -209,4 +208,129 @@ export const DEFAULT_TIMEZONE_BY_COUNTRY: Record<string, string> = {
 export function defaultTimezoneFor(country: string | null | undefined): string | null {
   if (!country) return null;
   return DEFAULT_TIMEZONE_BY_COUNTRY[country] ?? null;
+}
+
+/**
+ * Every real IANA zone for countries that genuinely span more than one —
+ * the actual fix for "a single country can have multiple timezones"
+ * (Denver vs. New York, Perth vs. Sydney, ...), not just a better guess.
+ * Deliberately not exhaustive down to every minor historical/exception
+ * sub-zone IANA tracks (e.g. US's `America/Indiana/*` county exceptions,
+ * Russia's very smallest regions) — the primary zones covering where
+ * hotels actually operate. Every country *not* listed here has exactly one
+ * real zone, so `timezoneOptionsFor` falls back to
+ * `DEFAULT_TIMEZONE_BY_COUNTRY` for the other 175+ entries rather than
+ * hand-listing a thousand-plus single-item arrays.
+ */
+const MULTI_ZONE_COUNTRIES: Record<string, SelectOption[]> = {
+  US: [
+    { value: 'America/New_York', label: 'Eastern — America/New_York' },
+    { value: 'America/Chicago', label: 'Central — America/Chicago' },
+    { value: 'America/Denver', label: 'Mountain — America/Denver' },
+    { value: 'America/Phoenix', label: 'Mountain, no DST — America/Phoenix' },
+    { value: 'America/Los_Angeles', label: 'Pacific — America/Los_Angeles' },
+    { value: 'America/Anchorage', label: 'Alaska — America/Anchorage' },
+    { value: 'Pacific/Honolulu', label: 'Hawaii — Pacific/Honolulu' },
+  ],
+  CA: [
+    { value: 'America/St_Johns', label: 'Newfoundland — America/St_Johns' },
+    { value: 'America/Halifax', label: 'Atlantic — America/Halifax' },
+    { value: 'America/Toronto', label: 'Eastern — America/Toronto' },
+    { value: 'America/Winnipeg', label: 'Central — America/Winnipeg' },
+    { value: 'America/Edmonton', label: 'Mountain — America/Edmonton' },
+    { value: 'America/Vancouver', label: 'Pacific — America/Vancouver' },
+  ],
+  RU: [
+    { value: 'Europe/Kaliningrad', label: 'Kaliningrad — Europe/Kaliningrad' },
+    { value: 'Europe/Moscow', label: 'Moscow — Europe/Moscow' },
+    { value: 'Europe/Samara', label: 'Samara — Europe/Samara' },
+    { value: 'Asia/Yekaterinburg', label: 'Yekaterinburg — Asia/Yekaterinburg' },
+    { value: 'Asia/Omsk', label: 'Omsk — Asia/Omsk' },
+    { value: 'Asia/Novosibirsk', label: 'Novosibirsk — Asia/Novosibirsk' },
+    { value: 'Asia/Krasnoyarsk', label: 'Krasnoyarsk — Asia/Krasnoyarsk' },
+    { value: 'Asia/Irkutsk', label: 'Irkutsk — Asia/Irkutsk' },
+    { value: 'Asia/Yakutsk', label: 'Yakutsk — Asia/Yakutsk' },
+    { value: 'Asia/Vladivostok', label: 'Vladivostok — Asia/Vladivostok' },
+    { value: 'Asia/Magadan', label: 'Magadan — Asia/Magadan' },
+    { value: 'Asia/Kamchatka', label: 'Kamchatka — Asia/Kamchatka' },
+  ],
+  AU: [
+    { value: 'Australia/Perth', label: 'Western — Australia/Perth' },
+    { value: 'Australia/Darwin', label: 'Central, no DST — Australia/Darwin' },
+    { value: 'Australia/Adelaide', label: 'Central — Australia/Adelaide' },
+    { value: 'Australia/Brisbane', label: 'Eastern, no DST — Australia/Brisbane' },
+    { value: 'Australia/Sydney', label: 'Eastern — Australia/Sydney' },
+    { value: 'Australia/Lord_Howe', label: 'Lord Howe Island — Australia/Lord_Howe' },
+  ],
+  BR: [
+    { value: 'America/Noronha', label: 'Fernando de Noronha — America/Noronha' },
+    { value: 'America/Sao_Paulo', label: 'Brasília — America/Sao_Paulo' },
+    { value: 'America/Manaus', label: 'Amazon — America/Manaus' },
+    { value: 'America/Rio_Branco', label: 'Acre — America/Rio_Branco' },
+  ],
+  MX: [
+    { value: 'America/Cancun', label: 'Southeast — America/Cancun' },
+    { value: 'America/Mexico_City', label: 'Central — America/Mexico_City' },
+    { value: 'America/Chihuahua', label: 'Pacific — America/Chihuahua' },
+    { value: 'America/Hermosillo', label: 'Sonora, no DST — America/Hermosillo' },
+    { value: 'America/Tijuana', label: 'Northwest — America/Tijuana' },
+  ],
+  ID: [
+    { value: 'Asia/Jakarta', label: 'Western — Asia/Jakarta' },
+    { value: 'Asia/Makassar', label: 'Central — Asia/Makassar' },
+    { value: 'Asia/Jayapura', label: 'Eastern — Asia/Jayapura' },
+  ],
+  CD: [
+    { value: 'Africa/Kinshasa', label: 'West — Africa/Kinshasa' },
+    { value: 'Africa/Lubumbashi', label: 'East — Africa/Lubumbashi' },
+  ],
+  KZ: [
+    { value: 'Asia/Almaty', label: 'East — Asia/Almaty' },
+    { value: 'Asia/Aqtobe', label: 'West — Asia/Aqtobe' },
+  ],
+  MN: [
+    { value: 'Asia/Ulaanbaatar', label: 'East — Asia/Ulaanbaatar' },
+    { value: 'Asia/Hovd', label: 'West — Asia/Hovd' },
+  ],
+  CL: [
+    { value: 'America/Santiago', label: 'Mainland — America/Santiago' },
+    { value: 'Pacific/Easter', label: 'Easter Island — Pacific/Easter' },
+  ],
+  EC: [
+    { value: 'America/Guayaquil', label: 'Mainland — America/Guayaquil' },
+    { value: 'Pacific/Galapagos', label: 'Galápagos — Pacific/Galapagos' },
+  ],
+  PT: [
+    { value: 'Europe/Lisbon', label: 'Mainland — Europe/Lisbon' },
+    { value: 'Atlantic/Madeira', label: 'Madeira — Atlantic/Madeira' },
+    { value: 'Atlantic/Azores', label: 'Azores — Atlantic/Azores' },
+  ],
+  ES: [
+    { value: 'Europe/Madrid', label: 'Mainland — Europe/Madrid' },
+    { value: 'Atlantic/Canary', label: 'Canary Islands — Atlantic/Canary' },
+  ],
+  NZ: [
+    { value: 'Pacific/Auckland', label: 'Mainland — Pacific/Auckland' },
+    { value: 'Pacific/Chatham', label: 'Chatham Islands — Pacific/Chatham' },
+  ],
+  KI: [
+    { value: 'Pacific/Tarawa', label: 'Gilbert Islands — Pacific/Tarawa' },
+    { value: 'Pacific/Enderbury', label: 'Phoenix Islands — Pacific/Enderbury' },
+    { value: 'Pacific/Kiritimati', label: 'Line Islands — Pacific/Kiritimati' },
+  ],
+};
+
+/**
+ * The actual dropdown options for `BranchSetupForm`'s Timezone field —
+ * every real zone for the ~15 countries that genuinely have more than one,
+ * a single option (from `DEFAULT_TIMEZONE_BY_COUNTRY`) for everyone else.
+ * `[]` before a country is picked (nothing to choose from yet, matches
+ * Country being a required field upstream of this one).
+ */
+export function timezoneOptionsFor(country: string | null | undefined): SelectOption[] {
+  if (!country) return [];
+  const multi = MULTI_ZONE_COUNTRIES[country];
+  if (multi) return multi;
+  const single = DEFAULT_TIMEZONE_BY_COUNTRY[country];
+  return single ? [{ value: single, label: single }] : [];
 }

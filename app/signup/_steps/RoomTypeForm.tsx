@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { roomTypeSchema, type RoomTypeFormValues } from '@/lib/schemas/onboarding';
 import { useWizardStore } from '@/lib/store/wizardStore';
 import { useAutosaveDraft } from '@/lib/useAutosaveDraft';
+import { currencySymbolFor } from '@/lib/currencies';
 
 const AMENITY_OPTIONS = [
   { value: 'wifi', label: 'Wi-Fi' },
@@ -23,9 +24,17 @@ const AMENITY_OPTIONS = [
  * property/dto/room-type.dto.ts's CreateRoomTypeDto. Purely local, like
  * every step from Organization Structure onward — see PHASE_NOTES.md's
  * "deferred submission" entry and BranchSetupForm's header comment.
+ *
+ * Base Nightly Rate is prefixed with the branch's own currency symbol
+ * (`lib/currencies.ts`'s `currencySymbolFor`, from the previous step's
+ * `branch.currency` — already set, this step comes after Branch Setup in
+ * the wizard) — a bare number with no currency shown next to it is
+ * ambiguous the moment more than one currency exists anywhere in the
+ * product.
  */
-export function RoomTypeForm({ onNext }: { onNext: () => void }) {
+export function RoomTypeForm({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
   const roomType = useWizardStore((state) => state.roomType);
+  const currencySymbol = useWizardStore((state) => currencySymbolFor(state.branch?.currency));
   const patch = useWizardStore((state) => state.patch);
   const {
     register,
@@ -54,15 +63,16 @@ export function RoomTypeForm({ onNext }: { onNext: () => void }) {
           label="Base Nightly Rate"
           type="number"
           step="0.01"
+          prefix={currencySymbol || undefined}
           {...register('baseRate', { valueAsNumber: true })}
           error={errors.baseRate?.message}
         />
         <Input label="Bed Type" hint="e.g. king, twin" {...register('bedType')} error={errors.bedType?.message} />
         <Input
-          label="Room Size"
+          label="Room Size (in square meters)"
           type="number"
           step="0.1"
-          hint="Square meters, optional"
+          suffix="m²"
           // Not `valueAsNumber` — this field is optional, and an empty
           // string coerced with valueAsNumber becomes NaN, not undefined,
           // which fails z.number().optional()'s check. setValueAs maps the
@@ -100,9 +110,14 @@ export function RoomTypeForm({ onNext }: { onNext: () => void }) {
         />
       </Section>
 
-      <Button type="submit" loading={isSubmitting}>
-        Continue
-      </Button>
+      <div className="flex items-center gap-3">
+        <Button type="button" variant="secondary" onClick={onBack}>
+          Back
+        </Button>
+        <Button type="submit" loading={isSubmitting}>
+          Continue
+        </Button>
+      </div>
     </form>
   );
 }
