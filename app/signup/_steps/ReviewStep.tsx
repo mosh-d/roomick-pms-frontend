@@ -257,10 +257,17 @@ async function finishBranch(branch: BranchDraft, brandId: string, accessToken: s
       tenantId,
       body: {
         name: roomType.name,
-        baseRate: roomType.baseRate,
+        // Rounded here too, not just on the form's own onBlur/mount
+        // normalization — the last point before this actually reaches the
+        // backend, so a stale draft value from before that normalization
+        // existed still can't slip through if this branch were finished
+        // without ever re-opening the Room Type step. Decimal.toFixed(n)
+        // matches the DB columns exactly (RoomType.baseRate Decimal(12,2),
+        // sizeM2 Decimal(6,1)).
+        baseRate: Number(roomType.baseRate.toFixed(2)),
         capacity: { adults: roomType.adults, children: roomType.children },
         bedType: roomType.bedType || undefined,
-        sizeM2: roomType.sizeM2,
+        sizeM2: roomType.sizeM2 !== undefined ? Number(roomType.sizeM2.toFixed(1)) : undefined,
         amenities: roomType.amenities,
       },
     });

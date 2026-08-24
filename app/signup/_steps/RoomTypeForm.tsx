@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -72,6 +73,24 @@ export function RoomTypeForm({ onBack, onNext }: { onBack: () => void; onNext: (
     mode: 'onTouched',
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'roomTypes' });
+
+  // Normalizes every sizeM2 on mount, not just on blur — `mode: 'onTouched'`
+  // only validates/corrects a field once it's actually interacted with, so
+  // a stale out-of-range value already sitting in a draft from before the
+  // onBlur rounding shipped would otherwise show no warning and never
+  // self-correct until someone happened to click into that exact field.
+  // `.toFixed(1)` is a no-op for an already-valid value, so this is safe to
+  // run unconditionally, once, on load.
+  useEffect(() => {
+    fields.forEach((_, index) => {
+      const current = branch?.roomTypes[index]?.sizeM2;
+      if (current === undefined) return;
+      setValue(`roomTypes.${index}.sizeM2`, Number(current.toFixed(1)), { shouldValidate: false });
+    });
+    // Runs once against the data the form actually mounted with — fields
+    // added later via "+ Add room type" start with no sizeM2 to normalize.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useAutosaveDraft(watch, (values) => {
     if (!branch) return;
