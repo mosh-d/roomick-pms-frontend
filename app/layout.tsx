@@ -25,7 +25,15 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     // properties (--font-body / --font-display) are in scope everywhere.
     // They shadow the static fallback stacks declared in
     // design-system/tokens.css once the fonts load — see lib/fonts.ts.
-    <html lang="en" className={`${satoshi.variable} ${playfairDisplay.variable} h-full`}>
+    //
+    // suppressHydrationWarning: browser extensions (password managers,
+    // "installed" markers, etc.) inject their own attributes onto <html>
+    // before React hydrates — e.g. `data-qb-installed`, never anything
+    // this app renders. That's a real, sanctioned reason to suppress here
+    // (see node_modules/next/dist/docs's "Preventing Flash" guide), not a
+    // blanket "hide hydration bugs" — it only silences *attribute*
+    // mismatches on this one element, not children or genuine app bugs.
+    <html lang="en" className={`${satoshi.variable} ${playfairDisplay.variable} h-full`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-white font-body text-body text-secondary antialiased">
         <Providers>{children}</Providers>
       </body>

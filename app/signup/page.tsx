@@ -203,7 +203,9 @@ function SignupPageInner() {
           ? { kind: 'buildings', branchLocalId: activeBranchLocalId }
           : step === 'rooms' && activeBranchLocalId && activeBuildingLocalId && activeFloorLocalId
             ? { kind: 'floor', branchLocalId: activeBranchLocalId, buildingLocalId: activeBuildingLocalId, floorLocalId: activeFloorLocalId }
-            : null;
+            : step === 'staff-invite'
+              ? { kind: 'staff-invite' }
+              : null;
 
   return (
     <WizardShell
@@ -217,6 +219,7 @@ function SignupPageInner() {
       onSelectFloor={goToFloor}
       onAddBranch={addBranch}
       onRemoveBranch={removeBranch}
+      onSelectStaffInvite={() => goTo('staff-invite')}
     >
       <Container className="max-w-xl py-0">
         <h1 className="text-title font-bold text-secondary mb-2">Create your Roomick account</h1>

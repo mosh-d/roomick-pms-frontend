@@ -1007,3 +1007,15 @@ Direct user decision: match Cloudbeds' model. Scoped via Plan Mode first — thi
 ### Carried forward
 - `activeBranchId` still has nowhere real to route to — tracked, not routed, until a real dashboard exists.
 - Everything else already carried forward from Phase 17 — unchanged.
+
+## Phase 19 — Extension-caused hydration warning; missing Staff Invite nav item (2026-08-24)
+
+### Delivered
+- **`app/layout.tsx` gains `suppressHydrationWarning` on `<html>`.** Not an app bug — a live "hydration mismatch" console error turned out to be a browser extension injecting its own attributes onto `<html>` before React hydrates (`data-qb-installed`, never anything this app renders). Confirmed against this project's own vendored Next.js 16.3.2 docs (`node_modules/next/dist/docs`'s "Preventing Flash" guide) that this is the sanctioned fix for exactly this class of mismatch, not a blanket "hide real bugs" suppression — it only silences *attribute* mismatches on this one element, never children or genuine app-caused ones.
+- **`WizardShell`'s sidebar had no way back to Staff Invite.** The step exists (`WizardStep`'s `staff-invite`, mapped to the "Branch Setup" phase in `PHASE_FOR_STEP`) and is fully reachable going *forward* (Continue chains route to it automatically), but the sidebar's branch tree — the only thing rendered under "Branch Setup" — showed branches and "+ Add branch" and nothing else. Navigate away to fix something on an earlier branch, and there was no direct link back; the wizard's own "always reachable once the phase is reached" navigation convention silently didn't extend to this one step. Fixed with a `{ kind: 'staff-invite' }` addition to `BranchTreeFocus` (tenant-wide, not per-branch — a sibling row below every branch, not nested under one) and a new "Staff Invite" `TreeRow` rendered after "+ Add branch".
+
+### Verified
+`npx tsc --noEmit` and `eslint` clean. Live Playwright check: the new nav item is visible once Branch Setup is reached, and clicking it correctly routes to the Staff Invite step. Separately root-caused, not fixed in code (nothing to fix): a "Could not load roles" error on that same step turned out to be `roomick-landing`'s dev server having claimed port 3000 after the real backend lost it in a `nest start --watch` restart race (confirmed via `netstat`/process inspection, not guessed) — every `/api/v1/*` call was silently hitting Next's own 404 page instead of the NestJS backend. Cleared the orphaned process tree and restarted the backend cleanly; `GET /auth/roles` confirmed working again with a real token.
+
+### Carried forward
+- Everything else already carried forward from Phase 18 — unchanged.

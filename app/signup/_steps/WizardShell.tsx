@@ -21,6 +21,7 @@ export type BranchTreeFocus =
   | { kind: 'room-types'; branchLocalId: string }
   | { kind: 'buildings'; branchLocalId: string }
   | { kind: 'floor'; branchLocalId: string; buildingLocalId: string; floorLocalId: string }
+  | { kind: 'staff-invite' }
   | null;
 
 /**
@@ -67,6 +68,7 @@ export function WizardShell({
   onSelectFloor,
   onAddBranch,
   onRemoveBranch,
+  onSelectStaffInvite,
   children,
 }: {
   currentPhase: WizardPhaseKey;
@@ -79,6 +81,8 @@ export function WizardShell({
   onSelectFloor?: (branchLocalId: string, buildingLocalId: string, floorLocalId: string) => void;
   onAddBranch?: () => void;
   onRemoveBranch?: (branchLocalId: string) => void;
+  /** Tenant-wide, not per-branch — sits as a sibling row under the tree, below every branch, not nested under any one of them. */
+  onSelectStaffInvite?: () => void;
   children: ReactNode;
 }) {
   const currentIndex = PHASES.findIndex((phase) => phase.key === currentPhase);
@@ -172,6 +176,7 @@ export function WizardShell({
                     onSelectFloor={onSelectFloor}
                     onAddBranch={onAddBranch}
                     onRemoveBranch={onRemoveBranch}
+                    onSelectStaffInvite={onSelectStaffInvite}
                   />
                 </div>
               );
@@ -195,6 +200,7 @@ function BranchTree({
   onSelectFloor,
   onAddBranch,
   onRemoveBranch,
+  onSelectStaffInvite,
 }: {
   branches: BranchDraft[];
   focus: BranchTreeFocus;
@@ -204,6 +210,7 @@ function BranchTree({
   onSelectFloor?: (branchLocalId: string, buildingLocalId: string, floorLocalId: string) => void;
   onAddBranch?: () => void;
   onRemoveBranch?: (branchLocalId: string) => void;
+  onSelectStaffInvite?: () => void;
 }) {
   // Deleting a branch discards every building/floor/room type/room
   // configured under it — real work, not a trivial undo — so the "×"
@@ -217,7 +224,7 @@ function BranchTree({
     <>
     <div className="flex flex-col gap-1 pl-3 border-l border-accent/20 ml-3">
       {branches.map((branch) => {
-        const isActiveBranch = focus?.branchLocalId === branch.localId;
+        const isActiveBranch = focus !== null && focus.kind !== 'staff-invite' && focus.branchLocalId === branch.localId;
         return (
           <div key={branch.localId} className="flex flex-col gap-1">
             <TreeRow
@@ -276,6 +283,12 @@ function BranchTree({
       >
         <PlusIcon className="size-3" /> Add branch
       </button>
+      {/* Tenant-wide (one invite step total, not per-branch) — a sibling
+          row below every branch, not nested under any one of them. Without
+          this, Staff Invite had no clickable nav item at all: reachable
+          only by walking forward through Continue clicks, with no way back
+          to it once you navigated elsewhere to fix something. */}
+      <TreeRow label="Staff Invite" active={focus?.kind === 'staff-invite'} onClick={() => onSelectStaffInvite?.()} />
     </div>
     <ConfirmDialog
       open={pendingDelete !== null}
