@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { CARD_TONE_CLASSES } from '@/components/ui/Card';
 
 /**
  * One card in the Front Desk hub grid (Roomick-UI.pdf page 10). Two
@@ -60,7 +61,7 @@ export function HubCard({
     return (
       <Link
         href={href}
-        className="flex-1 min-w-64 flex flex-col gap-2 rounded-card border border-accent/30 bg-secondary/5 p-4 hover:bg-secondary/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className={`flex-1 min-w-64 flex flex-col gap-2 rounded-card border p-4 hover:brightness-95 transition-[filter] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${CARD_TONE_CLASSES.secondary}`}
       >
         {content}
       </Link>
@@ -68,7 +69,7 @@ export function HubCard({
   }
 
   return (
-    <div title="Not built yet" className="flex-1 min-w-64 flex flex-col gap-2 rounded-card border border-accent/30 bg-secondary/5 p-4 opacity-70">
+    <div title="Not built yet" className={`flex-1 min-w-64 flex flex-col gap-2 rounded-card border p-4 opacity-70 ${CARD_TONE_CLASSES.secondary}`}>
       {content}
     </div>
   );

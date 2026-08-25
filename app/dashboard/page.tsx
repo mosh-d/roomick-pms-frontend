@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { Container } from '@/components/ui/Container';
+import { Section } from '@/components/ui/Section';
 import { CheckCircleIcon } from '@/components/ui/Icons';
 import { deriveRoomStatus } from '@/lib/deriveRoomStatus';
 import { useRoomsQuery } from '@/lib/rooms';
@@ -61,40 +62,34 @@ export default function FrontDeskHubPage() {
         </p>
       </div>
 
-      <HubSection label="Check-In">
-        <HubCard title="Arrivals Dashboard" description="Today's expected arrivals, status, room readiness" />
-        <HubCard title="Check-In Flow" description="ID capture, room assignment, folio activation" />
-        <HubCard title="Walk-In Booking" description="Create reservation and check-in in one flow" />
-      </HubSection>
+      <Section label="Check-In">
+        <div className="flex flex-wrap gap-4">
+          <HubCard title="Arrivals Dashboard" description="Today's expected arrivals, status, room readiness" />
+          <HubCard title="Check-In Flow" description="ID capture, room assignment, folio activation" />
+          <HubCard title="Walk-In Booking" description="Create reservation and check-in in one flow" />
+        </div>
+      </Section>
 
-      <HubSection label="Check-Out">
-        <HubCard title="Departures Dashboard" description="Today's expected departures, folio status" />
-        <HubCard title="Check-Out Flow" description="Folio review, final payment, room release" />
-        <HubCard title="Room Change" description="Switch guest to a different room" />
-      </HubSection>
+      <Section label="Check-Out">
+        <div className="flex flex-wrap gap-4">
+          <HubCard title="Departures Dashboard" description="Today's expected departures, folio status" />
+          <HubCard title="Check-Out Flow" description="Folio review, final payment, room release" />
+          <HubCard title="Room Change" description="Switch guest to a different room" />
+        </div>
+      </Section>
 
-      <HubSection label="In-House Management">
-        <HubCard title="In-House Guest List" description="All currently checked-in guests" />
-        <HubCard
-          icon={<CheckCircleIcon className="size-5" />}
-          title="Room Status Board"
-          description="Live grid of all rooms and their status"
-          stats={roomStatusStats}
-          href="/dashboard/room-status-board"
-        />
-      </HubSection>
+      <Section label="In-House Management">
+        <div className="flex flex-wrap gap-4">
+          <HubCard title="In-House Guest List" description="All currently checked-in guests" />
+          <HubCard
+            icon={<CheckCircleIcon className="size-5" />}
+            title="Room Status Board"
+            description="Live grid of all rooms and their status"
+            stats={roomStatusStats}
+            href="/dashboard/room-status-board"
+          />
+        </div>
+      </Section>
     </Container>
-  );
-}
-
-function HubSection({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-3">
-        <h2 className="text-tiny font-bold uppercase tracking-wide text-primary-text whitespace-nowrap">{label}</h2>
-        <div className="h-px flex-1 bg-accent/30" />
-      </div>
-      <div className="rounded-card border border-accent/30 p-4 flex flex-wrap gap-4">{children}</div>
-    </div>
   );
 }

@@ -1076,3 +1076,19 @@ Backend half in `roomick-pms-backend/PHASE_NOTES.md` — `createBranch` now reje
 
 ### Carried forward
 - Everything else already carried forward from Phase 21 — unchanged.
+
+## Phase 23 — Front Desk hub's section containers were hand-rolled instead of reusing Section (2026-08-25)
+
+Caught live: the hub's three section wrappers (Check-In/Check-Out/In-House Management) used a hand-rolled `border-accent/30` box with no fill. Pixel-sampled the reference precisely (pymupdf, high-DPI crop) rather than eyeballing again after the last round of color misses — the outer box border is `#cc9f00` (this app's own `primary`) over a pale warm-cream fill, i.e. exactly `Section.tsx`'s existing default (`tone="primary"`, `bg-primary-light/15 border-primary/40`), which already implements "small-caps gold label + rule above a pale gold box" — the exact shape `HubSection` had just re-implemented by hand.
+
+Also re-sampled the individual cards' own title/description text at high DPI to check whether they needed the same "primary" treatment: title `#160028` and description `#a697b2` matched this app's `--color-secondary` / `--color-secondary-light` almost exactly (off by one channel value — anti-aliasing noise, not a real difference). Those were already correct; only the outer container was wrong.
+
+### Delivered
+- `app/dashboard/page.tsx`'s hand-rolled `HubSection` replaced with the real `Section` component (default `tone="primary"`) — deleted, not kept as a thin wrapper.
+- `HubCard.tsx`'s own fill/border now imports and reuses `CARD_TONE_CLASSES.secondary` from `Card.tsx` instead of a hand-copied near-match (`bg-secondary/5` vs. the real token's `bg-secondary/10`) — same "reuse the constant, don't hand-copy it" discipline `Card.tsx`'s own header comment already documents.
+
+### Verified
+`npx tsc --noEmit`, `npm run build` clean. Live screenshot compared directly against the reference crop — outer containers now show the correct gold border/pale-gold fill, inner cards unchanged (confirmed already correct).
+
+### Carried forward
+- Everything else already carried forward from Phase 22 — unchanged.
