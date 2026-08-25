@@ -1060,3 +1060,19 @@ Phase 20 shipped Room Status Board directly at `/dashboard` with no sidebar at a
 
 ### Carried forward
 - Everything else already carried forward from Phase 20 — unchanged.
+
+## Phase 22 — Mirror the backend's BRANCH_NAME_TAKEN code (2026-08-25)
+
+Backend half in `roomick-pms-backend/PHASE_NOTES.md` — `createBranch` now rejects a same-name collision under the same brand (409), root-caused from a real duplicate branch found live in a signed-in account's own data.
+
+### Delivered
+- `lib/api.ts`'s `ApiErrorCode` union gains `'BRANCH_NAME_TAKEN'`, keeping the hand-maintained mirror in sync (no shared-types package between the two repos yet — same accepted drift risk this file's own header comment already documents).
+
+### Decisions & deviations
+1. **No dedicated catch branch in `ReviewStep.tsx`'s `handleFinish`.** Checked `formatApiError()` first rather than assuming a special case was needed: it already returns `error.message` directly, which for this code is the backend's own `A branch named "X" already exists under this brand` — already clear and actionable through the existing generic `ApiError` branch. Adding a second code path that does the same thing would be pure duplication.
+
+### Verified
+`npx tsc --noEmit` clean. Backend half verified live (real 409 on a name collision, real 201 on a genuinely new name) — no frontend-specific behavior to separately verify beyond the type addition compiling.
+
+### Carried forward
+- Everything else already carried forward from Phase 21 — unchanged.
