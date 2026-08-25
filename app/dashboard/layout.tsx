@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { useMyBranches } from '@/lib/dashboardBranches';
 import { useAuthStore } from '@/lib/store/authStore';
 import { BranchPicker } from './_components/BranchPicker';
+import { Sidebar } from './_components/Sidebar';
 
 /**
  * The auth gate + branch resolution + shared shell for every authenticated
@@ -32,6 +34,7 @@ import { BranchPicker } from './_components/BranchPicker';
  */
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { ready, user, accessToken } = useRequireAuth();
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
   const setActiveBranchId = useAuthStore((s) => s.setActiveBranchId);
@@ -91,17 +94,33 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   const activeBranchName = branches?.find((b) => b.id === activeBranchId)?.name;
 
+  // `h-screen` + `overflow-hidden` (not `min-h-screen`) — same reasoning as
+  // `WizardShell.tsx`'s identical shell: the browser window itself never
+  // scrolls, header and sidebar stay visually fixed, and `main` is the only
+  // part with its own `overflow-y-auto`.
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       <header className="shrink-0 flex items-center justify-between gap-4 border-b border-accent/20 px-6 py-4">
         <div className="flex items-center gap-3 text-small min-w-0">
           <span className="font-display text-header font-bold text-primary-text shrink-0">Roomick</span>
           {activeBranchName ? (
             <>
               <span className="text-accent shrink-0">/</span>
-              <span className="font-semibold text-secondary truncate">{activeBranchName}</span>
+              <span className="text-primary-text shrink-0">{activeBranchName}</span>
             </>
           ) : null}
+          <span className="text-accent shrink-0">/</span>
+          {pathname === '/dashboard' ? (
+            <span className="font-semibold text-secondary truncate">Front Desk</span>
+          ) : (
+            <>
+              <Link href="/dashboard" className="text-primary-text shrink-0 hover:underline">
+                Front Desk
+              </Link>
+              <span className="text-accent shrink-0">/</span>
+              <span className="font-semibold text-secondary truncate">Room Status Board</span>
+            </>
+          )}
         </div>
         <div className="flex items-center gap-4 shrink-0 text-small">
           <span className="text-secondary-light">{user?.name}</span>
@@ -114,7 +133,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </button>
         </div>
       </header>
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <div className="flex flex-1 min-h-0">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto">{children}</main>
+      </div>
     </div>
   );
 }

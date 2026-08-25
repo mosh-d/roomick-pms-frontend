@@ -44,7 +44,7 @@ export function RoomStatusFilters({
   const activeCount = [value.status, value.buildingId, value.roomTypeId].filter((v) => v !== ALL_VALUE).length;
 
   return (
-    <div className="flex flex-wrap items-end gap-4">
+    <div className="flex flex-wrap items-start gap-4">
       <div className="w-48">
         <Select
           id="room-status-filter"
@@ -75,13 +75,23 @@ export function RoomStatusFilters({
         />
       </div>
       {activeCount > 0 ? (
-        <button
-          type="button"
-          onClick={() => onChange({ status: ALL_VALUE, buildingId: ALL_VALUE, roomTypeId: ALL_VALUE })}
-          className="text-small font-semibold text-secondary underline hover:text-secondary-light cursor-pointer mb-2"
-        >
-          Clear all ({activeCount})
-        </button>
+        // A same-size invisible label above the button mirrors each
+        // `Select`'s own label-then-input stack, so this lines up with
+        // their input row under `items-start` instead of needing a
+        // hand-tuned margin that would drift out of sync with Select's own
+        // spacing.
+        <div className="flex flex-col gap-1 py-2">
+          <span aria-hidden className="text-small invisible">
+            Clear
+          </span>
+          <button
+            type="button"
+            onClick={() => onChange({ status: ALL_VALUE, buildingId: ALL_VALUE, roomTypeId: ALL_VALUE })}
+            className="text-small font-semibold text-secondary underline hover:text-secondary-light cursor-pointer"
+          >
+            Clear all ({activeCount})
+          </button>
+        </div>
       ) : null}
     </div>
   );

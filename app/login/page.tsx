@@ -72,7 +72,7 @@ export default function LoginPage() {
 
   return (
     <Container className="max-w-xl py-16">
-      <h1 className="text-title font-bold text-secondary mb-2">Log in to Roomick</h1>
+      <h1 className="font-display text-title font-bold text-secondary mb-2">Log in to Roomick</h1>
       <p className="text-body text-secondary-light mb-8">Enter your account details to continue.</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">

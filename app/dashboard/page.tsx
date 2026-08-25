@@ -1,90 +1,100 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Container } from '@/components/ui/Container';
-import type { SelectOption } from '@/components/ui/Select';
-import { groupRoomsByFloor } from '@/lib/groupRoomsByFloor';
+import { CheckCircleIcon } from '@/components/ui/Icons';
+import { deriveRoomStatus } from '@/lib/deriveRoomStatus';
 import { useRoomsQuery } from '@/lib/rooms';
 import { useAuthStore } from '@/lib/store/authStore';
-import { RoomStatusFilters, type RoomStatusFiltersValue } from './_components/RoomStatusFilters';
-import { RoomGrid } from './_components/RoomGrid';
-import { RoomDetailPanel } from './_components/RoomDetailPanel';
-import { deriveRoomStatus } from '@/lib/deriveRoomStatus';
-
-const EMPTY_FILTERS: RoomStatusFiltersValue = { status: '', buildingId: '', roomTypeId: '' };
+import { HubCard } from './_components/HubCard';
 
 /**
- * Room Status Board — reference page 19. `app/dashboard/layout.tsx` has
- * already gated auth and resolved `activeBranchId` by the time this
- * component renders, so no loading/redirect states are duplicated here.
+ * Front Desk hub (Roomick-UI.pdf page 10) — the actual `/dashboard`
+ * landing page. Three sections (Check-In, Check-Out, In-House Management),
+ * each a row of cards. Only "Room Status Board" is real today — see
+ * `HubCard.tsx`'s own header comment for why the rest render inert rather
+ * than omitted or linked nowhere.
  */
-export default function DashboardPage() {
+export default function FrontDeskHubPage() {
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
-  const [filters, setFilters] = useState<RoomStatusFiltersValue>(EMPTY_FILTERS);
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
 
+  // Shares its cache with room-status-board/page.tsx's own `useRoomsQuery`
+  // call (same query key) — real numbers for the one card that has them,
+  // no second network round-trip once either page has fetched.
   const roomsQuery = useRoomsQuery(activeBranchId, { accessToken: accessToken ?? undefined, tenantId: user?.tenantId });
-  const rooms = useMemo(() => roomsQuery.data ?? [], [roomsQuery.data]);
 
-  const buildingOptions: SelectOption[] = useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const room of rooms) seen.set(room.floor.building.id, room.floor.building.name ?? 'Main Building');
-    return [...seen.entries()]
-      .map(([value, label]) => ({ value, label }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [rooms]);
-
-  const roomTypeOptions: SelectOption[] = useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const room of rooms) seen.set(room.roomType.id, room.roomType.name);
-    return [...seen.entries()]
-      .map(([value, label]) => ({ value, label }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [rooms]);
-
-  const filteredRooms = useMemo(() => {
-    return rooms.filter((room) => {
-      if (filters.status && deriveRoomStatus(room.occupancyStatus, room.cleanlinessStatus, room.heldStatus) !== filters.status) {
-        return false;
+  const roomStatusStats = useMemo(() => {
+    const rooms = roomsQuery.data ?? [];
+    if (rooms.length === 0) return undefined;
+    let vacant = 0;
+    let occupied = 0;
+    let cleaning = 0;
+    let held = 0;
+    for (const room of rooms) {
+      switch (deriveRoomStatus(room.occupancyStatus, room.cleanlinessStatus, room.heldStatus)) {
+        case 'vacant':
+          vacant++;
+          break;
+        case 'occupied':
+          occupied++;
+          break;
+        case 'cleaning':
+          cleaning++;
+          break;
+        default:
+          held++;
       }
-      if (filters.buildingId && room.floor.building.id !== filters.buildingId) return false;
-      if (filters.roomTypeId && room.roomType.id !== filters.roomTypeId) return false;
-      return true;
-    });
-  }, [rooms, filters]);
-
-  const buildings = useMemo(() => groupRoomsByFloor(filteredRooms), [filteredRooms]);
-  const selectedRoom = rooms.find((r) => r.id === selectedRoomId) ?? null;
+    }
+    return [`${vacant} vacant rooms`, `${occupied} occupied rooms`, `${cleaning} being cleaned`, `${held} held`];
+  }, [roomsQuery.data]);
 
   if (!activeBranchId) return null;
 
   return (
-    <Container className="max-w-6xl py-10 flex flex-col gap-6">
+    <Container className="max-w-6xl py-10 flex flex-col gap-8">
       <div>
-        <h1 className="text-title font-bold text-secondary mb-1">Room Status Board</h1>
-        <p className="text-body text-secondary-light">See all rooms and their respective statuses</p>
+        <h1 className="font-display text-title font-bold text-secondary mb-1">Front Desk</h1>
+        <p className="text-body text-secondary-light">
+          Primary operational hub for receptionists. Arrivals, departures, in-house management, and walk-ins.
+        </p>
       </div>
 
-      <RoomStatusFilters value={filters} onChange={setFilters} buildingOptions={buildingOptions} roomTypeOptions={roomTypeOptions} />
+      <HubSection label="Check-In">
+        <HubCard title="Arrivals Dashboard" description="Today's expected arrivals, status, room readiness" />
+        <HubCard title="Check-In Flow" description="ID capture, room assignment, folio activation" />
+        <HubCard title="Walk-In Booking" description="Create reservation and check-in in one flow" />
+      </HubSection>
 
-      {roomsQuery.isLoading ? (
-        <p className="text-body text-secondary-light">Loading rooms…</p>
-      ) : roomsQuery.isError ? (
-        <p className="text-body text-red-600">Could not load rooms. Please try refreshing.</p>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 items-start">
-          <RoomGrid buildings={buildings} selectedRoomId={selectedRoomId} onSelectRoom={setSelectedRoomId} />
-          <RoomDetailPanel
-            room={selectedRoom}
-            branchId={activeBranchId}
-            user={user}
-            accessToken={accessToken ?? undefined}
-            tenantId={user?.tenantId}
-          />
-        </div>
-      )}
+      <HubSection label="Check-Out">
+        <HubCard title="Departures Dashboard" description="Today's expected departures, folio status" />
+        <HubCard title="Check-Out Flow" description="Folio review, final payment, room release" />
+        <HubCard title="Room Change" description="Switch guest to a different room" />
+      </HubSection>
+
+      <HubSection label="In-House Management">
+        <HubCard title="In-House Guest List" description="All currently checked-in guests" />
+        <HubCard
+          icon={<CheckCircleIcon className="size-5" />}
+          title="Room Status Board"
+          description="Live grid of all rooms and their status"
+          stats={roomStatusStats}
+          href="/dashboard/room-status-board"
+        />
+      </HubSection>
     </Container>
+  );
+}
+
+function HubSection({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-3">
+        <h2 className="text-tiny font-bold uppercase tracking-wide text-primary-text whitespace-nowrap">{label}</h2>
+        <div className="h-px flex-1 bg-accent/30" />
+      </div>
+      <div className="rounded-card border border-accent/30 p-4 flex flex-wrap gap-4">{children}</div>
+    </div>
   );
 }

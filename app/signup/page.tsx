@@ -1,10 +1,11 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { RadioCard } from '@/components/ui/RadioCard';
+import { Button } from '@/components/ui/Button';
 import { RegisterForm } from './_steps/RegisterForm';
 import { VerifyEmailForm } from './_steps/VerifyEmailForm';
 import { AutoLoginStep } from './_steps/AutoLoginStep';
@@ -283,6 +284,7 @@ function SignupPageInner() {
 }
 
 function CompleteStep() {
+  const router = useRouter();
   const owner = useWizardStore((state) => state.owner);
   const branches = useWizardStore((state) => state.branches);
   const resetWizard = useWizardStore((state) => state.reset);
@@ -296,9 +298,11 @@ function CompleteStep() {
         <span className="font-semibold">{owner?.groupName}</span> is ready — {branches.length} branch
         {branches.length === 1 ? '' : 'es'}, {branches.reduce((sum, b) => sum + b.roomTypes.length, 0)} room type
         {branches.reduce((sum, b) => sum + b.roomTypes.length, 0) === 1 ? '' : 's'}, and {roomCount} room
-        {roomCount === 1 ? '' : 's'} are all set up. A front-desk/operations dashboard is the next phase of this
-        project — see <code className="text-tiny">PHASE_NOTES.md</code>.
+        {roomCount === 1 ? '' : 's'} are all set up.
       </p>
+      <Button type="button" onClick={() => router.push('/dashboard')} className="self-start">
+        Go to dashboard
+      </Button>
       <button
         type="button"
         onClick={() => {
