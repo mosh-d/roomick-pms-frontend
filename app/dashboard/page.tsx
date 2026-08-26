@@ -6,6 +6,7 @@ import { Section } from '@/components/ui/Section';
 import { CheckCircleIcon } from '@/components/ui/Icons';
 import { deriveRoomStatus } from '@/lib/deriveRoomStatus';
 import { useRoomsQuery } from '@/lib/rooms';
+import { useArrivalsQuery, useDeparturesQuery, useInHouseQuery } from '@/lib/reservations';
 import { useAuthStore } from '@/lib/store/authStore';
 import { HubCard } from './_components/HubCard';
 
@@ -21,10 +22,14 @@ export default function FrontDeskHubPage() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
 
+  const auth = { accessToken: accessToken ?? undefined, tenantId: user?.tenantId };
   // Shares its cache with room-status-board/page.tsx's own `useRoomsQuery`
   // call (same query key) — real numbers for the one card that has them,
   // no second network round-trip once either page has fetched.
-  const roomsQuery = useRoomsQuery(activeBranchId, { accessToken: accessToken ?? undefined, tenantId: user?.tenantId });
+  const roomsQuery = useRoomsQuery(activeBranchId, auth);
+  const arrivalsQuery = useArrivalsQuery(activeBranchId, undefined, auth);
+  const departuresQuery = useDeparturesQuery(activeBranchId, undefined, auth);
+  const inHouseQuery = useInHouseQuery(activeBranchId, auth);
 
   const roomStatusStats = useMemo(() => {
     const rooms = roomsQuery.data ?? [];
@@ -64,23 +69,38 @@ export default function FrontDeskHubPage() {
 
       <Section label="Check-In">
         <div className="flex flex-wrap gap-4">
-          <HubCard title="Arrivals Dashboard" description="Today's expected arrivals, status, room readiness" />
-          <HubCard title="Check-In Flow" description="ID capture, room assignment, folio activation" />
-          <HubCard title="Walk-In Booking" description="Create reservation and check-in in one flow" />
+          <HubCard
+            title="Arrivals Dashboard"
+            description="Today's expected arrivals, status, room readiness"
+            stats={arrivalsQuery.data ? [`${arrivalsQuery.data.length} pending arrivals today`] : undefined}
+            href="/dashboard/arrivals"
+          />
+          <HubCard title="Check-In Flow" description="Room assignment for an arriving guest" href="/dashboard/arrivals" />
+          <HubCard title="Walk-In Booking" description="Create reservation and check-in in one flow" href="/dashboard/walk-in-booking" />
         </div>
       </Section>
 
       <Section label="Check-Out">
         <div className="flex flex-wrap gap-4">
-          <HubCard title="Departures Dashboard" description="Today's expected departures, folio status" />
-          <HubCard title="Check-Out Flow" description="Folio review, final payment, room release" />
+          <HubCard
+            title="Departures Dashboard"
+            description="Today's expected departures"
+            stats={departuresQuery.data ? [`${departuresQuery.data.length} guests departing today`] : undefined}
+            href="/dashboard/departures"
+          />
+          <HubCard title="Check-Out Flow" description="Release a departing guest's room" href="/dashboard/departures" />
           <HubCard title="Room Change" description="Switch guest to a different room" />
         </div>
       </Section>
 
       <Section label="In-House Management">
         <div className="flex flex-wrap gap-4">
-          <HubCard title="In-House Guest List" description="All currently checked-in guests" />
+          <HubCard
+            title="In-House Guest List"
+            description="All currently checked-in guests"
+            stats={inHouseQuery.data ? [`${inHouseQuery.data.length} checked-in guests`] : undefined}
+            href="/dashboard/in-house-guest-list"
+          />
           <HubCard
             icon={<CheckCircleIcon className="size-5" />}
             title="Room Status Board"

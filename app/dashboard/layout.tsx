@@ -9,6 +9,20 @@ import { useAuthStore } from '@/lib/store/authStore';
 import { BranchPicker } from './_components/BranchPicker';
 import { Sidebar } from './_components/Sidebar';
 
+/** Route → breadcrumb title. Extend this whenever a new `/dashboard/*` page is added — it used to be a two-way ternary hardcoded to exactly `/dashboard` vs. Room Status Board, which would have silently mislabeled every route added since. */
+const ROUTE_TITLES: Record<string, string> = {
+  '/dashboard/room-status-board': 'Room Status Board',
+  '/dashboard/arrivals': 'Arrivals Dashboard',
+  '/dashboard/departures': 'Departures Dashboard',
+  '/dashboard/in-house-guest-list': 'In-House Guest List',
+  '/dashboard/walk-in-booking': 'Walk-In Booking',
+};
+
+function pageTitleFor(pathname: string): string {
+  if (pathname.startsWith('/dashboard/check-in/')) return 'Check-In Flow';
+  return ROUTE_TITLES[pathname] ?? '';
+}
+
 /**
  * The auth gate + branch resolution + shared shell for every authenticated
  * route under `/dashboard`. Owns branch resolution rather than `/login` —
@@ -118,7 +132,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 Front Desk
               </Link>
               <span className="text-accent shrink-0">/</span>
-              <span className="font-semibold text-secondary truncate">Room Status Board</span>
+              <span className="font-semibold text-secondary truncate">{pageTitleFor(pathname)}</span>
             </>
           )}
         </div>

@@ -8,18 +8,22 @@ import { CARD_TONE_CLASSES } from '@/components/ui/Card';
  * One card in the Front Desk hub grid (Roomick-UI.pdf page 10). Two
  * variants, driven by whether `href` is passed:
  *
- * - **Linked** (`href` set): a real page exists — `Room Status Board` is
- *   the only one today. Renders as a genuine `Link`, hover/focus states,
- *   and any `stats` passed are real numbers derived from live data.
- * - **Inert** (`href` omitted): the reference shows this card (Arrivals
- *   Dashboard, Check-In Flow, Walk-In Booking, …) but nothing is built
- *   behind it yet — see PHASE_NOTES.md's backend build order
- *   (reservations/check-in/housekeeping-tasks/billing have zero modules
- *   registered). Rendered plain and non-interactive rather than either
- *   omitted (which would misrepresent the app's own documented
- *   architecture) or linked nowhere. Never pass fabricated `stats` to an
- *   inert card — there's no real data behind these yet, and a
- *   confidently-wrong number is worse than none.
+ * - **Linked** (`href` set): a real page exists — Room Status Board,
+ *   Arrivals/Departures Dashboards, In-House Guest List, Check-In/Check-
+ *   Out Flow (both route to their sibling Dashboard's per-row action —
+ *   there's no standalone flow entry point independent of a specific
+ *   reservation), and Walk-In Booking. Renders as a genuine `Link`,
+ *   hover/focus states, and any `stats` passed are real numbers derived
+ *   from live data.
+ * - **Inert** (`href` omitted): the reference shows this card (Room
+ *   Change, and everything under Reservations/Housekeeping/Billing/etc.
+ *   in the sidebar) but nothing is built behind it yet — see
+ *   PHASE_NOTES.md's backend build order (Folios/Payments/Housekeeping
+ *   tasks have zero modules registered). Rendered plain and non-
+ *   interactive rather than either omitted (which would misrepresent the
+ *   app's own documented architecture) or linked nowhere. Never pass
+ *   fabricated `stats` to an inert card — there's no real data behind
+ *   these yet, and a confidently-wrong number is worse than none.
  */
 export function HubCard({
   icon,

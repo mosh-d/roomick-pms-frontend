@@ -35,6 +35,24 @@ export function useRoomsQuery(
   });
 }
 
+export interface RoomTypeSummary {
+  id: string;
+  name: string;
+  baseRate: string;
+}
+
+/** `GET /branches/:branchId/room-types` — already built for onboarding, unused by any post-onboarding screen until Walk-In Booking needed a room-type picker outside the wizard's own local draft state. */
+export function useRoomTypesQuery(
+  branchId: string | null,
+  { accessToken, tenantId }: { accessToken: string | undefined; tenantId: string | undefined },
+) {
+  return useQuery({
+    queryKey: ['room-types', branchId ?? ''] as const,
+    queryFn: () => apiFetch<RoomTypeSummary[]>(`/branches/${branchId}/room-types`, { accessToken, tenantId }),
+    enabled: branchId !== null,
+  });
+}
+
 interface ChangeRoomStatusInput {
   roomId: string;
   occupancyStatus?: OccupancyStatus;
