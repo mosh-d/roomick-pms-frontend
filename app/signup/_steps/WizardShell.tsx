@@ -113,8 +113,13 @@ export function WizardShell({
           <span className="text-accent shrink-0">/</span>
           <span className="font-semibold text-secondary truncate">{currentLabel}</span>
         </div>
+        {/* `/login`, not `/` — `/` now redirects to the dashboard, which
+            bounces an unauthenticated visitor straight back to `/login`
+            anyway. Someone cancelling onboarding hasn't got an account yet,
+            so send them to the app's front door directly instead of through
+            a redirect they'd have no way to interpret. */}
         <Link
-          href="/"
+          href="/login"
           className="shrink-0 text-small font-semibold text-secondary border border-accent/40 rounded-control px-4 py-2 hover:bg-accent/10 transition-colors"
         >
           Cancel
