@@ -4,7 +4,16 @@ import { useMemo } from 'react';
 import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { CheckCircleIcon } from '@/components/ui/Icons';
+import {
+  CheckCircleIcon,
+  CityDepartureIcon,
+  ClipboardListIcon,
+  HotelCheckInIcon,
+  HotelCheckOutIcon,
+  PlaneLandingIcon,
+  RoomChangeIcon,
+  WalkInIcon,
+} from '@/components/ui/Icons';
 import { deriveRoomStatus } from '@/lib/deriveRoomStatus';
 import { useRoomsQuery } from '@/lib/rooms';
 import { useArrivalsQuery, useDeparturesQuery, useInHouseQuery } from '@/lib/reservations';
@@ -69,32 +78,50 @@ export default function FrontDeskHubPage() {
       <Section label="Check-In">
         <div className="flex flex-wrap gap-4">
           <HubCard
+            icon={<PlaneLandingIcon className="size-5" />}
             title="Arrivals Dashboard"
             description="Today's expected arrivals, status, room readiness"
             stats={arrivalsQuery.data ? [`${arrivalsQuery.data.length} pending arrivals today`] : undefined}
             href="/dashboard/arrivals"
           />
-          <HubCard title="Check-In Flow" description="Room assignment for an arriving guest" href="/dashboard/check-in" />
-          <HubCard title="Walk-In Booking" description="Create reservation and check-in in one flow" href="/dashboard/walk-in-booking" />
+          <HubCard
+            icon={<HotelCheckInIcon className="size-5" />}
+            title="Check-In Flow"
+            description="Room assignment for an arriving guest"
+            href="/dashboard/check-in"
+          />
+          <HubCard
+            icon={<WalkInIcon className="size-5" />}
+            title="Walk-In Booking"
+            description="Create reservation and check-in in one flow"
+            href="/dashboard/walk-in-booking"
+          />
         </div>
       </Section>
 
       <Section label="Check-Out">
         <div className="flex flex-wrap gap-4">
           <HubCard
+            icon={<CityDepartureIcon className="size-5" />}
             title="Departures Dashboard"
             description="Today's expected departures"
             stats={departuresQuery.data ? [`${departuresQuery.data.length} guests departing today`] : undefined}
             href="/dashboard/departures"
           />
-          <HubCard title="Check-Out Flow" description="Release a departing guest's room" href="/dashboard/check-out" />
-          <HubCard title="Room Change" description="Switch guest to a different room" />
+          <HubCard
+            icon={<HotelCheckOutIcon className="size-5" />}
+            title="Check-Out Flow"
+            description="Release a departing guest's room"
+            href="/dashboard/check-out"
+          />
+          <HubCard icon={<RoomChangeIcon className="size-5" />} title="Room Change" description="Switch guest to a different room" />
         </div>
       </Section>
 
       <Section label="In-House Management">
         <div className="flex flex-wrap gap-4">
           <HubCard
+            icon={<ClipboardListIcon className="size-5" />}
             title="In-House Guest List"
             description="All currently checked-in guests"
             stats={inHouseQuery.data ? [`${inHouseQuery.data.length} checked-in guests`] : undefined}

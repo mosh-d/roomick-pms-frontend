@@ -6,7 +6,7 @@ import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { BuildingArrowIcon } from '@/components/ui/Icons';
+import { HotelCheckInIcon } from '@/components/ui/Icons';
 import { useReservationQuery, useCheckInMutation } from '@/lib/reservations';
 import { useRoomsQuery } from '@/lib/rooms';
 import { groupRoomsByFloor } from '@/lib/groupRoomsByFloor';
@@ -68,7 +68,7 @@ export default function CheckInFlowPage() {
 
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-6">
-      <PageHeader icon={<BuildingArrowIcon className="size-8" />} title="Check-In Flow" subtitle="Check a guest in" />
+      <PageHeader icon={<HotelCheckInIcon className="size-8" />} title="Check-In Flow" subtitle="Check a guest in" />
 
       {reservationQuery.isLoading || roomsQuery.isLoading ? (
         <p className="text-body text-primary-dark/70">Loading…</p>

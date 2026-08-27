@@ -70,12 +70,32 @@ export function PlaneLandingIcon({ className = 'size-4' }: IconProps) {
   );
 }
 
-/** Departures Dashboard (ref p15) — a taking-off plane. */
-export function PlaneTakeoffIcon({ className = 'size-4' }: IconProps) {
+/**
+ * Departures Dashboard (ref p10 card AND p15 header) — a city skyline with a
+ * plane climbing away from it, NOT a bare plane. Arrivals is the bare plane;
+ * departures pairs it with the buildings the guest is leaving. Checked against
+ * both pages directly — an earlier version of this file used a plain
+ * take-off plane here and claimed p15 showed one, which it doesn't.
+ *
+ * The plane reuses the take-off geometry inside a scaled `<g>` rather than a
+ * second hand-drawn copy; `strokeWidth` is pre-multiplied by the inverse of
+ * the scale so the stroke still renders at the same 1.6 as everything else.
+ */
+export function CityDepartureIcon({ className = 'size-4' }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} className={className} aria-hidden="true">
-      <path d="M2 20h20" strokeLinecap="round" />
-      <path d="M4.2 13.6l-.8-4 1.5-.4 2.3 2.2 3.6-1-2.6-6.4 2-.6 4.7 6 3.6-1c.8-.2 1.6.3 1.8 1.1.2.8-.3 1.6-1.1 1.8L6 15.1a1.5 1.5 0 0 1-1.8-1.5z" strokeLinejoin="round" />
+      <path d="M2.5 21h13" strokeLinecap="round" />
+      <path d="M3.5 21V7.5h3.5V21" strokeLinejoin="round" />
+      <path d="M5.25 7.5V5" strokeLinecap="round" />
+      <path d="M7 21v-6.5h7.5V21" strokeLinejoin="round" />
+      <path d="M9.4 17.6h.5M12 17.6h.5" strokeLinecap="round" />
+      <g transform="translate(11.6 1.2) scale(0.52)">
+        <path
+          d="M4.2 13.6l-.8-4 1.5-.4 2.3 2.2 3.6-1-2.6-6.4 2-.6 4.7 6 3.6-1c.8-.2 1.6.3 1.8 1.1.2.8-.3 1.6-1.1 1.8L6 15.1a1.5 1.5 0 0 1-1.8-1.5z"
+          strokeWidth={3.08}
+          strokeLinejoin="round"
+        />
+      </g>
     </svg>
   );
 }
@@ -90,14 +110,83 @@ export function ClipboardListIcon({ className = 'size-4' }: IconProps) {
   );
 }
 
-/** Check-In / Check-Out Flow (ref p12, p16) — a building with a door arrow. */
-export function BuildingArrowIcon({ className = 'size-4' }: IconProps) {
+/**
+ * Check-In Flow (ref p10 card, p12 header) — a starred hotel with an arrow
+ * entering its door from the left. The stars are what make it a *hotel*
+ * rather than a generic building, and they're in the reference on both the
+ * hub card and the page header, so they're not decoration to drop.
+ *
+ * Paired with `HotelCheckOutIcon`, which is the same hotel with the arrow
+ * leaving on the right. The two only differ by arrow direction, exactly as
+ * the reference draws them — that contrast is the whole point, so keep them
+ * geometrically identical apart from the arrow.
+ */
+export function HotelCheckInIcon({ className = 'size-4' }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} className={className} aria-hidden="true">
-      <path d="M4 20V6.5L12 3l8 3.5V20" strokeLinejoin="round" />
-      <path d="M2.5 20h19" strokeLinecap="round" />
-      <path d="M10 20v-4.5h4V20" strokeLinejoin="round" />
-      <path d="M8.5 10h2M13.5 10h2" strokeLinecap="round" />
+      <path d="M9 20.5V10l6-3 6 3v10.5" strokeLinejoin="round" />
+      <path d="M8 20.5h14" strokeLinecap="round" />
+      <path d="M13 20.5v-4h4v4" strokeLinejoin="round" />
+      <path d="M11.6 13h1.2M17.2 13h1.2" strokeLinecap="round" />
+      <HotelStars cx={15} />
+      <path d="M2 17.5h5.5" strokeLinecap="round" />
+      <path d="M5.4 15.4l2.1 2.1-2.1 2.1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Check-Out Flow (ref p10 card, p16 header) — the same hotel, arrow leaving. */
+export function HotelCheckOutIcon({ className = 'size-4' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} className={className} aria-hidden="true">
+      <path d="M3 20.5V10l6-3 6 3v10.5" strokeLinejoin="round" />
+      <path d="M2 20.5h14" strokeLinecap="round" />
+      <path d="M7 20.5v-4h4v4" strokeLinejoin="round" />
+      <path d="M5.6 13h1.2M11.2 13h1.2" strokeLinecap="round" />
+      <HotelStars cx={9} />
+      <path d="M16.5 17.5H22" strokeLinecap="round" />
+      <path d="M19.9 15.4l2.1 2.1-2.1 2.1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/**
+ * The three stars above a hotel roof, shared by the check-in and check-out
+ * icons so the pair can't drift apart. Filled, not stroked — at 20px a
+ * stroked 2px star is a smudge.
+ */
+function HotelStars({ cx }: { cx: number }) {
+  return (
+    <g fill="currentColor" stroke="none">
+      {[
+        [cx - 3.4, 5.2],
+        [cx, 4],
+        [cx + 3.4, 5.2],
+      ].map(([x, y]) => (
+        <path key={`${x}-${y}`} d={`M${x} ${y - 1.1}l.42.68.75.2-.5.6.05.78-.72-.28-.72.28.05-.78-.5-.6.75-.2z`} />
+      ))}
+    </g>
+  );
+}
+
+/**
+ * Room Change (ref p10 card) — two bent arrows swapping past each other: one
+ * turning down on the left, one turning up on the right.
+ *
+ * The proportions matter more than they look. A first pass put the two
+ * horizontals 8 units apart with small 2.8-wide heads, and at 20px the result
+ * read as a plain rounded rectangle — the heads vanished and the two stalks
+ * closed into a loop. Keeping the horizontals close (9.5 and 14.5) while the
+ * stalks run long and the heads sit well clear of them is what makes it
+ * legible as two arrows at icon size.
+ */
+export function RoomChangeIcon({ className = 'size-4' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} className={className} aria-hidden="true">
+      <path d="M16.5 9.5H8.5a2 2 0 0 0-2 2v7.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 16.2l2.5 2.9 2.5-2.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7.5 14.5h8a2 2 0 0 0 2-2V4.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15 7.8l2.5-2.9 2.5 2.9" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

@@ -24,6 +24,22 @@ import { CARD_TONE_CLASSES } from '@/components/ui/Card';
  *   fabricated `stats` to an inert card — there's no real data behind
  *   these yet, and a confidently-wrong number is worse than none.
  */
+/**
+ * A linked card deepens its own tint by one 10% step on hover and a second on
+ * press: 10% at rest (`CARD_TONE_CLASSES.secondary`) → 20% hovered → 30%
+ * active. Same increment the card-nesting mechanic already uses, so a hovered
+ * card reads exactly as "one level closer" rather than as a separate
+ * highlight color nobody else in the system uses.
+ *
+ * `transition-colors`, not the `brightness` filter this used before — a
+ * filter dims the text and border along with the background, which is why the
+ * old hover made the card look greyed-out instead of raised.
+ *
+ * Applied only to the linked variant. An inert card doesn't respond to a
+ * pointer, because nothing happens when you click it.
+ */
+const INTERACTIVE_TINT_STEPS = 'hover:bg-secondary/20 active:bg-secondary/30';
+
 export function HubCard({
   icon,
   title,
@@ -64,7 +80,7 @@ export function HubCard({
     return (
       <Link
         href={href}
-        className={`flex-1 min-w-64 flex flex-col gap-2 rounded-card border p-4 hover:brightness-95 transition-[filter] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${CARD_TONE_CLASSES.secondary}`}
+        className={`flex-1 min-w-64 flex flex-col gap-2 rounded-card border p-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${CARD_TONE_CLASSES.secondary} ${INTERACTIVE_TINT_STEPS}`}
       >
         {content}
       </Link>

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Select, type SelectOption } from '@/components/ui/Select';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { PlaneTakeoffIcon } from '@/components/ui/Icons';
+import { HotelCheckOutIcon } from '@/components/ui/Icons';
 import { useInHouseQuery, useCheckOutMutation } from '@/lib/reservations';
 import { useFoliosQuery } from '@/lib/folios';
 import { formatMoney } from '@/lib/numberFormat';
@@ -85,7 +85,7 @@ export default function CheckOutFlowPage() {
 
   return (
     <Container className="max-w-3xl py-10 flex flex-col gap-6">
-      <PageHeader icon={<PlaneTakeoffIcon className="size-8" />} title="Check-Out Flow" subtitle="Settle up and release the room" />
+      <PageHeader icon={<HotelCheckOutIcon className="size-8" />} title="Check-Out Flow" subtitle="Settle up and release the room" />
 
       {checkedOutName ? (
         <p className="text-body font-semibold text-primary-dark">

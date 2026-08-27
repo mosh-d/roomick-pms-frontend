@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SearchInput } from '@/components/ui/SearchInput';
-import { PlaneTakeoffIcon } from '@/components/ui/Icons';
+import { CityDepartureIcon } from '@/components/ui/Icons';
 import { Table, type TableColumn } from '@/components/ui/Table';
 import { useDeparturesQuery, useCheckOutMutation, type ReservationSummary } from '@/lib/reservations';
 import { useFoliosQuery } from '@/lib/folios';
@@ -139,7 +139,7 @@ export default function DeparturesDashboardPage() {
 
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-6">
-      <PageHeader icon={<PlaneTakeoffIcon className="size-8" />} title="Departures Dashboard" subtitle="Today's expected departures" />
+      <PageHeader icon={<CityDepartureIcon className="size-8" />} title="Departures Dashboard" subtitle="Today's expected departures" />
 
       <SearchInput label="Search departures by guest name or room" placeholder="Search by guest name" value={search} onChange={setSearch} />
 

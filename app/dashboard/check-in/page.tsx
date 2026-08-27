@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select, type SelectOption } from '@/components/ui/Select';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { BuildingArrowIcon } from '@/components/ui/Icons';
+import { HotelCheckInIcon } from '@/components/ui/Icons';
 import { useArrivalsQuery } from '@/lib/reservations';
 import { useAuthStore } from '@/lib/store/authStore';
 
@@ -49,7 +49,7 @@ export default function CheckInFlowIndexPage() {
 
   return (
     <Container className="max-w-3xl py-10 flex flex-col gap-6">
-      <PageHeader icon={<BuildingArrowIcon className="size-8" />} title="Check-In Flow" subtitle="Check a guest in" />
+      <PageHeader icon={<HotelCheckInIcon className="size-8" />} title="Check-In Flow" subtitle="Check a guest in" />
 
       <Section label="Select Guest">
         {arrivalsQuery.isLoading ? (
