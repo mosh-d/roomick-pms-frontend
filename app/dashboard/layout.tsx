@@ -17,6 +17,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/dashboard/in-house-guest-list': 'In-House Guest List',
   '/dashboard/walk-in-booking': 'Walk-In Booking',
   '/dashboard/billing': 'Guest Folio',
+  '/dashboard/night-audit': 'Night Audit',
 };
 
 function pageTitleFor(pathname: string): string {

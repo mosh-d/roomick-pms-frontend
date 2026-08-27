@@ -77,10 +77,10 @@ const OPERATIONS_GROUPS: SidebarGroup[] = [
     children: [
       { label: 'Guest Folio', href: '/dashboard/billing' },
       { label: 'Split Billing' },
-      { label: 'Night Audit' },
+      { label: 'Night Audit', href: '/dashboard/night-audit' },
       { label: 'Refunds and Corrections' },
     ],
-    activeWhen: (p) => p.startsWith('/dashboard/billing'),
+    activeWhen: (p) => p.startsWith('/dashboard/billing') || p.startsWith('/dashboard/night-audit'),
   },
 ];
 

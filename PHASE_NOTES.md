@@ -1171,3 +1171,24 @@ Backend half in `roomick-pms-backend/PHASE_NOTES.md`, including the two design c
 ### Carried forward
 - Everything else already carried forward from Phase 25 — unchanged.
 - Night audit, Cloudbeds-style Transfer-to-AR, Split Billing, Refunds and Corrections, Folio Transfer, POS — all still inert/deferred and named in both repos' notes.
+
+## Phase 27 — Night Audit page (2026-08-27)
+
+Backend half in `roomick-pms-backend/PHASE_NOTES.md` — the accrual rollover, no-show marking, the check-out safety net, and a timezone-aware hourly sweep.
+
+### Delivered
+- **`/dashboard/night-audit`** (ref p35) — Pre-Audit Info (checklist + open folios), Unresolved No-Shows with per-row "View Reservation", and the Trigger Audit action behind a `ConfirmDialog` that spells out what a run does and that it can't be undone. Open-folio rows link straight to `/dashboard/billing/[folioId]`.
+- **`lib/nightAudit.ts`** — preflight/history queries and the run mutation, which invalidates folios, in-house and arrivals alongside its own keys, since a run posts charges and can flip reservations to no-show.
+- Wired into the Billing and Payments sidebar group and `ROUTE_TITLES`; the group now expands for both `/dashboard/billing` and `/dashboard/night-audit`.
+
+### Decisions & deviations
+1. **Untracked checks render as "Not tracked", never as a tick.** Two of the reference's three pre-audit conditions need the maintenance and shift modules, which don't exist — `passed: null` comes back from the API and the row renders neutral. A green check there would be a lie about a condition nobody verified.
+2. **"Recent Runs" is an addition to the reference.** The spec's own health rule (a run stuck in `running` over 10 minutes) is unobservable without somewhere to see run history, and `night_audit_log` exists precisely to record it.
+3. The trigger disables itself when the pending date has already been audited, and says so — the backend still enforces it with `409 AUDIT_ALREADY_RAN` regardless.
+
+### Verified
+`npx tsc --noEmit`, `eslint`, `npm run build` clean. Live Playwright, 12/12: reachable via the Billing sidebar group; all three sections render; the checklist shows the real failing departures check alongside two "Not tracked" rows; the page states which date it would close (or that it already ran); the runs table shows Manual/Scheduled origin and amounts with the currency symbol; breadcrumb correct; zero console errors.
+
+### Carried forward
+- Everything else already carried forward from Phase 26 — unchanged.
+- Split Billing, Refunds and Corrections, Folio Transfer, POS, Housekeeping, Reservations calendar — still inert and named.
