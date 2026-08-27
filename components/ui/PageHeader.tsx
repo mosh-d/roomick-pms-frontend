@@ -40,8 +40,13 @@ export function PageHeader({
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1 min-w-0">
           <div className="flex items-center gap-3 min-w-0">
+            {/* The icon takes `primary-dark`, matching the title beside it —
+                not the gold `primary-text`, which is the small-accent role
+                (Section labels, VIP badges). A page icon belongs to the
+                title lockup and reads wrong in a different color from the
+                words it sits against. */}
             {icon ? (
-              <span className="shrink-0 text-primary-text" aria-hidden>
+              <span className="shrink-0 text-primary-dark" aria-hidden>
                 {icon}
               </span>
             ) : null}

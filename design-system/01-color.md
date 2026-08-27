@@ -38,6 +38,11 @@ the component it happens to live in.**
 | `Card`/`Section` with `tone="accent"` | `text-primary-dark` | `text-accent-dark` | `border-accent-dark/20` |
 | Solid `bg-primary` fill (active nav) | `text-white` | `text-white/80` | — |
 
+Icons follow the text they sit with, not a color of their own: a page-header
+icon is part of the title lockup and takes `primary-dark` like the title.
+Gold `primary-text` is the small-accent role — `Section` labels, VIP badges —
+not a general icon color.
+
 `secondary` (`#160029`) is a violet near-black. It reads as *the* body color
 because it's the default, but on the warm page background the reference does
 not use it: pixel-sampling Roomick-UI.pdf p33 gives `#291E00` for the page
