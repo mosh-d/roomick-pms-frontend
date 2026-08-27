@@ -74,7 +74,7 @@ export default function ArrivalsDashboardPage() {
       <SearchInput label="Search arrivals by guest name" placeholder="Search by guest name" value={search} onChange={setSearch} />
 
       {arrivalsQuery.isLoading ? (
-        <p className="text-body text-secondary-light">Loading arrivals…</p>
+        <p className="text-body text-primary-dark/70">Loading arrivals…</p>
       ) : arrivalsQuery.isError ? (
         <p className="text-body text-red-600">Could not load arrivals. Please try refreshing.</p>
       ) : (

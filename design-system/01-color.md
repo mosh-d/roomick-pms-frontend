@@ -24,6 +24,41 @@ full default gray/red/etc. scale stays available alongside these (e.g.
 `red-600` is used as the form error-state color — no brand error red was
 specified, so we reuse Tailwind's default rather than inventing one).
 
+## Which family on which surface
+
+This is the rule that has been got wrong most often, so it is written down
+plainly: **the surface a piece of text sits on decides its color family, not
+the component it happens to live in.**
+
+| Surface | Body/heading text | Muted text | Rules & borders |
+|---|---|---|---|
+| Page background | `text-primary-dark` | `text-primary-dark/70` | `border-primary/25` |
+| `Section` (default `primary` tone) | `text-primary-dark` | `text-primary-dark/70` | `border-primary/25` |
+| `Card`/`Section` with `tone="secondary"` | `text-secondary` | `text-secondary-light` | `border-secondary/20` |
+| `Card`/`Section` with `tone="accent"` | `text-primary-dark` | `text-accent-dark` | `border-accent-dark/20` |
+| Solid `bg-primary` fill (active nav) | `text-white` | `text-white/80` | — |
+
+`secondary` (`#160029`) is a violet near-black. It reads as *the* body color
+because it's the default, but on the warm page background the reference does
+not use it: pixel-sampling Roomick-UI.pdf p33 gives `#291E00` for the page
+title, `#242000` for the subtitle, and `#2D2300` for the sidebar — all of
+them `primary-dark` (`#2E2400`), none of them anywhere near `#160029`.
+`secondary-light` (`#A698B2`, lavender-gray) is likewise a *card-interior*
+muted tone; on the page background it reads as washed-out and off-hue.
+
+So: **`secondary`/`secondary-light` are for text inside a secondary-toned
+card.** Everywhere else is the primary family. The practical test when
+writing a component — walk up the tree and find the nearest ancestor with a
+background: if it isn't `CARD_TONE_CLASSES.secondary`, the text is primary.
+
+**One deliberate exception: form-field labels.** `Input`/`Select`/`Textarea`
+keep `text-secondary` on their labels regardless of surface. They're used
+inside every tone (a `Section`, a secondary card, a bare page), so a single
+color is the only way they stay consistent — and `secondary` (`#160029`) vs
+`primary-dark` (`#2E2400`) is imperceptible at label size, both reading as
+near-black. This is the one place the surface rule doesn't apply, and it's a
+call, not an oversight.
+
 ## Accessibility extension: `primary-text`
 
 Raw `primary` gold fails WCAG AA for text: measured against white, it's

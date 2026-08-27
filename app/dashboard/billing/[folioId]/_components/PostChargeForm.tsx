@@ -63,7 +63,7 @@ export function PostChargeForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <p className="text-small text-secondary-light">
+      <p className="text-small text-primary-dark/70">
         Manually post a charge for a service to this guest&apos;s folio. Tax is applied automatically from the branch&apos;s active tax rules.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">

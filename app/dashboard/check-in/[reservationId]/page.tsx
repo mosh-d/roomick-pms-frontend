@@ -71,7 +71,7 @@ export default function CheckInFlowPage() {
       <PageHeader icon={<BuildingArrowIcon className="size-8" />} title="Check-In Flow" subtitle="Check a guest in" />
 
       {reservationQuery.isLoading || roomsQuery.isLoading ? (
-        <p className="text-body text-secondary-light">Loading…</p>
+        <p className="text-body text-primary-dark/70">Loading…</p>
       ) : reservationQuery.isError || !reservation ? (
         <p className="text-body text-red-600">Could not load this reservation.</p>
       ) : reservation.status !== 'confirmed' ? (
@@ -88,7 +88,7 @@ export default function CheckInFlowPage() {
 
           <Section label="Room Selection">
             {buildings.length === 0 ? (
-              <p className="text-body text-secondary-light">No ready rooms of this type — nothing vacant and clean/inspected right now.</p>
+              <p className="text-body text-primary-dark/70">No ready rooms of this type — nothing vacant and clean/inspected right now.</p>
             ) : (
               <RoomGrid buildings={buildings} selectedRoomId={selectedRoomId} onSelectRoom={setSelectedRoomId} />
             )}
@@ -110,7 +110,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
       <span className="text-small text-accent-dark">{label}</span>
-      <span className="text-body font-semibold text-secondary">{value}</span>
+      <span className="text-body font-semibold text-primary-dark">{value}</span>
     </div>
   );
 }

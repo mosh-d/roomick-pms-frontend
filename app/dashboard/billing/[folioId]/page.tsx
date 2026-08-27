@@ -60,7 +60,7 @@ export default function GuestFolioPage() {
   if (folioQuery.isLoading) {
     return (
       <Container className="max-w-6xl py-10">
-        <p className="text-body text-secondary-light">Loading folio…</p>
+        <p className="text-body text-primary-dark/70">Loading folio…</p>
       </Container>
     );
   }
@@ -96,7 +96,7 @@ export default function GuestFolioPage() {
       {closeError ? <p className="text-small text-red-600">{closeError}</p> : null}
       {folio.guestStatus === 'city_ledger' ? (
         <Card tone="accent">
-          <p className="text-small text-secondary">
+          <p className="text-small text-primary-dark">
             <span className="font-bold">City Ledger receivable.</span> This guest has checked out and still owes {formatMoney(folio.totals.balanceDue, symbol)}. Collections
             matter — check-out is never blocked on a balance.
           </p>
@@ -116,17 +116,17 @@ export default function GuestFolioPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-secondary/20">
-                  <th className="text-small font-bold text-secondary pb-2 pr-4">Service Date</th>
-                  <th className="text-small font-bold text-secondary pb-2 pr-4">Description</th>
-                  <th className="text-small font-bold text-secondary pb-2 pr-4">Charge Type</th>
-                  <th className="text-small font-bold text-secondary pb-2 text-right">Amount</th>
+                <tr className="border-b border-primary/25">
+                  <th className="text-small font-bold text-primary-dark pb-2 pr-4">Service Date</th>
+                  <th className="text-small font-bold text-primary-dark pb-2 pr-4">Description</th>
+                  <th className="text-small font-bold text-primary-dark pb-2 pr-4">Charge Type</th>
+                  <th className="text-small font-bold text-primary-dark pb-2 text-right">Amount</th>
                 </tr>
               </thead>
               <tbody>
                 {folio.lineItems.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="text-small text-secondary-light py-3">
+                    <td colSpan={4} className="text-small text-primary-dark/70 py-3">
                       Nothing posted to this folio yet.
                     </td>
                   </tr>
@@ -167,34 +167,34 @@ export default function GuestFolioPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-secondary/20">
-                  <th className="text-small font-bold text-secondary pb-2 pr-4">Tax Type</th>
-                  <th className="text-small font-bold text-secondary pb-2 pr-4 text-right">Taxable Base</th>
-                  <th className="text-small font-bold text-secondary pb-2 text-right">Tax Collected</th>
+                <tr className="border-b border-primary/25">
+                  <th className="text-small font-bold text-primary-dark pb-2 pr-4">Tax Type</th>
+                  <th className="text-small font-bold text-primary-dark pb-2 pr-4 text-right">Taxable Base</th>
+                  <th className="text-small font-bold text-primary-dark pb-2 text-right">Tax Collected</th>
                 </tr>
               </thead>
               <tbody>
                 {taxQuery.data.rows.map((row) => (
-                  <tr key={row.ruleId} className="border-b border-secondary/10 last:border-0">
+                  <tr key={row.ruleId} className="border-b border-primary/15 last:border-0">
                     <td className="py-3 pr-4">
-                      <span className="inline-flex rounded-pill bg-secondary/15 px-2 py-0.5 text-tiny font-semibold text-secondary">{row.ruleName}</span>
-                      <span className="text-small text-secondary-light ml-2">({(Number(row.rate) * 100).toFixed(2)}%)</span>
+                      <span className="inline-flex rounded-pill bg-primary/15 px-2 py-0.5 text-tiny font-semibold text-primary-dark">{row.ruleName}</span>
+                      <span className="text-small text-primary-dark/70 ml-2">({(Number(row.rate) * 100).toFixed(2)}%)</span>
                     </td>
-                    <td className="text-small text-secondary py-3 pr-4 text-right">{formatMoney(row.taxableBase, symbol)}</td>
-                    <td className="text-small text-secondary py-3 text-right">{formatMoney(row.taxCollected, symbol)}</td>
+                    <td className="text-small text-primary-dark py-3 pr-4 text-right">{formatMoney(row.taxableBase, symbol)}</td>
+                    <td className="text-small text-primary-dark py-3 text-right">{formatMoney(row.taxCollected, symbol)}</td>
                   </tr>
                 ))}
                 <tr>
-                  <td className="text-small font-bold text-secondary py-3 pr-4" colSpan={2}>
+                  <td className="text-small font-bold text-primary-dark py-3 pr-4" colSpan={2}>
                     Total Tax
                   </td>
-                  <td className="text-small font-bold text-secondary py-3 text-right">{formatMoney(taxQuery.data.totalTax, symbol)}</td>
+                  <td className="text-small font-bold text-primary-dark py-3 text-right">{formatMoney(taxQuery.data.totalTax, symbol)}</td>
                 </tr>
               </tbody>
             </table>
           </div>
         ) : (
-          <p className="text-body text-secondary-light">No tax has been charged on this folio.</p>
+          <p className="text-body text-primary-dark/70">No tax has been charged on this folio.</p>
         )}
       </Section>
 
@@ -215,7 +215,7 @@ export default function GuestFolioPage() {
           </Section>
         </>
       ) : (
-        <p className="text-body text-secondary-light">This folio is settled — no further charges or payments can be posted.</p>
+        <p className="text-body text-primary-dark/70">This folio is settled — no further charges or payments can be posted.</p>
       )}
 
       <ConfirmDialog
@@ -235,20 +235,20 @@ function LineItemRow({ item, symbol }: { item: LineItem; symbol: string }) {
   const isTax = item.chargeType === 'tax';
   const isCredit = Number(item.amount) < 0;
   return (
-    <tr className="border-b border-secondary/10 last:border-0">
-      <td className="text-small text-secondary py-3 pr-4 whitespace-nowrap">
+    <tr className="border-b border-primary/15 last:border-0">
+      <td className="text-small text-primary-dark py-3 pr-4 whitespace-nowrap">
         {item.serviceDate ? new Date(item.serviceDate).toLocaleDateString() : '—'}
       </td>
-      <td className={`text-small py-3 pr-4 ${isTax ? 'text-secondary-light' : 'text-secondary'}`}>{item.description}</td>
+      <td className={`text-small py-3 pr-4 ${isTax ? 'text-primary-dark/70' : 'text-primary-dark'}`}>{item.description}</td>
       <td className="py-3 pr-4">
-        <span className="inline-flex rounded-pill bg-secondary/15 px-2 py-0.5 text-tiny font-semibold text-secondary capitalize">
+        <span className="inline-flex rounded-pill bg-primary/15 px-2 py-0.5 text-tiny font-semibold text-primary-dark capitalize">
           {item.chargeType === 'fnb' ? 'FnB' : item.chargeType}
         </span>
       </td>
-      <td className={`text-small py-3 text-right whitespace-nowrap ${isCredit ? 'text-green-700' : 'text-secondary'}`}>
+      <td className={`text-small py-3 text-right whitespace-nowrap ${isCredit ? 'text-green-700' : 'text-primary-dark'}`}>
         <span className="font-semibold">{formatMoney(item.amount, symbol)}</span>
         {!isTax && Number(item.taxAmount) > 0 ? (
-          <span className="text-tiny text-secondary-light ml-2">+{formatMoney(item.taxAmount, symbol)} tax</span>
+          <span className="text-tiny text-primary-dark/70 ml-2">+{formatMoney(item.taxAmount, symbol)} tax</span>
         ) : null}
       </td>
     </tr>
@@ -268,7 +268,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
       <span className="text-small text-accent-dark">{label}</span>
-      <span className="text-body font-semibold text-secondary">{value}</span>
+      <span className="text-body font-semibold text-primary-dark">{value}</span>
     </div>
   );
 }

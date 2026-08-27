@@ -110,7 +110,7 @@ export default function InHouseGuestListPage() {
       <SearchInput label="Search in-house guests by name or room" placeholder="Search by guest name" value={search} onChange={setSearch} />
 
       {inHouseQuery.isLoading ? (
-        <p className="text-body text-secondary-light">Loading guests…</p>
+        <p className="text-body text-primary-dark/70">Loading guests…</p>
       ) : inHouseQuery.isError ? (
         <p className="text-body text-red-600">Could not load guests. Please try refreshing.</p>
       ) : (

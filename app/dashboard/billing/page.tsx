@@ -101,7 +101,7 @@ export default function BillingIndexPage() {
               type="button"
               onClick={() => setFilter(tab.value)}
               className={`rounded-control px-3 py-1.5 text-small font-semibold cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                filter === tab.value ? 'bg-primary text-white' : 'text-secondary hover:bg-accent/10'
+                filter === tab.value ? 'bg-primary text-white' : 'text-primary-dark hover:bg-accent/10'
               }`}
             >
               {tab.label}
@@ -112,7 +112,7 @@ export default function BillingIndexPage() {
       </div>
 
       {foliosQuery.isLoading ? (
-        <p className="text-body text-secondary-light">Loading folios…</p>
+        <p className="text-body text-primary-dark/70">Loading folios…</p>
       ) : foliosQuery.isError ? (
         <p className="text-body text-red-600">Could not load folios. Please try refreshing.</p>
       ) : (

@@ -1192,3 +1192,36 @@ Backend half in `roomick-pms-backend/PHASE_NOTES.md` — the accrual rollover, n
 ### Carried forward
 - Everything else already carried forward from Phase 26 — unchanged.
 - Split Billing, Refunds and Corrections, Folio Transfer, POS, Housekeeping, Reservations calendar — still inert and named.
+
+## Phase 28 — Split Billing, standalone flow pages, and the color-family correction (2026-08-27)
+
+Three things, all prompted by looking at the running app rather than the code.
+
+### Delivered
+- **`/dashboard/split-billing`** (ref p34) — pick a reservation's source folio, pick a target folio on the same reservation, tick the charges to move, see a live preview of both balances after, give a reason, split. Backend half in `roomick-pms-backend/PHASE_NOTES.md`.
+- **`/dashboard/check-in`** and **`/dashboard/check-out`** — the Check-In and Check-Out Flows are now real pages with a guest dropdown, not aliases for the Arrivals/Departures dashboards. Check-In lists today's arrivals and hands off to `/dashboard/check-in/[reservationId]`; Check-Out lists **everyone in-house**, not just today's departures, because an early check-out is a real front-desk event that a date-scoped dashboard can't serve. Check-Out shows the live folio balance and links into the folio to settle — never blocks.
+- **`Sidebar.tsx` rewritten.** Every child now owns a distinct href and its own `isActive` predicate.
+
+### The two bugs this fixes
+1. **Double-active nav.** "Arrivals Dashboard" and "Check-In Flow" both pointed at `/dashboard/arrivals`, so a plain `pathname === href` comparison lit up both — two tabs looking selected at once, with no way to tell which one you were on. The real fix wasn't the comparison, it was that two nav entries shared a destination; giving the flows their own pages removed the ambiguity at the source.
+2. **Compressed sidebar rows.** Flex children shrink by default, so once the list outgrew the viewport the rows squashed into each other instead of the column scrolling. Every row is `shrink-0` now, and there's a live assertion that no boxed row drops below 30px.
+
+### The color-family correction
+Page-background text was using `secondary`/`secondary-light` (violet near-black and lavender-gray). It should be the **primary** family. Pixel-sampling Roomick-UI.pdf p33 settles it: `#291E00` title, `#242000` subtitle, `#2D2300` sidebar — all `primary-dark` (`#2E2400`), none of them anywhere near `secondary` (`#160029`).
+
+`secondary`/`secondary-light` is for text **inside a `tone="secondary"` card**. Swept `PageHeader`, the shell breadcrumb/header, every loading and empty state, and every `Section` interior (tables, helper text, rules) to the primary family, while leaving secondary-card interiors — the folio totals rail, the night-audit checklist and open-folios cards, the data tables inside `Card tone="secondary"` — untouched.
+
+**The rule is now written down** in `design-system/01-color.md` § "Which family on which surface", with a per-surface table and the practical test (walk up to the nearest ancestor with a background; if it isn't `CARD_TONE_CLASSES.secondary`, the text is primary). It had to be corrected twice by hand before being documented, which is the reason it's documented.
+
+### Decisions & deviations
+1. **Form-field labels are the one exception** and keep `text-secondary` regardless of surface. `Input`/`Select`/`Textarea` appear inside every tone, so a single label color is the only way they stay consistent — and `#160029` vs `#2E2400` is imperceptible at label size. Recorded in the color doc as a call, not an oversight.
+2. **Check-Out Flow lists all in-house guests, not today's departures.** Deliberate divergence from Departures, and what makes it a distinct destination rather than a second route onto the same list.
+3. **Inert sidebar rows stay visible.** Same reasoning as `HubCard`'s inert variant — omitting them would misrepresent the documented architecture.
+
+### Verified
+`npx tsc --noEmit` clean; `eslint` 0 errors (4 pre-existing React-Compiler/RHF `watch()` warnings). Live Playwright, 26/26: **exactly one active nav row on each of all ten routes**; no compressed sidebar row (min 31px over 12); page title computes to `#2e2400` and renders in Playfair; the sidebar computes to `#2e2400`; Check-In Flow's dropdown selects a guest, shows their details, and its continue button navigates into `/dashboard/check-in/<uuid>`; Check-Out Flow's dropdown shows a real balance (`₦96.75`) with the currency **symbol**, not a code; Split Billing renders its Folio Selection section and source-folio picker. Zero console errors.
+
+One assertion of mine was wrong before the code was: the first row-height check flagged a 14px row as "compressed". That was the unpadded "Front Desk" header link doing exactly what it should — the assertion was measuring the wrong set of elements, not finding a bug.
+
+### Carried forward
+- Refunds and Corrections, Folio Transfer between reservations, Cloudbeds-style Transfer-to-AR, POS, Housekeeping, Room Change, Reservations calendar, Comms Log — still inert and named in both repos.

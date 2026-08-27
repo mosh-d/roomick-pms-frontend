@@ -82,7 +82,7 @@ export default function NightAuditPage() {
       ) : null}
 
       {preflightQuery.isLoading ? (
-        <p className="text-body text-secondary-light">Loading pre-audit checks…</p>
+        <p className="text-body text-primary-dark/70">Loading pre-audit checks…</p>
       ) : preflightQuery.isError || !preflight ? (
         <p className="text-body text-red-600">Could not load pre-audit information.</p>
       ) : (
@@ -128,29 +128,29 @@ export default function NightAuditPage() {
           </Section>
 
           <Section label="Unresolved No-Shows">
-            <p className="text-small text-secondary-light">
+            <p className="text-small text-primary-dark/70">
               Confirmed arrivals whose date has passed without a check-in. Running the audit marks these as no-shows and applies the
               branch&apos;s no-show penalty policy.
             </p>
             {preflight.unresolvedNoShows.length === 0 ? (
-              <p className="text-body text-secondary-light">Nothing unresolved — every arrival is accounted for.</p>
+              <p className="text-body text-primary-dark/70">Nothing unresolved — every arrival is accounted for.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="border-b border-secondary/20">
-                      <th className="text-small font-bold text-secondary pb-2 pr-4">Guest Name</th>
-                      <th className="text-small font-bold text-secondary pb-2 pr-4">Confirmation #</th>
-                      <th className="text-small font-bold text-secondary pb-2 pr-4">Expected Arrival</th>
-                      <th className="text-small font-bold text-secondary pb-2 text-right">Action</th>
+                    <tr className="border-b border-primary/25">
+                      <th className="text-small font-bold text-primary-dark pb-2 pr-4">Guest Name</th>
+                      <th className="text-small font-bold text-primary-dark pb-2 pr-4">Confirmation #</th>
+                      <th className="text-small font-bold text-primary-dark pb-2 pr-4">Expected Arrival</th>
+                      <th className="text-small font-bold text-primary-dark pb-2 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {preflight.unresolvedNoShows.map((r) => (
-                      <tr key={r.id} className="border-b border-secondary/10 last:border-0">
-                        <td className="text-small text-secondary py-3 pr-4">{r.guestName}</td>
-                        <td className="text-small text-secondary py-3 pr-4">{r.confirmationNumber}</td>
-                        <td className="text-small text-secondary py-3 pr-4">{new Date(r.checkInDate).toLocaleDateString()}</td>
+                      <tr key={r.id} className="border-b border-primary/15 last:border-0">
+                        <td className="text-small text-primary-dark py-3 pr-4">{r.guestName}</td>
+                        <td className="text-small text-primary-dark py-3 pr-4">{r.confirmationNumber}</td>
+                        <td className="text-small text-primary-dark py-3 pr-4">{new Date(r.checkInDate).toLocaleDateString()}</td>
                         <td className="py-3 text-right">
                           <Button size="sm" variant="outline" onClick={() => router.push(`/dashboard/check-in/${r.id}`)}>
                             View Reservation
@@ -168,7 +168,7 @@ export default function NightAuditPage() {
             <Button type="button" onClick={() => setConfirmOpen(true)} disabled={preflight.alreadyRan} loading={runMutation.isPending}>
               Trigger Audit
             </Button>
-            <p className="text-small text-secondary-light">
+            <p className="text-small text-primary-dark/70">
               {preflight.alreadyRan
                 ? `${preflight.auditDate} has already been audited for this property.`
                 : `Will close ${preflight.auditDate}.`}
@@ -182,26 +182,26 @@ export default function NightAuditPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-secondary/20">
-                  <th className="text-small font-bold text-secondary pb-2 pr-4">Audit Date</th>
-                  <th className="text-small font-bold text-secondary pb-2 pr-4">Status</th>
-                  <th className="text-small font-bold text-secondary pb-2 pr-4">Trigger</th>
-                  <th className="text-small font-bold text-secondary pb-2 pr-4 text-right">Folios</th>
-                  <th className="text-small font-bold text-secondary pb-2 pr-4 text-right">Charges</th>
-                  <th className="text-small font-bold text-secondary pb-2 text-right">Posted</th>
+                <tr className="border-b border-primary/25">
+                  <th className="text-small font-bold text-primary-dark pb-2 pr-4">Audit Date</th>
+                  <th className="text-small font-bold text-primary-dark pb-2 pr-4">Status</th>
+                  <th className="text-small font-bold text-primary-dark pb-2 pr-4">Trigger</th>
+                  <th className="text-small font-bold text-primary-dark pb-2 pr-4 text-right">Folios</th>
+                  <th className="text-small font-bold text-primary-dark pb-2 pr-4 text-right">Charges</th>
+                  <th className="text-small font-bold text-primary-dark pb-2 text-right">Posted</th>
                 </tr>
               </thead>
               <tbody>
                 {runsQuery.data.map((run) => (
-                  <tr key={run.id} className="border-b border-secondary/10 last:border-0">
-                    <td className="text-small text-secondary py-3 pr-4">{new Date(run.auditDate).toLocaleDateString()}</td>
+                  <tr key={run.id} className="border-b border-primary/15 last:border-0">
+                    <td className="text-small text-primary-dark py-3 pr-4">{new Date(run.auditDate).toLocaleDateString()}</td>
                     <td className="py-3 pr-4">
                       <RunStatusBadge status={run.status} />
                     </td>
-                    <td className="text-small text-secondary-light py-3 pr-4">{run.triggeredBy ? 'Manual' : 'Scheduled'}</td>
-                    <td className="text-small text-secondary py-3 pr-4 text-right">{run.foliosProcessed ?? '—'}</td>
-                    <td className="text-small text-secondary py-3 pr-4 text-right">{run.chargesPosted ?? '—'}</td>
-                    <td className="text-small text-secondary py-3 text-right">
+                    <td className="text-small text-primary-dark/70 py-3 pr-4">{run.triggeredBy ? 'Manual' : 'Scheduled'}</td>
+                    <td className="text-small text-primary-dark py-3 pr-4 text-right">{run.foliosProcessed ?? '—'}</td>
+                    <td className="text-small text-primary-dark py-3 pr-4 text-right">{run.chargesPosted ?? '—'}</td>
+                    <td className="text-small text-primary-dark py-3 text-right">
                       {run.totalAmountPosted ? formatMoney(run.totalAmountPosted, currencySymbolFor(run.currency)) : '—'}
                     </td>
                   </tr>
@@ -210,7 +210,7 @@ export default function NightAuditPage() {
             </table>
           </div>
         ) : (
-          <p className="text-body text-secondary-light">No audits have run for this property yet.</p>
+          <p className="text-body text-primary-dark/70">No audits have run for this property yet.</p>
         )}
       </Section>
 

@@ -185,9 +185,9 @@ export default function WalkInBookingPage() {
         {isImmediate && roomTypeId ? (
           <Section label="Room Selection">
             {roomsQuery.isLoading ? (
-              <p className="text-body text-secondary-light">Loading rooms…</p>
+              <p className="text-body text-primary-dark/70">Loading rooms…</p>
             ) : buildings.length === 0 ? (
-              <p className="text-body text-secondary-light">No ready rooms of this type — nothing vacant and clean/inspected right now.</p>
+              <p className="text-body text-primary-dark/70">No ready rooms of this type — nothing vacant and clean/inspected right now.</p>
             ) : (
               <RoomGrid buildings={buildings} selectedRoomId={selectedRoomId} onSelectRoom={setSelectedRoomId} />
             )}

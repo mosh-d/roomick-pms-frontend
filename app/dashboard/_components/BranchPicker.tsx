@@ -38,8 +38,8 @@ export function BranchPicker({
 
   return (
     <Container className="max-w-xl py-16">
-      <h1 className="font-display text-title font-bold text-secondary mb-2">Choose a property</h1>
-      <p className="text-body text-secondary-light mb-8">
+      <h1 className="font-display text-title font-bold text-primary-dark mb-2">Choose a property</h1>
+      <p className="text-body text-primary-dark/70 mb-8">
         You have access to more than one — pick which one to work in.
       </p>
       <div className="flex flex-col gap-4">

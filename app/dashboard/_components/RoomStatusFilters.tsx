@@ -87,7 +87,7 @@ export function RoomStatusFilters({
           <button
             type="button"
             onClick={() => onChange({ status: ALL_VALUE, buildingId: ALL_VALUE, roomTypeId: ALL_VALUE })}
-            className="text-small font-semibold text-secondary underline hover:text-secondary-light cursor-pointer"
+            className="text-small font-semibold text-primary-dark underline hover:text-primary-dark/70 cursor-pointer"
           >
             Clear all ({activeCount})
           </button>

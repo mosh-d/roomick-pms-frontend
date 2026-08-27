@@ -146,7 +146,7 @@ export default function DeparturesDashboardPage() {
       {actionError ? <p className="text-small text-red-600">{actionError}</p> : null}
 
       {departuresQuery.isLoading ? (
-        <p className="text-body text-secondary-light">Loading departures…</p>
+        <p className="text-body text-primary-dark/70">Loading departures…</p>
       ) : departuresQuery.isError ? (
         <p className="text-body text-red-600">Could not load departures. Please try refreshing.</p>
       ) : (

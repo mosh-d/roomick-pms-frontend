@@ -33,7 +33,7 @@ export function SearchInput({
         value={value}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
-        className={`w-full bg-transparent border-0 border-b pb-1 pl-6 text-body ${FIELD_PLACEHOLDER_CLASS} ${FIELD_UNDERLINE_CLASS} focus:outline-none focus:border-secondary transition-colors`}
+        className={`w-full bg-transparent border-0 border-b pb-1 pl-6 text-body ${FIELD_PLACEHOLDER_CLASS} ${FIELD_UNDERLINE_CLASS} focus:outline-none focus:border-primary transition-colors`}
       />
     </div>
   );
