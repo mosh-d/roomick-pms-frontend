@@ -4,41 +4,33 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 /**
- * The Front Desk sidebar (Roomick-UI.pdf pages 10, 14, 15, 18, 19). Reuses
- * `WizardShell.tsx`'s own row/active-state classes rather than a second,
- * separately-tuned copy — same shared-styling discipline that page's own
- * header comments establish for this codebase.
+ * The operations sidebar.
  *
- * A group only expands to show its children while a page inside it is
- * actually open (`activeWhen`) — matching `WizardShell`'s own "only the
- * active section auto-expands" rule (driven by the current route, not a
- * static default) — collapsed to a single row everywhere else, including
- * on the hub page itself, matching what both reference pages (10 and 19)
- * actually show.
+ * **Colour**: everything here sits on the page background, not inside a
+ * `tone="secondary"` card, so it uses the PRIMARY family — sampled from the
+ * reference, whose sidebar text is `#2d2300` (≈ `primary-dark`) and whose
+ * active group label is `#cca000` (`primary`). Lavender `secondary-light`
+ * belongs to text *inside* secondary-toned cards only. See
+ * `design-system/01-color.md` § "Which family on which surface".
  *
- * "Check-In Flow" and "Check-Out Flow" point at the same destination as
- * their sibling "Dashboard" entries (Arrivals/Departures) — there's no
- * standalone flow entry point independent of a specific reservation row;
- * entering either always starts from that dashboard's per-row button.
- * "Room Change" and everything under Operations stays inert — no backend
- * exists for any of it yet (see PHASE_NOTES.md's "backend build order").
+ * **Active state**: exactly one row is ever active. Each child owns an
+ * `isActive` predicate rather than the nav comparing `pathname === href`,
+ * because two entries pointing at the same route both matched and both lit
+ * up — ambiguous and wrong. Every child now has its own destination.
  *
- * A collapsed group's own label is ALSO a real link, to its first child's
- * route — without this, a group you're not already inside of would be a
- * dead end reachable only by going back through the hub first, which is a
- * worse, more confusing sidebar than not expanding at all. Caught live: a
- * first pass left collapsed groups fully inert, discovered while testing
- * cross-group navigation (Arrivals → Room Status Board) with no path back
- * except the hub card.
+ * **Layout**: every row is `shrink-0`. Flex children shrink by default, so
+ * once the list outgrew the viewport the rows compressed into each other
+ * instead of the column scrolling.
  */
 interface SidebarChild {
   label: string;
   href?: string;
+  /** Defaults to an exact path match; override when a child owns a subtree (e.g. `/check-in/[id]`). */
+  isActive?: (pathname: string) => boolean;
 }
 interface SidebarGroup {
   label: string;
   children: SidebarChild[];
-  activeWhen: (pathname: string) => boolean;
 }
 
 const GROUPS: SidebarGroup[] = [
@@ -46,19 +38,17 @@ const GROUPS: SidebarGroup[] = [
     label: 'Check-In',
     children: [
       { label: 'Arrivals Dashboard', href: '/dashboard/arrivals' },
-      { label: 'Check-In Flow', href: '/dashboard/arrivals' },
+      { label: 'Check-In Flow', href: '/dashboard/check-in', isActive: (p) => p.startsWith('/dashboard/check-in') },
       { label: 'Walk-In Booking', href: '/dashboard/walk-in-booking' },
     ],
-    activeWhen: (p) => p.startsWith('/dashboard/arrivals') || p.startsWith('/dashboard/check-in') || p.startsWith('/dashboard/walk-in-booking'),
   },
   {
     label: 'Check-Out',
     children: [
       { label: 'Departures Dashboard', href: '/dashboard/departures' },
-      { label: 'Check-Out Flow', href: '/dashboard/departures' },
+      { label: 'Check-Out Flow', href: '/dashboard/check-out', isActive: (p) => p.startsWith('/dashboard/check-out') },
       { label: 'Room Change' },
     ],
-    activeWhen: (p) => p.startsWith('/dashboard/departures'),
   },
   {
     label: 'In-House Management',
@@ -66,25 +56,20 @@ const GROUPS: SidebarGroup[] = [
       { label: 'In-House Guest List', href: '/dashboard/in-house-guest-list' },
       { label: 'Room Status Board', href: '/dashboard/room-status-board' },
     ],
-    activeWhen: (p) => p.startsWith('/dashboard/in-house-guest-list') || p.startsWith('/dashboard/room-status-board'),
   },
-];
-
-/** Groups that sit below the three Front Desk ones — same expand-on-active rule. */
-const OPERATIONS_GROUPS: SidebarGroup[] = [
   {
     label: 'Billing and Payments',
     children: [
-      { label: 'Guest Folio', href: '/dashboard/billing' },
-      { label: 'Split Billing' },
+      { label: 'Guest Folio', href: '/dashboard/billing', isActive: (p) => p.startsWith('/dashboard/billing') },
+      { label: 'Split Billing', href: '/dashboard/split-billing' },
       { label: 'Night Audit', href: '/dashboard/night-audit' },
       { label: 'Refunds and Corrections' },
     ],
-    activeWhen: (p) => p.startsWith('/dashboard/billing') || p.startsWith('/dashboard/night-audit'),
   },
 ];
 
-const INERT_OPERATIONS_ROWS = [
+/** Modules with no backend yet — visible so the documented architecture still reads, but honestly non-interactive. */
+const INERT_ROWS = [
   'Reservations',
   'Housekeeping',
   'Folio Transfer',
@@ -95,12 +80,20 @@ const INERT_OPERATIONS_ROWS = [
   'Comms Log',
 ];
 
+function childIsActive(child: SidebarChild, pathname: string): boolean {
+  if (!child.href) return false;
+  return child.isActive ? child.isActive(pathname) : pathname === child.href;
+}
+
 export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-60 shrink-0 overflow-y-auto border-r border-accent/20 px-4 py-6 flex flex-col gap-2">
-      <Link href="/dashboard" className="text-small font-bold text-secondary px-3 hover:text-primary-text transition-colors">
+    <aside className="w-60 shrink-0 overflow-y-auto border-r border-primary/20 px-4 py-6 flex flex-col gap-2">
+      <Link
+        href="/dashboard"
+        className="shrink-0 text-small font-bold text-primary-dark px-3 hover:text-primary-text transition-colors"
+      >
         Front Desk
       </Link>
 
@@ -108,32 +101,45 @@ export function Sidebar() {
         <GroupRow key={group.label} group={group} pathname={pathname} />
       ))}
 
-      {OPERATIONS_GROUPS.map((group) => (
-        <GroupRow key={group.label} group={group} pathname={pathname} />
-      ))}
-
-      {INERT_OPERATIONS_ROWS.map((label) => (
+      {INERT_ROWS.map((label) => (
         <InertRow key={label} label={label} />
       ))}
     </aside>
   );
 }
 
-/** One sidebar group: expanded (with its children) while a page inside it is open, a single collapsed link otherwise. */
+/** Expanded (children visible) while a page inside it is open; a single collapsed link otherwise. */
 function GroupRow({ group, pathname }: { group: SidebarGroup; pathname: string }) {
-  if (!group.activeWhen(pathname)) {
-    return <CollapsedGroupRow label={group.label} href={group.children.find((c) => c.href)?.href} />;
+  const expanded = group.children.some((c) => childIsActive(c, pathname));
+
+  if (!expanded) {
+    const firstReal = group.children.find((c) => c.href)?.href;
+    // A collapsed group is still a real link to its first child — otherwise
+    // a group you aren't already inside is a dead end.
+    if (!firstReal) return <InertRow label={group.label} />;
+    return (
+      <Link
+        href={firstReal}
+        className="shrink-0 rounded-control px-3 py-2 text-tiny font-semibold text-primary-dark border border-primary/30 hover:bg-primary-light/40 transition-colors"
+      >
+        {group.label}
+      </Link>
+    );
   }
+
   return (
-    <div className="rounded-control bg-primary flex flex-col gap-1 p-1">
+    <div className="shrink-0 rounded-control bg-primary flex flex-col gap-1 p-1">
       <span className="px-2 py-1.5 text-tiny font-semibold text-white">{group.label}</span>
       {group.children.map((child) =>
         child.href ? (
           <Link
             key={child.label}
             href={child.href}
+            aria-current={childIsActive(child, pathname) ? 'page' : undefined}
             className={`rounded-control px-2 py-1.5 text-tiny font-semibold transition-colors ${
-              pathname === child.href ? 'bg-white/20 text-white ring-1 ring-white/40' : 'text-white/80 hover:bg-white/10'
+              childIsActive(child, pathname)
+                ? 'bg-white/25 text-white ring-1 ring-white/50'
+                : 'text-white/80 hover:bg-white/10'
             }`}
           >
             {child.label}
@@ -146,26 +152,12 @@ function GroupRow({ group, pathname }: { group: SidebarGroup; pathname: string }
   );
 }
 
-/** A collapsed group's own row — a real link to its first real child when one exists (see this file's header comment on why), otherwise a plain inert row (e.g. no group has any built page at all yet). */
-function CollapsedGroupRow({ label, href }: { label: string; href?: string }) {
-  if (!href) return <InertRow label={label} />;
-  return (
-    <Link
-      href={href}
-      className="rounded-control px-3 py-2 text-tiny font-semibold text-secondary border border-accent/30 hover:bg-accent/10 transition-colors"
-    >
-      {label}
-    </Link>
-  );
-}
-
-/** A row for a module that isn't built yet — visible (matching the documented architecture) but honestly non-interactive, not a dead link. */
 function InertRow({ label, onDark = false }: { label: string; onDark?: boolean }) {
   return (
     <div
       title="Not built yet"
-      className={`rounded-control px-3 py-2 text-tiny truncate ${
-        onDark ? 'text-white/60' : 'border border-accent/30 text-secondary-light/70'
+      className={`shrink-0 rounded-control px-3 py-2 text-tiny truncate ${
+        onDark ? 'text-white/55' : 'border border-primary/20 text-primary-dark/45'
       }`}
     >
       {label}

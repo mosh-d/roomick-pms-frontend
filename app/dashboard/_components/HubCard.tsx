@@ -10,11 +10,10 @@ import { CARD_TONE_CLASSES } from '@/components/ui/Card';
  *
  * - **Linked** (`href` set): a real page exists — Room Status Board,
  *   Arrivals/Departures Dashboards, In-House Guest List, Check-In/Check-
- *   Out Flow (both route to their sibling Dashboard's per-row action —
- *   there's no standalone flow entry point independent of a specific
- *   reservation), and Walk-In Booking. Renders as a genuine `Link`,
- *   hover/focus states, and any `stats` passed are real numbers derived
- *   from live data.
+ *   Out Flow (each its own page with a guest picker, so the flow is
+ *   reachable without first finding the guest on a dated dashboard), and
+ *   Walk-In Booking. Renders as a genuine `Link`, hover/focus states, and
+ *   any `stats` passed are real numbers derived from live data.
  * - **Inert** (`href` omitted): the reference shows this card (Room
  *   Change, and everything under Reservations/Housekeeping/Billing/etc.
  *   in the sidebar) but nothing is built behind it yet — see

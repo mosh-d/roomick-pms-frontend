@@ -16,8 +16,11 @@ const ROUTE_TITLES: Record<string, string> = {
   '/dashboard/departures': 'Departures Dashboard',
   '/dashboard/in-house-guest-list': 'In-House Guest List',
   '/dashboard/walk-in-booking': 'Walk-In Booking',
+  '/dashboard/check-in': 'Check-In Flow',
+  '/dashboard/check-out': 'Check-Out Flow',
   '/dashboard/billing': 'Guest Folio',
   '/dashboard/night-audit': 'Night Audit',
+  '/dashboard/split-billing': 'Split Billing',
 };
 
 function pageTitleFor(pathname: string): string {
@@ -79,7 +82,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   if (branchesQuery.isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-body text-secondary-light">Loading your properties…</p>
+        <p className="text-body text-primary-dark/70">Loading your properties…</p>
       </div>
     );
   }
@@ -95,7 +98,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   if (branches && branches.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-body text-secondary-light">No properties are set up on this account yet.</p>
+        <p className="text-body text-primary-dark/70">No properties are set up on this account yet.</p>
       </div>
     );
   }
@@ -128,23 +131,23 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           ) : null}
           <span className="text-accent shrink-0">/</span>
           {pathname === '/dashboard' ? (
-            <span className="font-semibold text-secondary truncate">Front Desk</span>
+            <span className="font-semibold text-primary-dark truncate">Front Desk</span>
           ) : (
             <>
               <Link href="/dashboard" className="text-primary-text shrink-0 hover:underline">
                 Front Desk
               </Link>
               <span className="text-accent shrink-0">/</span>
-              <span className="font-semibold text-secondary truncate">{pageTitleFor(pathname)}</span>
+              <span className="font-semibold text-primary-dark truncate">{pageTitleFor(pathname)}</span>
             </>
           )}
         </div>
         <div className="flex items-center gap-4 shrink-0 text-small">
-          <span className="text-secondary-light">{user?.name}</span>
+          <span className="text-primary-dark/70">{user?.name}</span>
           <button
             type="button"
             onClick={handleLogout}
-            className="font-semibold text-secondary border border-accent/40 rounded-control px-4 py-2 hover:bg-accent/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="font-semibold text-primary-dark border border-primary/40 rounded-control px-4 py-2 hover:bg-primary-light/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             Log out
           </button>

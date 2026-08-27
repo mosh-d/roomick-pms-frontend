@@ -74,7 +74,7 @@ export default function FrontDeskHubPage() {
             stats={arrivalsQuery.data ? [`${arrivalsQuery.data.length} pending arrivals today`] : undefined}
             href="/dashboard/arrivals"
           />
-          <HubCard title="Check-In Flow" description="Room assignment for an arriving guest" href="/dashboard/arrivals" />
+          <HubCard title="Check-In Flow" description="Room assignment for an arriving guest" href="/dashboard/check-in" />
           <HubCard title="Walk-In Booking" description="Create reservation and check-in in one flow" href="/dashboard/walk-in-booking" />
         </div>
       </Section>
@@ -87,7 +87,7 @@ export default function FrontDeskHubPage() {
             stats={departuresQuery.data ? [`${departuresQuery.data.length} guests departing today`] : undefined}
             href="/dashboard/departures"
           />
-          <HubCard title="Check-Out Flow" description="Release a departing guest's room" href="/dashboard/departures" />
+          <HubCard title="Check-Out Flow" description="Release a departing guest's room" href="/dashboard/check-out" />
           <HubCard title="Room Change" description="Switch guest to a different room" />
         </div>
       </Section>
