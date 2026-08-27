@@ -6,6 +6,15 @@ import { usePathname } from 'next/navigation';
 /**
  * The operations sidebar.
  *
+ * **Structure**: "Front Desk" owns a bordered box containing exactly
+ * Check-In / Check-Out / In-House Management — its own indented children.
+ * Reservations, Housekeeping, Billing and Payments, and the rest sit
+ * OUTSIDE that box as separate top-level rows, matching the reference
+ * exactly (its border closes right after In-House Management, and
+ * Reservations starts its own separately-bordered box below). An earlier
+ * version flattened all four groups into one list with no wrapper at all —
+ * missing the box entirely, not just under-styling it.
+ *
  * **Colour**: everything here sits on the page background, not inside a
  * `tone="secondary"` card, so it uses the PRIMARY family — sampled from the
  * reference, whose sidebar text is `#2d2300` (≈ `primary-dark`) and whose
@@ -40,7 +49,16 @@ interface SidebarGroup {
   children: SidebarChild[];
 }
 
-const GROUPS: SidebarGroup[] = [
+/**
+ * "Front Desk" isn't just the sidebar's top link — in the reference it OWNS
+ * a bordered section containing exactly Check-In / Check-Out / In-House
+ * Management, and that box closes before Reservations, Housekeeping,
+ * Billing and Payments, etc. begin as their own, separately-bordered
+ * top-level rows. An earlier version of this file flattened all four
+ * groups (including Billing and Payments) into one list with no shared
+ * wrapper — structurally wrong, not just a missing border.
+ */
+const FRONT_DESK_GROUPS: SidebarGroup[] = [
   {
     label: 'Check-In',
     children: [
@@ -64,27 +82,40 @@ const GROUPS: SidebarGroup[] = [
       { label: 'Room Status Board', href: '/dashboard/room-status-board' },
     ],
   },
-  {
-    label: 'Billing and Payments',
-    children: [
-      { label: 'Guest Folio', href: '/dashboard/billing', isActive: (p) => p.startsWith('/dashboard/billing') },
-      { label: 'Split Billing', href: '/dashboard/split-billing' },
-      { label: 'Night Audit', href: '/dashboard/night-audit' },
-      { label: 'Refunds and Corrections' },
-    ],
-  },
 ];
 
-/** Modules with no backend yet — visible so the documented architecture still reads, but honestly non-interactive. */
-const INERT_ROWS = [
-  'Reservations',
-  'Housekeeping',
-  'Folio Transfer',
-  'Point of Sale',
-  'Shift Management',
-  'No-Show Handling',
-  'Guest Registration Card',
-  'Comms Log',
+const BILLING_GROUP: SidebarGroup = {
+  label: 'Billing and Payments',
+  children: [
+    { label: 'Guest Folio', href: '/dashboard/billing', isActive: (p) => p.startsWith('/dashboard/billing') },
+    { label: 'Split Billing', href: '/dashboard/split-billing' },
+    { label: 'Night Audit', href: '/dashboard/night-audit' },
+    { label: 'Refunds and Corrections' },
+  ],
+};
+
+type TopLevelItem = { kind: 'group'; group: SidebarGroup } | { kind: 'inert'; label: string };
+
+/**
+ * Everything below the Front Desk box, in the reference's own order:
+ * Reservations, Housekeeping, Billing and Payments, Folio Transfer, Point
+ * of Sale, Shift Management, No-Show Handling, Guest Registration Card,
+ * Comms Log. Billing and Payments is the one real, built group in this
+ * list — it renders with `GroupRow`, same as the Front Desk groups do,
+ * just outside that box rather than inside it. The rest have no backend
+ * module yet (see PHASE_NOTES.md's build order) and render inert — visible
+ * so the documented architecture still reads, but honestly non-interactive.
+ */
+const TOP_LEVEL: TopLevelItem[] = [
+  { kind: 'inert', label: 'Reservations' },
+  { kind: 'inert', label: 'Housekeeping' },
+  { kind: 'group', group: BILLING_GROUP },
+  { kind: 'inert', label: 'Folio Transfer' },
+  { kind: 'inert', label: 'Point of Sale' },
+  { kind: 'inert', label: 'Shift Management' },
+  { kind: 'inert', label: 'No-Show Handling' },
+  { kind: 'inert', label: 'Guest Registration Card' },
+  { kind: 'inert', label: 'Comms Log' },
 ];
 
 function childIsActive(child: SidebarChild, pathname: string): boolean {
@@ -97,20 +128,44 @@ export function Sidebar() {
 
   return (
     <aside className="w-60 shrink-0 overflow-y-auto border-r border-primary/20 px-4 py-6 flex flex-col gap-2">
-      <Link
-        href="/dashboard"
-        className="shrink-0 text-small font-bold text-primary-dark px-3 hover:text-primary-text transition-colors"
-      >
-        Front Desk
-      </Link>
+      {/*
+       * The Front Desk box. Border color is pixel-matched, not guessed:
+       * the reference's box stroke (`#dbba46` over its `#fffaeb` fill)
+       * solves to primary (`#CCA000`) at ~30% alpha over that fill — the
+       * exact same `border-primary/30` this file already uses for a
+       * collapsed group row, reused rather than a new one-off value.
+       * No fill of its own: the reference's box interior (`#fffaeb`) and
+       * the page around it (`#fffdf8`) are close enough to be the same
+       * surface — the box reads as a border only, not a tinted panel.
+       */}
+      <div className="shrink-0 rounded-card border border-primary/30 p-3 flex flex-col gap-2">
+        <Link href="/dashboard" className="shrink-0 text-small font-bold text-primary-dark hover:text-primary-text transition-colors">
+          Front Desk
+        </Link>
+        {/*
+         * Indented one step relative to "Front Desk" above it. Pixel-
+         * sampling the reference shows its own Check-In box left edge
+         * flush with "Front Desk"'s text (x=108 vs x=105 — noise, not a
+         * deliberate offset) — but told directly that "Front Desk" should
+         * stay far left while its children read as indented, so this is a
+         * deliberate improvement on the static mockup, not a reference
+         * measurement. The user's own standing guidance is that the
+         * mockups convey feel, not literal pixel law.
+         */}
+        <div className="flex flex-col gap-2 pl-3">
+          {FRONT_DESK_GROUPS.map((group) => (
+            <GroupRow key={group.label} group={group} pathname={pathname} />
+          ))}
+        </div>
+      </div>
 
-      {GROUPS.map((group) => (
-        <GroupRow key={group.label} group={group} pathname={pathname} />
-      ))}
-
-      {INERT_ROWS.map((label) => (
-        <InertRow key={label} label={label} />
-      ))}
+      {TOP_LEVEL.map((item) =>
+        item.kind === 'group' ? (
+          <GroupRow key={item.group.label} group={item.group} pathname={pathname} />
+        ) : (
+          <InertRow key={item.label} label={item.label} />
+        ),
+      )}
     </aside>
   );
 }
