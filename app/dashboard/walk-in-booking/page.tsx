@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select, type SelectOption } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { WalkInIcon } from '@/components/ui/Icons';
 import { walkInBookingSchema, type WalkInBookingFormValues } from '@/lib/schemas/reservations';
 import { useRoomsQuery, useRoomTypesQuery } from '@/lib/rooms';
 import { groupRoomsByFloor } from '@/lib/groupRoomsByFloor';
@@ -135,46 +137,53 @@ export default function WalkInBookingPage() {
   const pending = isSubmitting || createReservationMutation.isPending || createWalkInMutation.isPending;
 
   return (
-    <Container className="max-w-3xl py-10 flex flex-col gap-6">
-      <div>
-        <h1 className="font-display text-title font-bold text-secondary mb-1">Walk-In Booking</h1>
-        <p className="text-body text-secondary-light">
-          {isImmediate ? 'Check an offline guest in now.' : 'Book ahead for a future date — no room assignment yet.'}
-        </p>
-      </div>
+    <Container className="max-w-5xl py-10 flex flex-col gap-6">
+      <PageHeader
+        icon={<WalkInIcon className="size-8" />}
+        title="Walk-In Booking"
+        subtitle={isImmediate ? 'Check an offline guest in now.' : 'Book ahead for a future date — no room assignment yet.'}
+      />
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+        {/* Two-column field pairs, matching the reference's own form layout
+            (Roomick-UI.pdf p14 pairs first/last name, email/phone, and the
+            date fields side by side) — a single stacked column made this
+            form roughly twice as tall as the reference for no benefit. */}
         <Section label="Guest">
-          <Input label="Name" {...register('guestName')} error={errors.guestName?.message} />
-          <Input label="Email" type="email" {...register('guestEmail')} error={errors.guestEmail?.message} />
-          <Input label="Phone" {...register('guestPhone')} error={errors.guestPhone?.message} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+            <Input label="Name" {...register('guestName')} error={errors.guestName?.message} />
+            <Input label="Email" type="email" {...register('guestEmail')} error={errors.guestEmail?.message} />
+            <Input label="Phone" {...register('guestPhone')} error={errors.guestPhone?.message} />
+          </div>
         </Section>
 
         <Section label="Stay">
-          <Controller
-            control={control}
-            name="roomTypeId"
-            render={({ field }) => (
-              <Select
-                name="roomTypeId"
-                label="Room Type"
-                options={roomTypeOptions}
-                value={field.value || null}
-                onChange={field.onChange}
-                error={errors.roomTypeId?.message}
-              />
-            )}
-          />
-          <Input label="Check-In Date" type="date" min={today} {...register('checkInDate')} error={errors.checkInDate?.message} />
-          <Input label="Check-Out Date" type="date" min={checkInDate || today} {...register('checkOutDate')} error={errors.checkOutDate?.message} />
-          <Input label="Adults" type="number" min={1} max={20} {...register('adults', { valueAsNumber: true })} error={errors.adults?.message} />
-          <Input label="Children" type="number" min={0} max={20} {...register('children', { valueAsNumber: true })} error={errors.children?.message} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+            <Controller
+              control={control}
+              name="roomTypeId"
+              render={({ field }) => (
+                <Select
+                  name="roomTypeId"
+                  label="Room Type"
+                  options={roomTypeOptions}
+                  value={field.value || null}
+                  onChange={field.onChange}
+                  error={errors.roomTypeId?.message}
+                />
+              )}
+            />
+            <div className="hidden sm:block" aria-hidden />
+            <Input label="Check-In Date" type="date" min={today} {...register('checkInDate')} error={errors.checkInDate?.message} />
+            <Input label="Check-Out Date" type="date" min={checkInDate || today} {...register('checkOutDate')} error={errors.checkOutDate?.message} />
+            <Input label="Adults" type="number" min={1} max={20} {...register('adults', { valueAsNumber: true })} error={errors.adults?.message} />
+            <Input label="Children" type="number" min={0} max={20} {...register('children', { valueAsNumber: true })} error={errors.children?.message} />
+          </div>
           <Textarea label="Special Requests" {...register('specialRequests')} error={errors.specialRequests?.message} />
         </Section>
 
         {isImmediate && roomTypeId ? (
-          <div>
-            <h2 className="text-body font-bold text-secondary mb-3">Room Selection</h2>
+          <Section label="Room Selection">
             {roomsQuery.isLoading ? (
               <p className="text-body text-secondary-light">Loading rooms…</p>
             ) : buildings.length === 0 ? (
@@ -182,7 +191,7 @@ export default function WalkInBookingPage() {
             ) : (
               <RoomGrid buildings={buildings} selectedRoomId={selectedRoomId} onSelectRoom={setSelectedRoomId} />
             )}
-          </div>
+          </Section>
         ) : null}
 
         {formError ? <p className="text-small text-red-600">{formError}</p> : null}

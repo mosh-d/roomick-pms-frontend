@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { CheckCircleIcon } from '@/components/ui/Icons';
 import { deriveRoomStatus } from '@/lib/deriveRoomStatus';
 import { useRoomsQuery } from '@/lib/rooms';
@@ -60,12 +61,10 @@ export default function FrontDeskHubPage() {
 
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-8">
-      <div>
-        <h1 className="font-display text-title font-bold text-secondary mb-1">Front Desk</h1>
-        <p className="text-body text-secondary-light">
-          Primary operational hub for receptionists. Arrivals, departures, in-house management, and walk-ins.
-        </p>
-      </div>
+      <PageHeader
+        title="Front Desk"
+        subtitle="Primary operational hub for receptionists. Arrivals, departures, in-house management, and walk-ins."
+      />
 
       <Section label="Check-In">
         <div className="flex flex-wrap gap-4">

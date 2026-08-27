@@ -3,8 +3,10 @@
 import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Container } from '@/components/ui/Container';
-import { Card } from '@/components/ui/Card';
+import { Section } from '@/components/ui/Section';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { BuildingArrowIcon } from '@/components/ui/Icons';
 import { useReservationQuery, useCheckInMutation } from '@/lib/reservations';
 import { useRoomsQuery } from '@/lib/rooms';
 import { groupRoomsByFloor } from '@/lib/groupRoomsByFloor';
@@ -66,10 +68,7 @@ export default function CheckInFlowPage() {
 
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-6">
-      <div>
-        <h1 className="font-display text-title font-bold text-secondary mb-1">Check-In Flow</h1>
-        <p className="text-body text-secondary-light">Check a guest in</p>
-      </div>
+      <PageHeader icon={<BuildingArrowIcon className="size-8" />} title="Check-In Flow" subtitle="Check a guest in" />
 
       {reservationQuery.isLoading || roomsQuery.isLoading ? (
         <p className="text-body text-secondary-light">Loading…</p>
@@ -79,23 +78,21 @@ export default function CheckInFlowPage() {
         <p className="text-body text-red-600">This reservation is already {reservation.status.replace('_', ' ')} — nothing to check in.</p>
       ) : (
         <>
-          <Card tone="secondary" className="flex flex-col gap-2">
-            <h2 className="text-body font-bold text-secondary">Guest Details</h2>
+          <Section label="Guest Details" tone="accent">
             <Row label="Name" value={reservation.guest.name} />
             <Row label="Email" value={reservation.guest.email ?? 'NIL'} />
             <Row label="Phone" value={reservation.guest.phone ?? 'NIL'} />
             <Row label="Room Type" value={reservation.roomType.name} />
             <Row label="Confirmation #" value={reservation.confirmationNumber} />
-          </Card>
+          </Section>
 
-          <div>
-            <h2 className="text-body font-bold text-secondary mb-3">Room Selection</h2>
+          <Section label="Room Selection">
             {buildings.length === 0 ? (
               <p className="text-body text-secondary-light">No ready rooms of this type — nothing vacant and clean/inspected right now.</p>
             ) : (
               <RoomGrid buildings={buildings} selectedRoomId={selectedRoomId} onSelectRoom={setSelectedRoomId} />
             )}
-          </div>
+          </Section>
 
           {actionError ? <p className="text-small text-red-600">{actionError}</p> : null}
 
@@ -108,10 +105,11 @@ export default function CheckInFlowPage() {
   );
 }
 
+/** Always rendered inside the `tone="accent"` Guest Details Section — label uses `text-accent-dark` to stay in the same slate family as the card, matching `ReviewStep.tsx`'s identical Row and its own note on why. */
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-small text-secondary-light">{label}</span>
+      <span className="text-small text-accent-dark">{label}</span>
       <span className="text-body font-semibold text-secondary">{value}</span>
     </div>
   );

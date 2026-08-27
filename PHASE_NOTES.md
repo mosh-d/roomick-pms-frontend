@@ -1116,3 +1116,33 @@ Backend half in `roomick-pms-backend/PHASE_NOTES.md` — same reduced scope (fla
 - Everything else already carried forward from Phase 23 — unchanged.
 - Arrivals/Departures have no date picker this pass — always "today" (branch timezone). A real reservation booked for a future date is correctly invisible on today's Arrivals until that date arrives; not tested further beyond confirming that's the actual (accepted) behavior.
 - Reservations has no general search/management screen — the sidebar's own "Reservations" row stays inert.
+
+## Phase 25 — Reference audit + shared page/table chrome (2026-08-27)
+
+A full audit of every built screen against `Roomick-UI.pdf` (rendering each reference page and screenshotting the live app side by side) found the IA, colors, and typography on track, but surfaced **systemic drift**: each list page had hand-rolled its own header and table, and every one of them had independently ended up missing the same reference chrome. Fixed as shared components rather than page-by-page, specifically so the pattern stops repeating — the Guest Folio page (ref p33) would have been the fourth.
+
+### Audit result
+- **On track**: route/IA mapping matches the reference page-for-page (hub=p10, Arrivals=p11, Check-In=p12/13, Walk-In=p14, Departures=p15, In-House=p18, Room Status Board=p19); sidebar groups match; backend model matches the DB architecture doc; build order being followed.
+- **Drift found and fixed** (below).
+- **Correctly deferred, confirmed still-blocked**: ID Capture (needs the encryption pass), rate-plan/Payment sections (need Rate Resolver), Folio columns (need P4), Room Change / Reservations calendar / Housekeeping (whole modules unbuilt).
+
+### Delivered
+- **`components/ui/PageHeader.tsx`** (new) — icon + serif `text-title` H1 + subtitle + closing rule, the header shape every reference operations page uses. Every dashboard page now uses it; none re-implement it. This is what all 7 pages had independently gotten wrong (no icon, no rule).
+- **`components/ui/Table.tsx` extended** — sortable headers with the reference's paired ↑↓ arrows (`sortValue` per column; columns without it stay unsorted, matching which columns the reference marks sortable), "← N/N →" pagination, and a real CSV Export button (RFC 4180 quoting, so a guest name with a comma doesn't split columns). Sorting/paging are client-side over already-fetched rows — each list is one branch's data in a single request, so server-side paging would be API surface with nothing to gain yet.
+- **`components/ui/SearchInput.tsx`** (new) — the reference's magnifier + underline search field, reusing `Input.tsx`'s exported underline/placeholder constants rather than a hand-copied near-match.
+- **New page-header icons** in `Icons.tsx` (plane-landing, plane-takeoff, clipboard-list, building-arrow, walk-in, receipt) plus table chrome (search, sort, arrows, download).
+- Arrivals/Departures/In-House all now have the header icon+rule, search, sortable columns, pagination, Export, and a Status column.
+- **Component-discipline fix**: `check-in/[reservationId]` was using ad-hoc `<h2 className="text-body font-bold">` where every other page uses the `Section` component's gold small-caps label; Walk-In Booking mixed both. Both now use `Section` throughout (Guest Details as `tone="accent"`, matching `ReviewStep`'s read-only-detail convention, with its `Row` label corrected to `text-accent-dark` to match).
+- **Layout fix**: Walk-In Booking was single-column where the reference pairs fields two-up — it rendered roughly twice as tall as intended. Now a 2-col grid, matching p14.
+
+### Decisions & deviations
+1. **No "Room" column on Arrivals**, though the reference has one. In this design a room is only assigned *at* check-in (spec §4.3), so the column would be a wall of dashes. The reference's Arrivals showing "203 · Vacant" implies room pre-assignment at booking — a real divergence, deliberately kept as-is for now (decision: follow the spec) and recorded here rather than silently ignored. Revisit when the Reservations module (ref p20–26) is built.
+2. **"Group", VIP badge, and Folio Balance columns omitted** — all need `GuestProfile`/`Folio` fields this pass deliberately excludes. Named in each page's own header comment so it's clear they're deferred, not overlooked.
+3. **Filter rows not added to the list pages.** Room Status Board's existing filter row already established the pattern (plain `Select`s, Phase 20); adding filters to Arrivals/Departures/In-House needs real filterable fields (Guest Status, Reservation Type) that don't exist yet. Search covers the actual current need.
+
+### Verified
+`npx tsc --noEmit`, `eslint` (0 errors; only the 4 known pre-existing RHF `incompatible-library` warnings), `npm run build` all clean. Live screenshots of all 7 pages re-captured and compared against their reference pages — header icon/rule, search, sort arrows, Status column, and Export all render correctly; Walk-In Booking's two-column layout confirmed roughly halving the form height.
+
+### Carried forward
+- Everything else already carried forward from Phase 24 — unchanged.
+- Pagination only appears above one page of rows (by design) — not yet exercised against a >10-row list.

@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { Container } from '@/components/ui/Container';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { CheckCircleIcon } from '@/components/ui/Icons';
 import type { SelectOption } from '@/components/ui/Select';
 import { groupRoomsByFloor } from '@/lib/groupRoomsByFloor';
 import { useRoomsQuery } from '@/lib/rooms';
@@ -67,10 +69,7 @@ export default function RoomStatusBoardPage() {
 
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-6">
-      <div>
-        <h1 className="font-display text-title font-bold text-secondary mb-1">Room Status Board</h1>
-        <p className="text-body text-secondary-light">See all rooms and their respective statuses</p>
-      </div>
+      <PageHeader icon={<CheckCircleIcon className="size-8" />} title="Room Status Board" subtitle="See all rooms and their respective statuses" />
 
       <RoomStatusFilters value={filters} onChange={setFilters} buildingOptions={buildingOptions} roomTypeOptions={roomTypeOptions} />
 
