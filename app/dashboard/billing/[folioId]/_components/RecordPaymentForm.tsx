@@ -22,11 +22,13 @@ export function RecordPaymentForm({
   folioId,
   auth,
   balanceDue,
+  currencySymbol,
 }: {
   branchId: string;
   folioId: string;
   auth: { accessToken: string | undefined; tenantId: string | undefined };
   balanceDue: string;
+  currencySymbol: string;
 }) {
   const [formError, setFormError] = useState<string | null>(null);
   const mutation = useRecordPaymentMutation(branchId, folioId, auth);
@@ -109,7 +111,7 @@ export function RecordPaymentForm({
           onClick={() => setValue('amount', owed, { shouldValidate: true })}
           className="self-start text-small font-semibold text-primary-text hover:underline cursor-pointer"
         >
-          Pay full balance ({formatMoney(balanceDue)})
+          Pay full balance ({formatMoney(balanceDue, currencySymbol)})
         </button>
       ) : null}
 

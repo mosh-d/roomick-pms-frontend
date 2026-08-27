@@ -47,6 +47,10 @@ export function displayWithCommas(value: number | undefined): string {
 export function formatMoney(value: string | number, currencySymbol = ''): string {
   const numeric = typeof value === 'number' ? value : Number(value);
   if (Number.isNaN(numeric)) return String(value);
-  const formatted = numeric.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return currencySymbol ? `${currencySymbol}${formatted}` : formatted;
+  // Sign goes OUTSIDE the symbol ("-₦150.00", not "₦-150.00") — format the
+  // absolute value and re-attach the minus, since toLocaleString would
+  // otherwise leave it stranded between the symbol and the digits.
+  const formatted = Math.abs(numeric).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const sign = numeric < 0 ? '-' : '';
+  return `${sign}${currencySymbol}${formatted}`;
 }

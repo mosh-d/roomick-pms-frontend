@@ -12,6 +12,7 @@ import { Table, type TableColumn } from '@/components/ui/Table';
 import { useDeparturesQuery, useCheckOutMutation, type ReservationSummary } from '@/lib/reservations';
 import { useFoliosQuery } from '@/lib/folios';
 import { formatMoney } from '@/lib/numberFormat';
+import { currencySymbolFor } from '@/lib/currencies';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 
@@ -23,28 +24,31 @@ import { useAuthStore } from '@/lib/store/authStore';
  * blocked by it, but you're notified)") and Cloudbeds, whose AR transfer
  * likewise happens after check-out.
  */
-function checkOutDescription(pending: { guestName: string; balanceDue: string | null } | null): string {
+function checkOutDescription(pending: { guestName: string; balanceDue: string | null; currency: string | null } | null): string {
   const base = `This checks out ${pending?.guestName ?? 'this guest'} and releases the room for cleaning.`;
   const owed = Number(pending?.balanceDue ?? 0);
   if (owed > 0) {
-    return `${base} They still owe ${formatMoney(owed)} — settle payment first if you can. Checking out anyway is allowed; the balance becomes a City Ledger receivable.`;
+    const amount = formatMoney(owed, currencySymbolFor(pending?.currency));
+    return `${base} They still owe ${amount} — settle payment first if you can. Checking out anyway is allowed; the balance becomes a City Ledger receivable.`;
   }
   return `${base} The folio is fully paid and will be settled automatically.`;
 }
 
 /**
  * Departures Dashboard (Roomick-UI.pdf page 15) — checked-in reservations
- * checking out today. No dedicated Check-Out Flow page this pass: the
- * reference's version (p16) is built entirely around a folio line-item
- * list and a final-payment step, and Folios/Payments aren't built. A
- * `ConfirmDialog` is the whole check-out UX, and its copy says so rather
- * than pretending a balance was settled.
+ * checking out today, each row showing its live folio balance.
+ *
+ * Still no dedicated Check-Out Flow page (ref p16): that screen is a full
+ * folio line-item list plus a payment step, which the Guest Folio page
+ * (`/dashboard/billing/[folioId]`) now provides — so check-out here stays
+ * a `ConfirmDialog` that names the outstanding amount and links the
+ * settling work to where it actually lives.
  */
 export default function DeparturesDashboardPage() {
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
-  const [pendingCheckOut, setPendingCheckOut] = useState<{ id: string; guestName: string; balanceDue: string | null } | null>(null);
+  const [pendingCheckOut, setPendingCheckOut] = useState<{ id: string; guestName: string; balanceDue: string | null; currency: string | null } | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
@@ -55,9 +59,9 @@ export default function DeparturesDashboardPage() {
 
   /** reservationId -> folio balance, so the row and the confirm dialog can both warn about money owed. */
   const folioByReservation = useMemo(() => {
-    const map = new Map<string, { id: string; balanceDue: string }>();
+    const map = new Map<string, { id: string; balanceDue: string; currency: string }>();
     for (const folio of foliosQuery.data ?? []) {
-      if (folio.reservation) map.set(folio.reservation.id, { id: folio.id, balanceDue: folio.balanceDue });
+      if (folio.reservation) map.set(folio.reservation.id, { id: folio.id, balanceDue: folio.balanceDue, currency: folio.currency });
     }
     return map;
   }, [foliosQuery.data]);
@@ -106,7 +110,7 @@ export default function DeparturesDashboardPage() {
         const folio = folioByReservation.get(r.id);
         if (!folio) return <span className="text-secondary-light">—</span>;
         const owed = Number(folio.balanceDue);
-        return <span className={owed > 0 ? 'font-semibold text-red-600' : 'text-secondary-light'}>{formatMoney(folio.balanceDue)}</span>;
+        return <span className={owed > 0 ? 'font-semibold text-red-600' : 'text-secondary-light'}>{formatMoney(folio.balanceDue, currencySymbolFor(folio.currency))}</span>;
       },
       sortValue: (r) => Number(folioByReservation.get(r.id)?.balanceDue ?? 0),
       exportValue: (r) => folioByReservation.get(r.id)?.balanceDue ?? '',
@@ -119,7 +123,12 @@ export default function DeparturesDashboardPage() {
         <Button
           size="sm"
           onClick={() =>
-            setPendingCheckOut({ id: r.id, guestName: r.guest.name, balanceDue: folioByReservation.get(r.id)?.balanceDue ?? null })
+            setPendingCheckOut({
+              id: r.id,
+              guestName: r.guest.name,
+              balanceDue: folioByReservation.get(r.id)?.balanceDue ?? null,
+              currency: folioByReservation.get(r.id)?.currency ?? null,
+            })
           }
         >
           Check-Out

@@ -67,6 +67,8 @@ export interface FolioDetail {
   lineItems: LineItem[];
   payments: FolioPayment[];
   totals: FolioTotals;
+  /** The branch's ISO 4217 code — feed to `currencySymbolFor` for display. */
+  currency: string;
   guestStatus: FolioGuestStatus;
 }
 
@@ -78,6 +80,7 @@ export interface FolioListRow {
   guest: { id: string; name: string };
   reservation: { id: string; confirmationNumber: string; status: string; checkOutDate: string; room: { number: string } | null } | null;
   balanceDue: string;
+  currency: string;
   guestStatus: FolioGuestStatus;
 }
 

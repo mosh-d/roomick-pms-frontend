@@ -12,6 +12,7 @@ import { Table, type TableColumn } from '@/components/ui/Table';
 import { useInHouseQuery, type ReservationSummary } from '@/lib/reservations';
 import { useFoliosQuery } from '@/lib/folios';
 import { formatMoney } from '@/lib/numberFormat';
+import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
 
 /**
@@ -37,9 +38,9 @@ export default function InHouseGuestListPage() {
 
   /** reservationId -> its folio, so each row can show a live balance and link straight to it. */
   const folioByReservation = useMemo(() => {
-    const map = new Map<string, { id: string; balanceDue: string }>();
+    const map = new Map<string, { id: string; balanceDue: string; currency: string }>();
     for (const folio of foliosQuery.data ?? []) {
-      if (folio.reservation) map.set(folio.reservation.id, { id: folio.id, balanceDue: folio.balanceDue });
+      if (folio.reservation) map.set(folio.reservation.id, { id: folio.id, balanceDue: folio.balanceDue, currency: folio.currency });
     }
     return map;
   }, [foliosQuery.data]);
@@ -79,7 +80,7 @@ export default function InHouseGuestListPage() {
         const owed = Number(folio.balanceDue);
         return (
           <span className={owed > 0 ? 'font-semibold text-red-600' : owed < 0 ? 'font-semibold text-green-700' : 'text-secondary-light'}>
-            {formatMoney(folio.balanceDue)}
+            {formatMoney(folio.balanceDue, currencySymbolFor(folio.currency))}
           </span>
         );
       },

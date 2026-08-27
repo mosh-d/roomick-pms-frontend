@@ -12,6 +12,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ApiError } from '@/lib/api';
 import { useFolioQuery, useTaxBreakdownQuery, useCloseFolioMutation, type LineItem } from '@/lib/folios';
 import { formatMoney } from '@/lib/numberFormat';
+import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
 import { PostChargeForm } from './_components/PostChargeForm';
 import { RecordPaymentForm } from './_components/RecordPaymentForm';
@@ -73,6 +74,7 @@ export default function GuestFolioPage() {
 
   const balance = Number(folio.totals.balanceDue);
   const isSettled = folio.status === 'settled';
+  const symbol = currencySymbolFor(folio.currency);
 
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-8">
@@ -95,7 +97,7 @@ export default function GuestFolioPage() {
       {folio.guestStatus === 'city_ledger' ? (
         <Card tone="accent">
           <p className="text-small text-secondary">
-            <span className="font-bold">City Ledger receivable.</span> This guest has checked out and still owes {formatMoney(folio.totals.balanceDue)}. Collections
+            <span className="font-bold">City Ledger receivable.</span> This guest has checked out and still owes {formatMoney(folio.totals.balanceDue, symbol)}. Collections
             matter — check-out is never blocked on a balance.
           </p>
         </Card>
@@ -129,28 +131,30 @@ export default function GuestFolioPage() {
                     </td>
                   </tr>
                 ) : (
-                  folio.lineItems.map((item) => <LineItemRow key={item.id} item={item} />)
+                  folio.lineItems.map((item) => <LineItemRow key={item.id} item={item} symbol={symbol} />)
                 )}
               </tbody>
             </table>
           </div>
 
           <Card tone="secondary" className="flex flex-col gap-2">
-            <TotalRow label="Sub Total" value={folio.totals.subTotal} />
-            <TotalRow label="Tax" value={folio.totals.taxTotal} />
-            <TotalRow label="Total Cost" value={folio.totals.totalCost} />
-            {Number(folio.totals.depositsTotal) > 0 ? <TotalRow label="Deposit Applied" value={`-${folio.totals.depositsTotal}`} /> : null}
-            <TotalRow label="Payments" value={`-${folio.totals.paymentsTotal}`} />
+            <TotalRow label="Sub Total" value={folio.totals.subTotal} symbol={symbol} />
+            <TotalRow label="Tax" value={folio.totals.taxTotal} symbol={symbol} />
+            <TotalRow label="Total Cost" value={folio.totals.totalCost} symbol={symbol} />
+            {Number(folio.totals.depositsTotal) > 0 ? (
+              <TotalRow label="Deposit Applied" value={`-${folio.totals.depositsTotal}`} symbol={symbol} />
+            ) : null}
+            <TotalRow label="Payments" value={`-${folio.totals.paymentsTotal}`} symbol={symbol} />
             {folio.reservation ? (
               <div className="flex items-center justify-between gap-2 pt-2 border-t border-secondary/20">
                 <span className="text-small text-secondary-light">Projected stay total</span>
-                <span className="text-small text-secondary-light">{formatMoney(folio.reservation.confirmedRate)}</span>
+                <span className="text-small text-secondary-light">{formatMoney(folio.reservation.confirmedRate, symbol)}</span>
               </div>
             ) : null}
             <div className="pt-3 mt-1 border-t border-secondary/20">
               <p className="text-small text-secondary-light mb-1">{balance < 0 ? 'Credit due to guest' : 'Balance Due'}</p>
               <p className={`text-title font-bold ${balance > 0 ? 'text-red-600' : balance < 0 ? 'text-green-700' : 'text-secondary'}`}>
-                {formatMoney(Math.abs(balance))}
+                {formatMoney(Math.abs(balance), symbol)}
               </p>
               <p className="text-tiny text-secondary-light mt-1">Full folio balance</p>
             </div>
@@ -176,15 +180,15 @@ export default function GuestFolioPage() {
                       <span className="inline-flex rounded-pill bg-secondary/15 px-2 py-0.5 text-tiny font-semibold text-secondary">{row.ruleName}</span>
                       <span className="text-small text-secondary-light ml-2">({(Number(row.rate) * 100).toFixed(2)}%)</span>
                     </td>
-                    <td className="text-small text-secondary py-3 pr-4 text-right">{formatMoney(row.taxableBase)}</td>
-                    <td className="text-small text-secondary py-3 text-right">{formatMoney(row.taxCollected)}</td>
+                    <td className="text-small text-secondary py-3 pr-4 text-right">{formatMoney(row.taxableBase, symbol)}</td>
+                    <td className="text-small text-secondary py-3 text-right">{formatMoney(row.taxCollected, symbol)}</td>
                   </tr>
                 ))}
                 <tr>
                   <td className="text-small font-bold text-secondary py-3 pr-4" colSpan={2}>
                     Total Tax
                   </td>
-                  <td className="text-small font-bold text-secondary py-3 text-right">{formatMoney(taxQuery.data.totalTax)}</td>
+                  <td className="text-small font-bold text-secondary py-3 text-right">{formatMoney(taxQuery.data.totalTax, symbol)}</td>
                 </tr>
               </tbody>
             </table>
@@ -201,7 +205,13 @@ export default function GuestFolioPage() {
           </Section>
 
           <Section label="Payment">
-            <RecordPaymentForm branchId={activeBranchId} folioId={params.folioId} auth={auth} balanceDue={folio.totals.balanceDue} />
+            <RecordPaymentForm
+              branchId={activeBranchId}
+              folioId={params.folioId}
+              auth={auth}
+              balanceDue={folio.totals.balanceDue}
+              currencySymbol={symbol}
+            />
           </Section>
         </>
       ) : (
@@ -221,7 +231,7 @@ export default function GuestFolioPage() {
 }
 
 /** Tax rows are the engine's own ledger entries; a parent charge shows its tax as a "+X tax" suffix, matching the reference's line list. */
-function LineItemRow({ item }: { item: LineItem }) {
+function LineItemRow({ item, symbol }: { item: LineItem; symbol: string }) {
   const isTax = item.chargeType === 'tax';
   const isCredit = Number(item.amount) < 0;
   return (
@@ -236,20 +246,20 @@ function LineItemRow({ item }: { item: LineItem }) {
         </span>
       </td>
       <td className={`text-small py-3 text-right whitespace-nowrap ${isCredit ? 'text-green-700' : 'text-secondary'}`}>
-        <span className="font-semibold">{formatMoney(item.amount)}</span>
+        <span className="font-semibold">{formatMoney(item.amount, symbol)}</span>
         {!isTax && Number(item.taxAmount) > 0 ? (
-          <span className="text-tiny text-secondary-light ml-2">+{formatMoney(item.taxAmount)} tax</span>
+          <span className="text-tiny text-secondary-light ml-2">+{formatMoney(item.taxAmount, symbol)} tax</span>
         ) : null}
       </td>
     </tr>
   );
 }
 
-function TotalRow({ label, value }: { label: string; value: string }) {
+function TotalRow({ label, value, symbol }: { label: string; value: string; symbol: string }) {
   return (
     <div className="flex items-center justify-between gap-2">
       <span className="text-small text-secondary">{label}</span>
-      <span className="text-small text-secondary">{formatMoney(value)}</span>
+      <span className="text-small text-secondary">{formatMoney(value, symbol)}</span>
     </div>
   );
 }

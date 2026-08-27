@@ -11,6 +11,7 @@ import { ReceiptIcon } from '@/components/ui/Icons';
 import { Table, type TableColumn } from '@/components/ui/Table';
 import { useFoliosQuery, type FolioListRow, type FolioFilter } from '@/lib/folios';
 import { formatMoney } from '@/lib/numberFormat';
+import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
 
 /**
@@ -72,7 +73,7 @@ export default function BillingIndexPage() {
       key: 'balance',
       label: 'Balance',
       align: 'right',
-      render: (f) => <BalanceCell amount={f.balanceDue} />,
+      render: (f) => <BalanceCell amount={f.balanceDue} currency={f.currency} />,
       sortValue: (f) => Number(f.balanceDue),
       exportValue: (f) => f.balanceDue,
     },
@@ -140,9 +141,10 @@ function GuestStatusBadge({ status }: { status: FolioListRow['guestStatus'] }) {
 }
 
 /** Positive = owed by the guest (red). Negative = a credit owed back to them (green), matching the in-house PMS's own convention. */
-function BalanceCell({ amount }: { amount: string }) {
+function BalanceCell({ amount, currency }: { amount: string; currency: string }) {
+  const symbol = currencySymbolFor(currency);
   const numeric = Number(amount);
-  if (numeric < 0) return <span className="font-semibold text-green-700">Credit {formatMoney(Math.abs(numeric))}</span>;
-  if (numeric > 0) return <span className="font-semibold text-red-600">{formatMoney(amount)}</span>;
-  return <span className="text-secondary-light">{formatMoney(amount)}</span>;
+  if (numeric < 0) return <span className="font-semibold text-green-700">Credit {formatMoney(Math.abs(numeric), symbol)}</span>;
+  if (numeric > 0) return <span className="font-semibold text-red-600">{formatMoney(amount, symbol)}</span>;
+  return <span className="text-secondary-light">{formatMoney(amount, symbol)}</span>;
 }
