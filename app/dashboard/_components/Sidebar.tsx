@@ -18,6 +18,13 @@ import { usePathname } from 'next/navigation';
  * because two entries pointing at the same route both matched and both lit
  * up — ambiguous and wrong. Every child now has its own destination.
  *
+ * **Selected-pill styling** (inside `GroupRow`) is pixel-sampled off the
+ * reference, not guessed: every child pill has a border and a fill at rest,
+ * both of which merely strengthen when selected (border ~35%→70% white,
+ * fill ~20%→50% `primary-light` over the group's gold), and only the
+ * selected pill is bold. See that component's own comment for the exact
+ * measurements.
+ *
  * **Layout**: every row is `shrink-0`. Flex children shrink by default, so
  * once the list outgrew the viewport the rows compressed into each other
  * instead of the column scrolling.
@@ -136,10 +143,23 @@ function GroupRow({ group, pathname }: { group: SidebarGroup; pathname: string }
             key={child.label}
             href={child.href}
             aria-current={childIsActive(child, pathname) ? 'page' : undefined}
-            className={`rounded-control px-2 py-1.5 text-tiny font-semibold transition-colors ${
+            // Every child pill carries its own border and its own fill —
+            // both are always present, only their strength changes. Pixel-
+            // sampled directly off the reference (p11): the fill is
+            // ~primary-light at 19% opacity over the group's `bg-primary`
+            // at rest, ~48% when selected — a genuinely lighter shade of
+            // the same gold, NOT a white wash over it (the earlier
+            // `bg-white/25 ring-1` version was a guess, not measured). Text
+            // stays pure white either way — the whitest pixel inside both
+            // "Arrivals Dashboard" (selected) and "Check-In Flow"
+            // (unselected) sampled identically at #ffffff. The only other
+            // difference is weight: `font-semibold` only on the selected
+            // row, `font-normal` otherwise — the reference never bolds a
+            // child that isn't the current page.
+            className={`rounded-control border px-2 py-1.5 text-tiny text-white transition-colors ${
               childIsActive(child, pathname)
-                ? 'bg-white/25 text-white ring-1 ring-white/50'
-                : 'text-white/80 hover:bg-white/10'
+                ? 'border-white/70 bg-primary-light/50 font-semibold'
+                : 'border-white/35 bg-primary-light/20 font-normal hover:border-white/55 hover:bg-primary-light/30'
             }`}
           >
             {child.label}
@@ -156,8 +176,13 @@ function InertRow({ label, onDark = false }: { label: string; onDark?: boolean }
   return (
     <div
       title="Not built yet"
-      className={`shrink-0 rounded-control px-3 py-2 text-tiny truncate ${
-        onDark ? 'text-white/55' : 'border border-primary/20 text-primary-dark/45'
+      className={`shrink-0 rounded-control border px-3 py-2 text-tiny truncate ${
+        // An inert row inside an expanded group (e.g. "Room Change" sitting
+        // among real Check-Out pills) still gets the same bordered-pill
+        // shape as its siblings — a bare unbordered label there read as if
+        // it had fallen out of the list, when every real pill next to it is
+        // bordered. The border is just dimmer, since nothing is selectable.
+        onDark ? 'border-white/20 text-white/55' : 'border-primary/20 text-primary-dark/45'
       }`}
     >
       {label}
