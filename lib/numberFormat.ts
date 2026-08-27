@@ -34,3 +34,19 @@ export function displayWithCommas(value: number | undefined): string {
   if (value === undefined || Number.isNaN(value)) return '';
   return value.toLocaleString('en-US', { maximumFractionDigits: 2 });
 }
+
+/**
+ * Formats a money value that arrived from the API as a string (Prisma
+ * `Decimal` serialises that way) for display, always to 2dp with grouping.
+ *
+ * The `Number()` here is display-only and deliberate: the backend is the
+ * sole authority on money arithmetic (all `Prisma.Decimal`), and nothing
+ * client-side ever computes a balance — it only renders one. Never reuse
+ * this to add or compare amounts.
+ */
+export function formatMoney(value: string | number, currencySymbol = ''): string {
+  const numeric = typeof value === 'number' ? value : Number(value);
+  if (Number.isNaN(numeric)) return String(value);
+  const formatted = numeric.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return currencySymbol ? `${currencySymbol}${formatted}` : formatted;
+}

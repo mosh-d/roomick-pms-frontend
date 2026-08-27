@@ -70,10 +70,23 @@ const GROUPS: SidebarGroup[] = [
   },
 ];
 
-const OPERATIONS_ROWS = [
+/** Groups that sit below the three Front Desk ones — same expand-on-active rule. */
+const OPERATIONS_GROUPS: SidebarGroup[] = [
+  {
+    label: 'Billing and Payments',
+    children: [
+      { label: 'Guest Folio', href: '/dashboard/billing' },
+      { label: 'Split Billing' },
+      { label: 'Night Audit' },
+      { label: 'Refunds and Corrections' },
+    ],
+    activeWhen: (p) => p.startsWith('/dashboard/billing'),
+  },
+];
+
+const INERT_OPERATIONS_ROWS = [
   'Reservations',
   'Housekeeping',
-  'Billing and Payments',
   'Folio Transfer',
   'Point of Sale',
   'Shift Management',
@@ -91,37 +104,45 @@ export function Sidebar() {
         Front Desk
       </Link>
 
-      {GROUPS.map((group) =>
-        group.activeWhen(pathname) ? (
-          <div key={group.label} className="rounded-control bg-primary flex flex-col gap-1 p-1">
-            <span className="px-2 py-1.5 text-tiny font-semibold text-white">{group.label}</span>
-            {group.children.map((child) =>
-              child.href ? (
-                <Link
-                  key={child.label}
-                  href={child.href}
-                  className={`rounded-control px-2 py-1.5 text-tiny font-semibold transition-colors ${
-                    pathname === child.href
-                      ? 'bg-white/20 text-white ring-1 ring-white/40'
-                      : 'text-white/80 hover:bg-white/10'
-                  }`}
-                >
-                  {child.label}
-                </Link>
-              ) : (
-                <InertRow key={child.label} label={child.label} onDark />
-              ),
-            )}
-          </div>
-        ) : (
-          <CollapsedGroupRow key={group.label} label={group.label} href={group.children.find((c) => c.href)?.href} />
-        ),
-      )}
+      {GROUPS.map((group) => (
+        <GroupRow key={group.label} group={group} pathname={pathname} />
+      ))}
 
-      {OPERATIONS_ROWS.map((label) => (
+      {OPERATIONS_GROUPS.map((group) => (
+        <GroupRow key={group.label} group={group} pathname={pathname} />
+      ))}
+
+      {INERT_OPERATIONS_ROWS.map((label) => (
         <InertRow key={label} label={label} />
       ))}
     </aside>
+  );
+}
+
+/** One sidebar group: expanded (with its children) while a page inside it is open, a single collapsed link otherwise. */
+function GroupRow({ group, pathname }: { group: SidebarGroup; pathname: string }) {
+  if (!group.activeWhen(pathname)) {
+    return <CollapsedGroupRow label={group.label} href={group.children.find((c) => c.href)?.href} />;
+  }
+  return (
+    <div className="rounded-control bg-primary flex flex-col gap-1 p-1">
+      <span className="px-2 py-1.5 text-tiny font-semibold text-white">{group.label}</span>
+      {group.children.map((child) =>
+        child.href ? (
+          <Link
+            key={child.label}
+            href={child.href}
+            className={`rounded-control px-2 py-1.5 text-tiny font-semibold transition-colors ${
+              pathname === child.href ? 'bg-white/20 text-white ring-1 ring-white/40' : 'text-white/80 hover:bg-white/10'
+            }`}
+          >
+            {child.label}
+          </Link>
+        ) : (
+          <InertRow key={child.label} label={child.label} onDark />
+        ),
+      )}
+    </div>
   );
 }
 

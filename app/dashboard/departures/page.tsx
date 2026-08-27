@@ -10,8 +10,27 @@ import { SearchInput } from '@/components/ui/SearchInput';
 import { PlaneTakeoffIcon } from '@/components/ui/Icons';
 import { Table, type TableColumn } from '@/components/ui/Table';
 import { useDeparturesQuery, useCheckOutMutation, type ReservationSummary } from '@/lib/reservations';
+import { useFoliosQuery } from '@/lib/folios';
+import { formatMoney } from '@/lib/numberFormat';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+
+/**
+ * Check-out is NEVER blocked by an outstanding balance — the room has to
+ * release either way, and the guest becomes a City Ledger receivable. This
+ * dialog therefore *warns* rather than gates, matching the in-house PMS
+ * ("you'll see an explicit warning to settle payment first (checkout isn't
+ * blocked by it, but you're notified)") and Cloudbeds, whose AR transfer
+ * likewise happens after check-out.
+ */
+function checkOutDescription(pending: { guestName: string; balanceDue: string | null } | null): string {
+  const base = `This checks out ${pending?.guestName ?? 'this guest'} and releases the room for cleaning.`;
+  const owed = Number(pending?.balanceDue ?? 0);
+  if (owed > 0) {
+    return `${base} They still owe ${formatMoney(owed)} — settle payment first if you can. Checking out anyway is allowed; the balance becomes a City Ledger receivable.`;
+  }
+  return `${base} The folio is fully paid and will be settled automatically.`;
+}
 
 /**
  * Departures Dashboard (Roomick-UI.pdf page 15) — checked-in reservations
@@ -25,12 +44,23 @@ export default function DeparturesDashboardPage() {
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
-  const [pendingCheckOut, setPendingCheckOut] = useState<{ id: string; guestName: string } | null>(null);
+  const [pendingCheckOut, setPendingCheckOut] = useState<{ id: string; guestName: string; balanceDue: string | null } | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
-  const departuresQuery = useDeparturesQuery(activeBranchId, undefined, { accessToken: accessToken ?? undefined, tenantId: user?.tenantId });
-  const checkOutMutation = useCheckOutMutation(activeBranchId ?? '', { accessToken: accessToken ?? undefined, tenantId: user?.tenantId });
+  const auth = { accessToken: accessToken ?? undefined, tenantId: user?.tenantId };
+  const departuresQuery = useDeparturesQuery(activeBranchId, undefined, auth);
+  const foliosQuery = useFoliosQuery(activeBranchId, 'all', auth);
+  const checkOutMutation = useCheckOutMutation(activeBranchId ?? '', auth);
+
+  /** reservationId -> folio balance, so the row and the confirm dialog can both warn about money owed. */
+  const folioByReservation = useMemo(() => {
+    const map = new Map<string, { id: string; balanceDue: string }>();
+    for (const folio of foliosQuery.data ?? []) {
+      if (folio.reservation) map.set(folio.reservation.id, { id: folio.id, balanceDue: folio.balanceDue });
+    }
+    return map;
+  }, [foliosQuery.data]);
 
   const rows = useMemo(() => {
     const all = departuresQuery.data ?? [];
@@ -69,11 +99,29 @@ export default function DeparturesDashboardPage() {
       sortValue: () => 'Due Out',
     },
     {
+      key: 'folioBalance',
+      label: 'Balance',
+      align: 'right',
+      render: (r) => {
+        const folio = folioByReservation.get(r.id);
+        if (!folio) return <span className="text-secondary-light">—</span>;
+        const owed = Number(folio.balanceDue);
+        return <span className={owed > 0 ? 'font-semibold text-red-600' : 'text-secondary-light'}>{formatMoney(folio.balanceDue)}</span>;
+      },
+      sortValue: (r) => Number(folioByReservation.get(r.id)?.balanceDue ?? 0),
+      exportValue: (r) => folioByReservation.get(r.id)?.balanceDue ?? '',
+    },
+    {
       key: 'action',
       label: 'Action',
       align: 'right',
       render: (r) => (
-        <Button size="sm" onClick={() => setPendingCheckOut({ id: r.id, guestName: r.guest.name })}>
+        <Button
+          size="sm"
+          onClick={() =>
+            setPendingCheckOut({ id: r.id, guestName: r.guest.name, balanceDue: folioByReservation.get(r.id)?.balanceDue ?? null })
+          }
+        >
           Check-Out
         </Button>
       ),
@@ -106,7 +154,7 @@ export default function DeparturesDashboardPage() {
       <ConfirmDialog
         open={pendingCheckOut !== null}
         title="Check out this guest?"
-        description={`This checks out ${pendingCheckOut?.guestName} and releases the room for cleaning. This does not settle any charges — billing isn't available yet.`}
+        description={checkOutDescription(pendingCheckOut)}
         confirmLabel="Check-Out"
         onCancel={() => setPendingCheckOut(null)}
         onConfirm={confirmCheckOut}

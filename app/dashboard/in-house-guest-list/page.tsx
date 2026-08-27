@@ -1,28 +1,48 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Container } from '@/components/ui/Container';
 import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { ClipboardListIcon } from '@/components/ui/Icons';
 import { Table, type TableColumn } from '@/components/ui/Table';
 import { useInHouseQuery, type ReservationSummary } from '@/lib/reservations';
+import { useFoliosQuery } from '@/lib/folios';
+import { formatMoney } from '@/lib/numberFormat';
 import { useAuthStore } from '@/lib/store/authStore';
 
 /**
  * In-House Guest List (Roomick-UI.pdf page 18) — every currently
- * checked-in guest. Reference columns not built: "Folio Balance" and the
- * "View Folio" action (both need Folios/Payments, P4), "Group" and the VIP
- * badge (both need `GuestProfile` fields this pass deliberately excludes).
+ * checked-in guest, with the reference's Folio Balance column and View
+ * Folio action (both unblocked once Folios/Payments landed). Still not
+ * built: "Group" and the VIP badge, which need `GuestProfile` fields this
+ * pass deliberately excludes.
+ *
+ * Balances come from the branch folio list rather than a per-row fetch —
+ * one request for the whole table instead of N.
  */
 export default function InHouseGuestListPage() {
+  const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
   const [search, setSearch] = useState('');
+  const auth = { accessToken: accessToken ?? undefined, tenantId: user?.tenantId };
 
-  const inHouseQuery = useInHouseQuery(activeBranchId, { accessToken: accessToken ?? undefined, tenantId: user?.tenantId });
+  const inHouseQuery = useInHouseQuery(activeBranchId, auth);
+  const foliosQuery = useFoliosQuery(activeBranchId, 'all', auth);
+
+  /** reservationId -> its folio, so each row can show a live balance and link straight to it. */
+  const folioByReservation = useMemo(() => {
+    const map = new Map<string, { id: string; balanceDue: string }>();
+    for (const folio of foliosQuery.data ?? []) {
+      if (folio.reservation) map.set(folio.reservation.id, { id: folio.id, balanceDue: folio.balanceDue });
+    }
+    return map;
+  }, [foliosQuery.data]);
 
   const rows = useMemo(() => {
     const all = inHouseQuery.data ?? [];
@@ -48,6 +68,37 @@ export default function InHouseGuestListPage() {
       label: 'Check-Out Date',
       render: (r) => new Date(r.checkOutDate).toLocaleDateString(),
       sortValue: (r) => r.checkOutDate,
+    },
+    {
+      key: 'folioBalance',
+      label: 'Folio Balance',
+      align: 'right',
+      render: (r) => {
+        const folio = folioByReservation.get(r.id);
+        if (!folio) return <span className="text-secondary-light">—</span>;
+        const owed = Number(folio.balanceDue);
+        return (
+          <span className={owed > 0 ? 'font-semibold text-red-600' : owed < 0 ? 'font-semibold text-green-700' : 'text-secondary-light'}>
+            {formatMoney(folio.balanceDue)}
+          </span>
+        );
+      },
+      sortValue: (r) => Number(folioByReservation.get(r.id)?.balanceDue ?? 0),
+      exportValue: (r) => folioByReservation.get(r.id)?.balanceDue ?? '',
+    },
+    {
+      key: 'action',
+      label: 'Action',
+      align: 'right',
+      render: (r) => {
+        const folio = folioByReservation.get(r.id);
+        if (!folio) return <span className="text-secondary-light">—</span>;
+        return (
+          <Button size="sm" variant="outline" onClick={() => router.push(`/dashboard/billing/${folio.id}`)}>
+            View Folio
+          </Button>
+        );
+      },
     },
   ];
 

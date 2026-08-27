@@ -16,10 +16,12 @@ const ROUTE_TITLES: Record<string, string> = {
   '/dashboard/departures': 'Departures Dashboard',
   '/dashboard/in-house-guest-list': 'In-House Guest List',
   '/dashboard/walk-in-booking': 'Walk-In Booking',
+  '/dashboard/billing': 'Guest Folio',
 };
 
 function pageTitleFor(pathname: string): string {
   if (pathname.startsWith('/dashboard/check-in/')) return 'Check-In Flow';
+  if (pathname.startsWith('/dashboard/billing/')) return 'Guest Folio';
   return ROUTE_TITLES[pathname] ?? '';
 }
 

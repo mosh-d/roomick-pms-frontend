@@ -1146,3 +1146,28 @@ A full audit of every built screen against `Roomick-UI.pdf` (rendering each refe
 ### Carried forward
 - Everything else already carried forward from Phase 24 — unchanged.
 - Pagination only appears above one page of rows (by design) — not yet exercised against a >10-row list.
+
+## Phase 26 — Guest Folio: billing pages, City Ledger, live balances (2026-08-27)
+
+Backend half in `roomick-pms-backend/PHASE_NOTES.md`, including the two design corrections (check-out never blocks on a balance; room charges accrue one night at a time) that came from studying the in-house PMS and Cloudbeds rather than assuming.
+
+### Delivered
+- **`/dashboard/billing`** — folio list with **Outstanding / Overdue / All** tabs (server-filtered, so the definitions live in one place) and the reference's **Guest Status** column rendering `City Ledger` / `Still In-House`. Built on the Phase 25 `PageHeader` + `SearchInput` + sortable `Table` — exactly the payoff that refactor was for; this page needed no new chrome.
+- **`/dashboard/billing/[folioId]`** — Guest Folio (ref p33), all five sections: Guest Details (`tone="accent"`), Line Items with the "+11.25 tax" per-line suffix and a right-rail totals card, Tax Breakdown (per rule, with taxable base), Add Charge, Payment. Plus a **Close Folio** action disabled above a zero balance, and a City Ledger banner when the guest has departed owing.
+- **Projected stay total** shown above Balance Due, read off `reservation.confirmedRate` — Cloudbeds' "pending vs posted" intent (front desk sees the full expected bill, not just what's accrued) without needing a pending flag on `LineItem`. Deliberately labelled distinctly so it can't be mistaken for what's owed.
+- **`lib/folios.ts`** (types + React Query hooks, mutations invalidating folio/list/in-house keys), **`lib/schemas/folios.ts`** (Zod mirrors), and `formatMoney` added to `lib/numberFormat.ts` — with an explicit comment that its `Number()` is **display-only**, since the backend is the sole authority on money arithmetic.
+- **In-House Guest List** finally gains the reference's **Folio Balance** column and **View Folio** action — the two columns the Phase 25 audit flagged as blocked on this module. Balances come from one branch-folio request keyed by reservation, not N per-row fetches.
+- **Departures** now shows a Balance column, and its check-out dialog **warns instead of misleading**: it names the outstanding amount and states that checking out anyway is allowed and turns the balance into a City Ledger receivable. The old "billing isn't available yet" copy is gone.
+- **`Sidebar.tsx`**: "Billing and Payments" is a real group (Guest Folio live; Split Billing / Night Audit / Refunds and Corrections inert). The group-rendering JSX was extracted into a `GroupRow` component so the Front Desk groups and this one share one implementation rather than a copy.
+
+### Decisions & deviations
+1. **No per-charge tax-rule picker**, though ref p33 shows one. `TaxRule.appliesToChargeTypes` already declares which charge types a rule taxes, so the engine resolves them from the charge type. Hand-picking per charge would let the two disagree and produce tax rows that don't match the branch's own rules.
+2. **One charge at a time**, not the reference's repeatable "Charge 1 / Charge 2 / + Add charge" block. Each post is its own transaction with its own taxes, so batching would be a UI convenience over the same N calls.
+3. **Print / Send Email buttons omitted** — the comms module is stubbed (`communication_log` rows only), so they'd do nothing.
+
+### Verified
+`npx tsc --noEmit`, `eslint`, `npm run build` clean. Live Playwright against real folio data, 17/17: sidebar reaches the list; tabs and the seeded guest render; all five folio sections render; the room charge shows **one night (150.00), not the 300.00 full stay** — the accrual model visible in the UI; the VAT row and per-rule breakdown render; posting a charge from the UI appears in the ledger; "Pay full balance" then Save Payment drives the balance to 0.00; In-House Guest List shows the Folio Balance column and View Folio action. Zero console errors. One test-only bug found and fixed along the way (`Section` renders labels uppercase via CSS, which `innerText` reflects — the assertions were case-sensitive; the app was correct throughout).
+
+### Carried forward
+- Everything else already carried forward from Phase 25 — unchanged.
+- Night audit, Cloudbeds-style Transfer-to-AR, Split Billing, Refunds and Corrections, Folio Transfer, POS — all still inert/deferred and named in both repos' notes.
