@@ -51,6 +51,8 @@ export interface FolioTotals {
 export interface FolioDetail {
   id: string;
   status: FolioStatus;
+  /** `null` on the reservation's primary folio; every additional folio is named (see `createAdditionalFolio`). */
+  label: string | null;
   openedAt: string | null;
   closedAt: string | null;
   guest: GuestSummary;
@@ -93,6 +95,16 @@ export interface TaxBreakdownRow {
 }
 
 export type FolioFilter = 'all' | 'outstanding' | 'overdue';
+
+export interface FolioTransfer {
+  id: string;
+  sourceFolioId: string;
+  targetFolioId: string;
+  lineItemIds: string[];
+  amount: string;
+  reason: string;
+  createdAt: string;
+}
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -167,5 +179,51 @@ export function useCloseFolioMutation(branchId: string, folioId: string, { acces
   return useMutation({
     mutationFn: () => apiFetch<FolioDetail>(`/folios/${folioId}/close`, { method: 'POST', accessToken, tenantId }),
     onSuccess: () => invalidateMoney(queryClient, branchId, folioId),
+  });
+}
+
+
+export function useReservationFoliosQuery(reservationId: string | null, { accessToken, tenantId }: AuthOpts) {
+  return useQuery({
+    queryKey: ['reservation-folios', reservationId] as const,
+    queryFn: () => apiFetch<FolioDetail[]>(`/reservations/${reservationId}/folios`, { accessToken, tenantId }),
+    enabled: reservationId !== null,
+  });
+}
+
+export function useTransferHistoryQuery(folioId: string | null, { accessToken, tenantId }: AuthOpts) {
+  return useQuery({
+    queryKey: ['folio-transfers', folioId] as const,
+    queryFn: () => apiFetch<FolioTransfer[]>(`/folios/${folioId}/transfer-history`, { accessToken, tenantId }),
+    enabled: folioId !== null,
+  });
+}
+
+export function useCreateFolioMutation(branchId: string, reservationId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (label: string) =>
+      apiFetch<FolioDetail>(`/reservations/${reservationId}/folios`, { method: 'POST', accessToken, tenantId, body: { label } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservation-folios', reservationId] });
+      queryClient.invalidateQueries({ queryKey: ['folios', branchId] });
+    },
+  });
+}
+
+/** A split moves charges between two folios, so BOTH folios' detail queries and every list showing a balance go stale. */
+export function useSplitFolioMutation(branchId: string, reservationId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sourceFolioId, targetFolioId, lineItemIds, reason }: { sourceFolioId: string; targetFolioId: string; lineItemIds: string[]; reason: string }) =>
+      apiFetch<FolioTransfer>(`/folios/${sourceFolioId}/split`, {
+        method: 'POST', accessToken, tenantId, body: { targetFolioId, lineItemIds, reason },
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: folioQueryKey(variables.sourceFolioId) });
+      queryClient.invalidateQueries({ queryKey: folioQueryKey(variables.targetFolioId) });
+      queryClient.invalidateQueries({ queryKey: ['reservation-folios', reservationId] });
+      queryClient.invalidateQueries({ queryKey: ['folios', branchId] });
+    },
   });
 }
