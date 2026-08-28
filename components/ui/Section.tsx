@@ -19,9 +19,12 @@ import { CARD_TONE_CLASSES, type CardTone } from './Card';
  * renders for this specific screen — direct call: review/detail cards use
  * this system's own `accent` token, not the mockup's colors.
  *
- * Uses `primary-text` (the AA-contrast-safe gold, not raw `primary`) for
- * the label regardless of `tone` — the label itself is always this app's
- * one consistent gold, only the box beneath it changes.
+ * Uses `primary-dark` at 50% opacity for the label regardless of `tone` —
+ * the label itself is always this one muted bronze, only the box beneath
+ * it changes. Not `primary-text` (the AA-contrast-safe gold used for small
+ * accent text elsewhere) — direct correction: the label is the DARK
+ * primary variant pulled back with opacity, not the gold variant at full
+ * strength.
  */
 export function Section({
   label,
@@ -37,7 +40,7 @@ export function Section({
   return (
     <div className={`flex flex-col gap-3 ${className}`}>
       <div className="flex items-center gap-3">
-        <h3 className="text-tiny font-bold uppercase tracking-wide text-primary-text whitespace-nowrap">{label}</h3>
+        <h3 className="text-tiny font-bold uppercase tracking-wide text-primary-dark/50 whitespace-nowrap">{label}</h3>
         <div className="h-px flex-1 bg-accent/30" />
       </div>
       <div className={`rounded-card border p-4 flex flex-col gap-4 ${CARD_TONE_CLASSES[tone]}`}>{children}</div>
