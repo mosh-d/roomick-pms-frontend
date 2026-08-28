@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -202,16 +203,48 @@ function sectionIsActive(section: TopLevelSection, pathname: string): boolean {
   return pathname === section.href || section.items.some((item) => sectionItemIsActive(item, pathname));
 }
 
-export function Sidebar() {
+/**
+ * Below the `md` breakpoint this is an off-canvas drawer (`fixed`,
+ * `-translate-x-full` at rest, a `md:hidden` backdrop dismisses it) rather
+ * than the always-visible rail it is at `md` and up — found live, not by
+ * inspection: at a 375px viewport the old unconditional `w-60` rail alone
+ * left barely 135px for `main`, squeezing every page's own content into an
+ * unusable sliver. `layout.tsx` owns the open/closed state (it also owns
+ * the header's own hamburger toggle); this component closes itself on its
+ * own pathname change so tapping a link dismisses the drawer instead of
+ * leaving it open over the page the user just navigated to.
+ */
+export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
   const pathname = usePathname();
 
+  useEffect(() => {
+    onClose();
+    // Only the pathname changing should close the drawer — including
+    // `onClose` here would also fire this on every parent re-render that
+    // creates a new function identity, which defeats the point.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
   return (
-    <aside className="w-60 shrink-0 overflow-y-auto border-r border-primary/20 px-4 py-6 flex flex-col gap-2 print:hidden">
-      <TopLevelSectionRow section={FRONT_DESK_SECTION} pathname={pathname} />
-      {TOP_LEVEL_SECTIONS.map((section) => (
-        <TopLevelSectionRow key={section.label} section={section} pathname={pathname} />
-      ))}
-    </aside>
+    <>
+      {mobileOpen ? (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      ) : null}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-60 shrink-0 overflow-y-auto border-r border-primary/20 bg-white px-4 py-6 flex flex-col gap-2 print:hidden transition-transform duration-200 md:static md:translate-x-0 ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <TopLevelSectionRow section={FRONT_DESK_SECTION} pathname={pathname} />
+        {TOP_LEVEL_SECTIONS.map((section) => (
+          <TopLevelSectionRow key={section.label} section={section} pathname={pathname} />
+        ))}
+      </aside>
+    </>
   );
 }
 

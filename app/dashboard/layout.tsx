@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { useMyBranches } from '@/lib/dashboardBranches';
 import { useAuthStore } from '@/lib/store/authStore';
+import { MenuIcon } from '@/components/ui/Icons';
 import { BranchPicker } from './_components/BranchPicker';
 import { Sidebar } from './_components/Sidebar';
 
@@ -110,6 +111,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
   const setActiveBranchId = useAuthStore((s) => s.setActiveBranchId);
   const clear = useAuthStore((s) => s.clear);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   function handleLogout() {
     clear();
@@ -172,30 +174,41 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   // part with its own `overflow-y-auto`.
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <header className="shrink-0 flex items-center justify-between gap-4 border-b border-accent/20 px-6 py-4 print:hidden">
-        <div className="flex items-center gap-3 text-small min-w-0">
-          <span className="font-display text-header font-bold text-primary-text shrink-0">Roomick</span>
-          {activeBranchName ? (
-            <>
-              <span className="text-accent shrink-0">/</span>
-              <span className="text-primary-text shrink-0">{activeBranchName}</span>
-            </>
-          ) : null}
-          <span className="text-accent shrink-0">/</span>
-          {pathname === section.href ? (
-            <span className="font-semibold text-primary-dark truncate">{section.label}</span>
-          ) : (
-            <>
-              <Link href={section.href} className="text-primary-text shrink-0 hover:underline">
-                {section.label}
-              </Link>
-              <span className="text-accent shrink-0">/</span>
-              <span className="font-semibold text-primary-dark truncate">{pageTitleFor(pathname)}</span>
-            </>
-          )}
+      <header className="shrink-0 flex items-center justify-between gap-3 border-b border-accent/20 px-4 sm:px-6 py-4 print:hidden">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={() => setMobileNavOpen(true)}
+            aria-label="Open navigation menu"
+            className="md:hidden shrink-0 rounded-control border border-primary/30 p-2 text-primary-dark hover:bg-primary-light/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <MenuIcon className="size-5" />
+          </button>
+          {/* Roomick / branch / section are dropped below `sm` — the current page name is the one thing that must survive at a phone's width; the header's own overflow-hidden clips anything that still doesn't fit rather than letting it overlap the right-hand controls the way the un-hidden trail used to. */}
+          <div className="flex items-center gap-3 text-small min-w-0 overflow-hidden">
+            <span className="hidden sm:inline font-display text-header font-bold text-primary-text shrink-0">Roomick</span>
+            {activeBranchName ? (
+              <>
+                <span className="hidden sm:inline text-accent shrink-0">/</span>
+                <span className="hidden sm:inline text-primary-text shrink-0">{activeBranchName}</span>
+              </>
+            ) : null}
+            <span className="hidden sm:inline text-accent shrink-0">/</span>
+            {pathname === section.href ? (
+              <span className="font-semibold text-primary-dark truncate">{section.label}</span>
+            ) : (
+              <>
+                <Link href={section.href} className="hidden sm:inline text-primary-text shrink-0 hover:underline">
+                  {section.label}
+                </Link>
+                <span className="hidden sm:inline text-accent shrink-0">/</span>
+                <span className="font-semibold text-primary-dark truncate">{pageTitleFor(pathname)}</span>
+              </>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-4 shrink-0 text-small">
-          <span className="text-primary-dark/70">{user?.name}</span>
+          <span className="hidden sm:inline text-primary-dark/70">{user?.name}</span>
           <button
             type="button"
             onClick={handleLogout}
@@ -206,7 +219,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
       <div className="flex flex-1 min-h-0">
-        <Sidebar />
+        <Sidebar mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
