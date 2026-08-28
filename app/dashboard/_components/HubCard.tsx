@@ -25,11 +25,12 @@ import { CARD_TONE_CLASSES } from '@/components/ui/Card';
  *   these yet, and a confidently-wrong number is worse than none.
  */
 /**
- * A linked card deepens its own tint by one 10% step on hover and a second on
- * press: 10% at rest (`CARD_TONE_CLASSES.secondary`) → 20% hovered → 30%
- * active. Same increment the card-nesting mechanic already uses, so a hovered
- * card reads exactly as "one level closer" rather than as a separate
- * highlight color nobody else in the system uses.
+ * A linked card deepens its own tint on hover and a second step further on
+ * press: `CARD_TONE_CLASSES.secondary`'s own rest-state alpha (currently 5%)
+ * → 10% hovered → 15% active. Kept as a fixed step above whatever the rest
+ * state currently is, not computed from it — `Card.tsx` owns the rest-state
+ * value and can change it independently; this only needs "hover reads as
+ * one step closer, press as one more" to stay true, not an exact multiple.
  *
  * `transition-colors`, not the `brightness` filter this used before — a
  * filter dims the text and border along with the background, which is why the
