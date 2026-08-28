@@ -119,7 +119,7 @@ const RESERVATIONS_SECTION: TopLevelSection = {
     leaf({ label: 'Modify Reservation', href: '/dashboard/reservations/modify' }),
     leaf({ label: 'Cancel Reservation', href: '/dashboard/reservations/cancel' }),
     leaf({ label: 'Waitlist Management', href: '/dashboard/reservations/waitlist' }),
-    leaf({ label: 'Rate Plan Management' }),
+    leaf({ label: 'Rate Plan Management', href: '/dashboard/reservations/rate-plans' }),
   ],
 };
 

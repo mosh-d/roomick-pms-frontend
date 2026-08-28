@@ -1333,3 +1333,34 @@ You'd manually edited `Card.tsx`'s `CARD_TONE_CLASSES` (`secondary`/`primary` bo
 
 ### Carried forward
 - Everything from Phase 31's own list — unchanged.
+
+## Phase 33 — Rate Resolver: live rate quoting, Rate Plan Management (2026-08-28)
+
+The backend replaced flat `baseRate × nights` with a real cascade/override pricing engine (see `roomick-pms-backend/PHASE_NOTES.md`'s own entry) — this wires the frontend up to it. Two pages had priced a stay with nothing shown on screen at all until now: Create Reservation and Walk-In Booking never displayed a rate, cost, or total anywhere before this phase.
+
+### `RatePreview` — shared, not duplicated
+One component (`app/dashboard/_components/RatePreview.tsx`), used by both Create Reservation and Walk-In Booking — the two pages that create a `Reservation` and therefore both need the identical live-quote behavior the reference names explicitly for its own `RatePreview` component: "calls endpoint on mount, re-fetches on prop change, never caches locally." `useCalculateRateQuery` (`lib/rate-resolver.ts`) sets `staleTime: 0` for exactly that reason — the backend endpoint also writes a `RateAuditLog` row on every call, so a stale client-held quote isn't just wrong, it's untracked. React Query's own dependency-keyed re-fetching handles the "don't spam it on every keystroke" concern for free — a date `<input type="date">` commits atomically, it isn't typed character by character the way a text field is.
+
+Renders nights × avg rate, the winning rule's name (or "Standard Rate"), subtotal, tax (only when nonzero), and total — confirmed live against a real Weekend cascade plan (`115.00/night avg` off a `90` base + `25` fixed uplift, `230.00` subtotal, `247.25` with tax, all matching the API's own numbers exactly).
+
+**No promo-code or corporate-account input on either form yet** — the backend already accepts both (`CreateReservationDto`/`WalkInReservationDto` gained `promoCode`/`corporateAccountId`), but building the picker UI for them is deferred, not silently dropped. `RatePreview` itself already accepts both props, so wiring a picker in later is additive, not a rework.
+
+**Currency symbol is blank on these two pages specifically** — every other money display in the app resolves currency from data it was already fetching for other reasons (a folio, a reservation with `branch.currency` included); a brand-new booking form has no such reservation yet, and the branch-detail endpoint that would supply it (`GET /branches`) is Owner-only, not reachable by the `front_desk` role that actually uses these forms. `formatMoney` already renders correctly with no symbol (grouped, 2dp) — chose not to build a new endpoint as a side quest of this phase.
+
+### Rate Plan Management — the sidebar's last inert Reservations row
+`/dashboard/reservations/rate-plans`: a create form (type/room-type/name/amount, an adjustment-type picker that hides itself for negotiated/promotional since their amount is absolute, not a delta — mirroring the backend's own validation for a better error experience, not just duplicating it) plus a sortable table with a Retire/Reactivate toggle (never a hard delete, matching `TaxRule`'s own convention). `cascadeTier` is never shown or made editable — the backend derives it from `type` alone, there's nothing here for it to set. Wired the sidebar's `Rate Plan Management` leaf, the Reservations hub's card (now shows a live active-plan count, matching every other hub card's stats convention), and `layout.tsx`'s breadcrumb title — the same 3-spot wiring every previously-inert row in this app has needed.
+
+Found and fixed a real accessibility gap while building this page's form: every `Input` here needed an explicit `name` prop for its `<label htmlFor>` to actually associate with the field (`Input.tsx`'s `fieldId = id ?? name` — omit both and the label has no `for`, same failure Playwright's own `getByLabel` hit first). Fixed for every field on this new page; pre-existing plain-`useState` forms elsewhere (e.g. Room Blocking) have the same gap but were out of this phase's scope to touch.
+
+Added `RatePlanIcon` (`FaTags`) to the react-icons wrapper set — no existing icon fit "a list of pricing tiers."
+
+### Verified
+`npx tsc --noEmit` clean, `eslint` 0 errors (same pre-existing React-Compiler/RHF `watch()` warning class as before, one new instance from Create Reservation's own new `watch()` calls), `npm run build` clean (`/dashboard/reservations/rate-plans` registered as a static route).
+
+Live Playwright end to end: created a Weekend cascade plan through the actual UI → `RatePreview` on Create Reservation resolved it live with the exact right numbers → submitted the booking → confirmed `confirmedRate` via the API (ground truth) → confirmed a promotional override (posted directly, no UI picker yet) replaces the rate outright rather than stacking with the cascade → retired the plan through the UI's Retire button → confirmed a fresh quote for the same dates fell back to the plain base rate. This same run also surfaced the two real backend bugs named in the backend's own PHASE_NOTES entry (a BigInt-serialization crash and an orphaned audit trail) — caught here because this was the first time anything actually exercised the audit endpoint with real rows, not by backend inspection alone.
+
+### Carried forward
+- Everything from Phase 32's own list — unchanged.
+- Promo-code / corporate-account picker UI on Create Reservation and Walk-In Booking.
+- A branch-currency source reachable by non-Owner roles, so `RatePreview` (and any other pre-reservation money display) can show a real currency symbol.
+- Carrying a promo/negotiated override forward across Modify Reservation (currently re-resolves through base/cascade tiers only — see the backend's own PHASE_NOTES entry).

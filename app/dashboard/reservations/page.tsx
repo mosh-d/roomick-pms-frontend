@@ -9,9 +9,10 @@ import {
   ModifyReservationIcon,
   CancelReservationIcon,
   WaitlistIcon,
-  ReceiptIcon,
+  RatePlanIcon,
 } from '@/components/ui/Icons';
 import { useReservationsQuery } from '@/lib/reservations';
+import { useRatePlansQuery } from '@/lib/rate-resolver';
 import { useAuthStore } from '@/lib/store/authStore';
 import { HubCard } from '../_components/HubCard';
 
@@ -19,14 +20,10 @@ import { HubCard } from '../_components/HubCard';
  * Reservations hub (Roomick-UI.pdf p20) — the sidebar's "Reservations" row
  * has pointed nowhere since Phase 24 flagged it inert; this is that page.
  *
- * Six cards, five real. **Rate Plan Management stays inert** — the
- * reference's Create/Modify screens show a full rate-plan picker
- * (promotional code / negotiated / base) that needs a cascade-tier rate
- * resolver, its own module on the scale of Taxes or Folios, not a slice of
- * this one. Every real page here instead prices a stay at flat
- * `roomType.baseRate × nights`, the same derivation Walk-In Booking and
- * check-in already use — named explicitly in PHASE_NOTES.md, not silently
- * dropped.
+ * All six cards are real now — Rate Plan Management (the last inert one)
+ * now has a Rate Resolver module behind it: every booking screen prices a
+ * stay through the base/seasonal/weekend/corporate cascade and negotiated/
+ * promotional overrides this page manages, not a flat `baseRate × nights`.
  */
 export default function ReservationsHubPage() {
   const user = useAuthStore((s) => s.user);
@@ -37,6 +34,8 @@ export default function ReservationsHubPage() {
   const confirmedQuery = useReservationsQuery(activeBranchId, { status: 'confirmed' }, auth);
   const waitlistQuery = useReservationsQuery(activeBranchId, { status: 'waitlisted' }, auth);
   const cancelledQuery = useReservationsQuery(activeBranchId, { status: 'cancelled' }, auth);
+  const ratePlansQuery = useRatePlansQuery(activeBranchId, auth);
+  const activeRatePlanCount = (ratePlansQuery.data ?? []).filter((p) => p.isActive).length;
 
   if (!activeBranchId) return null;
 
@@ -80,9 +79,11 @@ export default function ReservationsHubPage() {
             href="/dashboard/reservations/waitlist"
           />
           <HubCard
-            icon={<ReceiptIcon className="size-5" />}
+            icon={<RatePlanIcon className="size-5" />}
             title="Rate Plan Management"
             description="Base, seasonal, weekend, corporate, promo"
+            stats={ratePlansQuery.data ? [`${activeRatePlanCount} active rate plans`] : undefined}
+            href="/dashboard/reservations/rate-plans"
           />
         </div>
       </Section>

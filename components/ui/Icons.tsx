@@ -52,6 +52,7 @@ import {
   FaBan,
   FaClock,
   FaCalendarTimes,
+  FaTags,
 } from 'react-icons/fa';
 
 type IconProps = { className?: string };
@@ -116,6 +117,10 @@ export function WalkInIcon({ className = 'size-4' }: IconProps) {
 /** Guest Folio / Billing (ref p33) — a receipt. */
 export function ReceiptIcon({ className = 'size-4' }: IconProps) {
   return <FaReceipt className={className} aria-hidden="true" />;
+}
+
+export function RatePlanIcon({ className = 'size-4' }: IconProps) {
+  return <FaTags className={className} aria-hidden="true" />;
 }
 
 // --- Table chrome (ref p11/p18: search field, sortable headers, pagination, export) ---

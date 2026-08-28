@@ -12,6 +12,7 @@ import { Select, type SelectOption } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { CreateReservationIcon } from '@/components/ui/Icons';
+import { RatePreview } from '../../_components/RatePreview';
 import { createReservationSchema, type CreateReservationFormValues } from '@/lib/schemas/reservations';
 import { useRoomTypesQuery } from '@/lib/rooms';
 import { useCreateReservationMutation } from '@/lib/reservations';
@@ -27,18 +28,22 @@ function todayString(): string {
  * Create Reservation (ref p22), reduced to an individual advance booking —
  * guest, room type, dates, party size. The reference's own card says
  * "Individual, group, multi-room"; group/multi-room bookings, ID capture,
- * a rate-plan picker, and payment/deposit collection at booking time are
- * each a real subsystem the backend doesn't have yet (group reservations,
- * encrypted ID-document storage, the rate resolver cascade, a payments-at-
- * booking flow) — building a form for them would be UI over nothing.
+ * and payment/deposit collection at booking time are each a real subsystem
+ * the backend doesn't have yet (group reservations, encrypted ID-document
+ * storage, a payments-at-booking flow) — building a form for them would be
+ * UI over nothing. The rate now DOES go through the full Rate Resolver
+ * cascade (`RatePreview`, below) — no promo/corporate-account picker on
+ * this form yet, though the backend already accepts both; adding that
+ * input is deferred, not the resolver itself.
  *
  * This does the same job Walk-In Booking's own "book ahead" branch
- * already does (same `createReservation` call, same flat-rate pricing) —
+ * already does (same `createReservation` call, same resolved pricing) —
  * duplicated here as its own page, not extracted into a shared component,
  * because the two only look similar today: Walk-In Booking's dual
  * immediate/future toggle and room picker don't belong on a Reservations-
  * module page, and this page's waitlist path doesn't belong on Walk-In
- * Booking's. Genuinely different pages that happen to share a backend call.
+ * Booking's. Genuinely different pages that happen to share a backend call
+ * (and now, the shared `RatePreview` component).
  */
 export default function CreateReservationPage() {
   const router = useRouter();
@@ -56,11 +61,15 @@ export default function CreateReservationPage() {
     handleSubmit,
     control,
     getValues,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<CreateReservationFormValues>({
     resolver: zodResolver(createReservationSchema),
     defaultValues: { checkInDate: today, adults: 1, children: 0 },
   });
+  const watchedRoomTypeId = watch('roomTypeId');
+  const watchedCheckInDate = watch('checkInDate');
+  const watchedCheckOutDate = watch('checkOutDate');
 
   const roomTypesQuery = useRoomTypesQuery(activeBranchId, auth);
   const createMutation = useCreateReservationMutation(activeBranchId ?? '', auth);
@@ -136,6 +145,15 @@ export default function CreateReservationPage() {
             <Input label="Children" type="number" min={0} max={20} {...register('children', { valueAsNumber: true })} error={errors.children?.message} />
           </div>
           <Textarea label="Special Requests" {...register('specialRequests')} error={errors.specialRequests?.message} />
+          <RatePreview
+            branchId={activeBranchId}
+            currency={undefined}
+            roomTypeId={watchedRoomTypeId || null}
+            checkInDate={watchedCheckInDate || null}
+            checkOutDate={watchedCheckOutDate || null}
+            accessToken={auth.accessToken}
+            tenantId={auth.tenantId}
+          />
         </Section>
 
         {formError ? (

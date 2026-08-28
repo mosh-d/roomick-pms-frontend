@@ -19,6 +19,7 @@ import { useCreateReservationMutation, useCreateWalkInMutation } from '@/lib/res
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 import { RoomGrid } from '../_components/RoomGrid';
+import { RatePreview } from '../_components/RatePreview';
 
 /** Browser-local "today" for the date input's default/min — the backend is the actual authority on "today" (branch timezone, via `todayInTimezone`) and re-derives it server-side for the walk-in path regardless of what's shown here. */
 function todayString(): string {
@@ -29,9 +30,11 @@ function todayString(): string {
 /**
  * Walk-In Booking (Roomick-UI.pdf page 14), reduced to guest + dates + room
  * type (+ room, immediate mode only) — the reference's ID Capture and
- * Payment sections (rate plan/promo code, additional costs, deposit) need
- * ID-document encryption and the full Rate Resolver/Folios stack, neither
- * built this pass.
+ * Payment sections (additional costs, deposit) need ID-document encryption
+ * and a payments-at-booking flow, neither built this pass. The rate itself
+ * DOES go through the full Rate Resolver cascade now (`RatePreview`,
+ * below) — no promo/corporate-account picker on this form yet, though the
+ * backend already accepts both.
  *
  * Dual-mode, not a separate route: this is the only place a `Reservation`
  * gets created, so if walk-in (create + immediate check-in) were the only
@@ -65,6 +68,7 @@ export default function WalkInBookingPage() {
   });
 
   const checkInDate = watch('checkInDate');
+  const checkOutDate = watch('checkOutDate');
   const roomTypeId = watch('roomTypeId');
   const isImmediate = checkInDate === today;
 
@@ -180,6 +184,15 @@ export default function WalkInBookingPage() {
             <Input label="Children" type="number" min={0} max={20} {...register('children', { valueAsNumber: true })} error={errors.children?.message} />
           </div>
           <Textarea label="Special Requests" {...register('specialRequests')} error={errors.specialRequests?.message} />
+          <RatePreview
+            branchId={activeBranchId}
+            currency={undefined}
+            roomTypeId={roomTypeId || null}
+            checkInDate={checkInDate || null}
+            checkOutDate={checkOutDate || null}
+            accessToken={auth.accessToken}
+            tenantId={auth.tenantId}
+          />
         </Section>
 
         {isImmediate && roomTypeId ? (

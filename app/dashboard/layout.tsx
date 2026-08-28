@@ -27,6 +27,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/dashboard/reservations/modify': 'Modify Reservation',
   '/dashboard/reservations/cancel': 'Cancel Reservation',
   '/dashboard/reservations/waitlist': 'Waitlist Management',
+  '/dashboard/reservations/rate-plans': 'Rate Plan Management',
   '/dashboard/housekeeping': 'Housekeeping',
   '/dashboard/housekeeping/task-board': 'Task Board',
   '/dashboard/housekeeping/staff-assignment': 'Staff Assignment',
