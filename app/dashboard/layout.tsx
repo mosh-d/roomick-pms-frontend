@@ -49,9 +49,10 @@ function pageTitleFor(pathname: string): string {
  * breadcrumbs like "Front Desk / Housekeeping" — found live, not by
  * inspection, the moment a second section existed to make it visible.
  *
- * Billing and Payments has no hub page of its own (`Sidebar.tsx`'s
- * `BILLING_GROUP` sets no `href`) — its section link falls back to Guest
- * Folio, the same default its collapsed sidebar row already uses.
+ * Billing and Payments has no hub page of its own — its `href` here (and
+ * `Sidebar.tsx`'s own `BILLING_SECTION.href`) both point at Guest Folio,
+ * its first and most useful page, the same role a real hub plays for the
+ * other three sections.
  */
 const SECTIONS: Array<{ prefix: string; label: string; href: string }> = [
   { prefix: '/dashboard/reservations', label: 'Reservations', href: '/dashboard/reservations' },

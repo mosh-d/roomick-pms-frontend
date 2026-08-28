@@ -6,14 +6,21 @@ import { usePathname } from 'next/navigation';
 /**
  * The operations sidebar.
  *
- * **Structure**: "Front Desk" owns a bordered box containing exactly
- * Check-In / Check-Out / In-House Management — its own indented children.
- * Reservations, Housekeeping, Billing and Payments, and the rest sit
- * OUTSIDE that box as separate top-level rows, matching the reference
- * exactly (its border closes right after In-House Management, and
- * Reservations starts its own separately-bordered box below). An earlier
- * version flattened all four groups into one list with no wrapper at all —
- * missing the box entirely, not just under-styling it.
+ * **Structure — two real levels, not one hardcoded specially.** Front Desk,
+ * Reservations, Housekeeping, and Billing and Payments are all the SAME
+ * kind of thing: a top-level section that collapses to a single row when
+ * you're elsewhere, and expands to a bordered box (its own label + its own
+ * children, indented) when a page inside it is open. An earlier version
+ * hardcoded Front Desk's box directly in `Sidebar()`'s own JSX while the
+ * other three went through `GroupRow`'s solid-gold "expanded group"
+ * rendering instead — two genuinely different components for what the
+ * reference draws as the same pattern, and Front Desk never collapsed at
+ * all even when you'd navigated somewhere else entirely. `TopLevelSection`
+ * + `TopLevelSectionRow` below is the one shared implementation now; only
+ * Front Desk still has a SECOND level of nesting (Check-In / Check-Out /
+ * In-House Management, each its own `GroupRow`), because that's genuinely
+ * how the reference organizes it — Reservations/Housekeeping/Billing's own
+ * pages sit directly inside their section box, one level, no sub-groups.
  *
  * **Colour**: everything here sits on the page background, not inside a
  * `tone="secondary"` card, so it uses the PRIMARY family — sampled from the
@@ -27,12 +34,16 @@ import { usePathname } from 'next/navigation';
  * because two entries pointing at the same route both matched and both lit
  * up — ambiguous and wrong. Every child now has its own destination.
  *
- * **Selected-pill styling** (inside `GroupRow`) is pixel-sampled off the
- * reference, not guessed: every child pill has a border and a fill at rest,
- * both of which merely strengthen when selected (border ~35%→70% white,
- * fill ~20%→50% `primary-light` over the group's gold), and only the
- * selected pill is bold. See that component's own comment for the exact
- * measurements.
+ * **Selected-pill styling** (inside `GroupRow`, Front Desk's own nested
+ * groups) is pixel-sampled off the reference, not guessed: every child pill
+ * has a border and a fill at rest, both of which merely strengthen when
+ * selected (border ~35%→70% white, fill ~20%→50% `primary-light` over the
+ * group's gold), and only the selected pill is bold. See that component's
+ * own comment for the exact measurements. A top-level section's own DIRECT
+ * page children (`LeafPill`) are simpler — plain bordered pill at rest,
+ * solid `bg-primary` fill only when that exact page is open — since they
+ * sit straight on the section box's pale background, not on a second gold
+ * layer the way Front Desk's nested pills do.
  *
  * **Layout**: every row is `shrink-0`. Flex children shrink by default, so
  * once the list outgrew the viewport the rows compressed into each other
@@ -47,26 +58,14 @@ interface SidebarChild {
 interface SidebarGroup {
   label: string;
   children: SidebarChild[];
-  /**
-   * A group with its own overview/hub page (only Reservations, so far —
-   * mirrors the Front Desk hub pattern at `/dashboard`) sets this so the
-   * group's own label becomes a link back to it, collapsed or expanded.
-   * Without it, the label is plain text when expanded, and the collapsed
-   * link falls back to the first child with an href (Billing and
-   * Payments has no hub of its own — its collapsed click goes straight to
-   * Guest Folio, its most useful default).
-   */
-  href?: string;
 }
 
 /**
- * "Front Desk" isn't just the sidebar's top link — in the reference it OWNS
- * a bordered section containing exactly Check-In / Check-Out / In-House
- * Management, and that box closes before Reservations, Housekeeping,
- * Billing and Payments, etc. begin as their own, separately-bordered
- * top-level rows. An earlier version of this file flattened all four
- * groups (including Billing and Payments) into one list with no shared
- * wrapper — structurally wrong, not just a missing border.
+ * Front Desk's own second level of nesting — Check-In / Check-Out /
+ * In-House Management, each independently collapsing to a link or
+ * expanding to a solid-gold pill list depending on whether one of ITS OWN
+ * children is open. Nothing else in the sidebar nests this deep; every
+ * other section's children are direct pages.
  */
 const FRONT_DESK_GROUPS: SidebarGroup[] = [
   {
@@ -94,140 +93,175 @@ const FRONT_DESK_GROUPS: SidebarGroup[] = [
   },
 ];
 
-const RESERVATIONS_GROUP: SidebarGroup = {
+type SectionItem = { kind: 'leaf'; child: SidebarChild } | { kind: 'group'; group: SidebarGroup };
+
+interface TopLevelSection {
+  label: string;
+  /** The section's own hub/first-page link — collapsed-row target AND the expanded box's own label link. Every section has a real one now (no more "no hub, fall back to first child" special case). */
+  href: string;
+  items: SectionItem[];
+}
+
+const leaf = (child: SidebarChild): SectionItem => ({ kind: 'leaf', child });
+
+const FRONT_DESK_SECTION: TopLevelSection = {
+  label: 'Front Desk',
+  href: '/dashboard',
+  items: FRONT_DESK_GROUPS.map((group) => ({ kind: 'group', group })),
+};
+
+const RESERVATIONS_SECTION: TopLevelSection = {
   label: 'Reservations',
   href: '/dashboard/reservations',
-  children: [
-    { label: 'Availability Calendar', href: '/dashboard/reservations/availability-calendar' },
-    { label: 'Create Reservation', href: '/dashboard/reservations/create' },
-    { label: 'Modify Reservation', href: '/dashboard/reservations/modify' },
-    { label: 'Cancel Reservation', href: '/dashboard/reservations/cancel' },
-    { label: 'Waitlist Management', href: '/dashboard/reservations/waitlist' },
-    { label: 'Rate Plan Management' },
+  items: [
+    leaf({ label: 'Availability Calendar', href: '/dashboard/reservations/availability-calendar' }),
+    leaf({ label: 'Create Reservation', href: '/dashboard/reservations/create' }),
+    leaf({ label: 'Modify Reservation', href: '/dashboard/reservations/modify' }),
+    leaf({ label: 'Cancel Reservation', href: '/dashboard/reservations/cancel' }),
+    leaf({ label: 'Waitlist Management', href: '/dashboard/reservations/waitlist' }),
+    leaf({ label: 'Rate Plan Management' }),
   ],
 };
 
-const HOUSEKEEPING_GROUP: SidebarGroup = {
+const HOUSEKEEPING_SECTION: TopLevelSection = {
   label: 'Housekeeping',
   href: '/dashboard/housekeeping',
-  children: [
-    { label: 'Task Board', href: '/dashboard/housekeeping/task-board' },
-    { label: 'Staff Assignment', href: '/dashboard/housekeeping/staff-assignment' },
-    { label: 'Inspection Workflow', href: '/dashboard/housekeeping/inspection-workflow' },
-    { label: 'Room Blocking / OOO', href: '/dashboard/housekeeping/room-blocking' },
+  items: [
+    leaf({ label: 'Task Board', href: '/dashboard/housekeeping/task-board' }),
+    leaf({ label: 'Staff Assignment', href: '/dashboard/housekeeping/staff-assignment' }),
+    leaf({ label: 'Inspection Workflow', href: '/dashboard/housekeeping/inspection-workflow' }),
+    leaf({ label: 'Room Blocking / OOO', href: '/dashboard/housekeeping/room-blocking' }),
   ],
 };
 
-const BILLING_GROUP: SidebarGroup = {
+const BILLING_SECTION: TopLevelSection = {
   label: 'Billing and Payments',
-  children: [
-    { label: 'Guest Folio', href: '/dashboard/billing', isActive: (p) => p.startsWith('/dashboard/billing') },
-    { label: 'Split Billing', href: '/dashboard/split-billing' },
-    { label: 'Night Audit', href: '/dashboard/night-audit' },
-    { label: 'Refunds and Corrections' },
+  // No dedicated hub page — Guest Folio (its first, most useful page) is
+  // the collapsed-row target and the expanded box's own label link, same
+  // role a real hub plays for the other three sections.
+  href: '/dashboard/billing',
+  items: [
+    leaf({ label: 'Guest Folio', href: '/dashboard/billing', isActive: (p) => p.startsWith('/dashboard/billing') }),
+    leaf({ label: 'Split Billing', href: '/dashboard/split-billing' }),
+    leaf({ label: 'Night Audit', href: '/dashboard/night-audit' }),
+    leaf({ label: 'Refunds and Corrections' }),
   ],
 };
 
-type TopLevelItem = { kind: 'group'; group: SidebarGroup } | { kind: 'inert'; label: string };
+const TOP_LEVEL_SECTIONS: TopLevelSection[] = [RESERVATIONS_SECTION, HOUSEKEEPING_SECTION, BILLING_SECTION];
 
-/**
- * Everything below the Front Desk box, in the reference's own order:
- * Reservations, Housekeeping, Billing and Payments, Folio Transfer, Point
- * of Sale, Shift Management, No-Show Handling, Guest Registration Card,
- * Comms Log. Reservations, Housekeeping, and Billing and Payments are the
- * three real, built groups in this list — each renders with `GroupRow`,
- * same as the Front Desk groups do, just outside that box rather than
- * inside it. The rest have no backend module yet (see PHASE_NOTES.md's
- * build order) and render inert — visible so the documented architecture
- * still reads, but honestly non-interactive.
- */
-const TOP_LEVEL: TopLevelItem[] = [
-  { kind: 'group', group: RESERVATIONS_GROUP },
-  { kind: 'group', group: HOUSEKEEPING_GROUP },
-  { kind: 'group', group: BILLING_GROUP },
-  { kind: 'inert', label: 'Folio Transfer' },
-  { kind: 'inert', label: 'Point of Sale' },
-  { kind: 'inert', label: 'Shift Management' },
-  { kind: 'inert', label: 'No-Show Handling' },
-  { kind: 'inert', label: 'Guest Registration Card' },
-  { kind: 'inert', label: 'Comms Log' },
-];
+/** Sidebar rows with no backend module yet (see PHASE_NOTES.md's build order) — visible so the documented architecture still reads, but honestly non-interactive. */
+const INERT_TOP_LEVEL = ['Folio Transfer', 'Point of Sale', 'Shift Management', 'No-Show Handling', 'Guest Registration Card', 'Comms Log'];
 
 function childIsActive(child: SidebarChild, pathname: string): boolean {
   if (!child.href) return false;
   return child.isActive ? child.isActive(pathname) : pathname === child.href;
 }
 
+function sectionItemIsActive(item: SectionItem, pathname: string): boolean {
+  return item.kind === 'leaf' ? childIsActive(item.child, pathname) : item.group.children.some((c) => childIsActive(c, pathname));
+}
+
+function sectionIsActive(section: TopLevelSection, pathname: string): boolean {
+  return pathname === section.href || section.items.some((item) => sectionItemIsActive(item, pathname));
+}
+
 export function Sidebar() {
   const pathname = usePathname();
-  // Whether the current page is anywhere under Front Desk's own umbrella
-  // (the hub itself, or one of its three groups' children) — the same
-  // `childIsActive` test every `GroupRow` already uses, applied here since
-  // the Front Desk box isn't a `SidebarGroup` and has no `GroupRow` of its
-  // own to compute it for.
-  const frontDeskActive =
-    pathname === '/dashboard' || FRONT_DESK_GROUPS.some((group) => group.children.some((child) => childIsActive(child, pathname)));
 
   return (
     <aside className="w-60 shrink-0 overflow-y-auto border-r border-primary/20 px-4 py-6 flex flex-col gap-2">
-      {/*
-       * The Front Desk box. Border color is pixel-matched, not guessed:
-       * the reference's box stroke (`#dbba46` over its `#fffaeb` fill)
-       * solves to primary (`#CCA000`) at ~30% alpha over that fill — the
-       * exact same `border-primary/30` this file already uses for a
-       * collapsed group row, reused rather than a new one-off value.
-       *
-       * Fill is conditional: `bg-primary/10` while Front Desk is the
-       * active section, transparent otherwise — the same 10%-opacity-at-
-       * rest convention `CARD_TONE_CLASSES` already uses for a tinted
-       * surface, so "this section is where you are" reads the same way a
-       * `Card`'s own tone does, not a one-off invented for this box.
-       */}
-      <div className={`shrink-0 rounded-card border border-primary/30 p-3 flex flex-col gap-2 transition-colors ${frontDeskActive ? 'bg-primary/10' : ''}`}>
-        <Link href="/dashboard" className="shrink-0 text-small font-bold text-primary-dark hover:text-primary-text transition-colors">
-          Front Desk
-        </Link>
-        {/*
-         * Indented one step relative to "Front Desk" above it. Pixel-
-         * sampling the reference shows its own Check-In box left edge
-         * flush with "Front Desk"'s text (x=108 vs x=105 — noise, not a
-         * deliberate offset) — but told directly that "Front Desk" should
-         * stay far left while its children read as indented, so this is a
-         * deliberate improvement on the static mockup, not a reference
-         * measurement. The user's own standing guidance is that the
-         * mockups convey feel, not literal pixel law.
-         */}
-        <div className="flex flex-col gap-2 pl-3">
-          {FRONT_DESK_GROUPS.map((group) => (
-            <GroupRow key={group.label} group={group} pathname={pathname} />
-          ))}
-        </div>
-      </div>
-
-      {TOP_LEVEL.map((item) =>
-        item.kind === 'group' ? (
-          <GroupRow key={item.group.label} group={item.group} pathname={pathname} />
-        ) : (
-          <InertRow key={item.label} label={item.label} />
-        ),
-      )}
+      <TopLevelSectionRow section={FRONT_DESK_SECTION} pathname={pathname} />
+      {TOP_LEVEL_SECTIONS.map((section) => (
+        <TopLevelSectionRow key={section.label} section={section} pathname={pathname} />
+      ))}
+      {INERT_TOP_LEVEL.map((label) => (
+        <InertRow key={label} label={label} />
+      ))}
     </aside>
   );
 }
 
-/** Expanded (children visible) while a page inside it is open; a single collapsed link otherwise. */
+/**
+ * Collapses to a single bordered link when nothing inside the section is
+ * open — same look every collapsed `GroupRow` already used, so Front Desk
+ * collapsing away when you're in Reservations reads identically to
+ * Reservations collapsing away when you're in Housekeeping, not as a
+ * special case. Expands to a bordered, `bg-primary/5`-tinted box (the same
+ * 5% rest-state convention `CARD_TONE_CLASSES` uses — see
+ * `design-system/01-color.md` § "Card tone tints") containing the
+ * section's own label and its indented children.
+ */
+function TopLevelSectionRow({ section, pathname }: { section: TopLevelSection; pathname: string }) {
+  const active = sectionIsActive(section, pathname);
+
+  if (!active) {
+    return (
+      <Link
+        href={section.href}
+        className="shrink-0 rounded-control px-3 py-2 text-tiny font-semibold text-primary-dark border border-primary/30 hover:bg-primary-light/40 transition-colors"
+      >
+        {section.label}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="shrink-0 rounded-card border border-primary/30 bg-primary/5 p-3 flex flex-col gap-2">
+      <Link href={section.href} className="shrink-0 text-small font-bold text-primary-dark hover:text-primary-text transition-colors">
+        {section.label}
+      </Link>
+      <div className="flex flex-col gap-2 pl-3">
+        {section.items.map((item) =>
+          item.kind === 'leaf' ? (
+            <LeafPill key={item.child.label} child={item.child} pathname={pathname} />
+          ) : (
+            <GroupRow key={item.group.label} group={item.group} pathname={pathname} />
+          ),
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One of a top-level section's own direct pages (Reservations' "Create
+ * Reservation", Housekeeping's "Task Board", ...). Plain bordered pill at
+ * rest; solid `bg-primary` fill only when it's the exact open page — it
+ * sits straight on the section box's pale background, so unlike a nested
+ * `GroupRow` pill it doesn't need a lighter-gold-over-gold blend to read
+ * as "selected", a flat gold fill against the pale box already contrasts.
+ */
+function LeafPill({ child, pathname }: { child: SidebarChild; pathname: string }) {
+  if (!child.href) return <InertRow label={child.label} />;
+  const active = childIsActive(child, pathname);
+  return (
+    <Link
+      href={child.href}
+      aria-current={active ? 'page' : undefined}
+      className={`shrink-0 rounded-control border px-3 py-2 text-tiny transition-colors ${
+        active
+          ? 'bg-primary border-primary text-white font-semibold'
+          : 'border-primary/30 text-primary-dark font-normal hover:bg-primary-light/40'
+      }`}
+    >
+      {child.label}
+    </Link>
+  );
+}
+
+/** Front Desk's own nested groups only (Check-In / Check-Out / In-House Management) — expanded (children visible, solid gold) while a page inside it is open; a single collapsed link otherwise. */
 function GroupRow({ group, pathname }: { group: SidebarGroup; pathname: string }) {
   const expanded = group.children.some((c) => childIsActive(c, pathname));
 
   if (!expanded) {
-    // A group with its own hub (Reservations) collapses to a link there;
-    // one without (Billing and Payments has none) falls back to its first
-    // real child — either way, a collapsed group is never a dead end.
-    const collapsedTarget = group.href ?? group.children.find((c) => c.href)?.href;
-    if (!collapsedTarget) return <InertRow label={group.label} />;
+    const firstReal = group.children.find((c) => c.href)?.href;
+    // A collapsed group is still a real link to its first child — otherwise
+    // a group you aren't already inside is a dead end.
+    if (!firstReal) return <InertRow label={group.label} />;
     return (
       <Link
-        href={collapsedTarget}
+        href={firstReal}
         className="shrink-0 rounded-control px-3 py-2 text-tiny font-semibold text-primary-dark border border-primary/30 hover:bg-primary-light/40 transition-colors"
       >
         {group.label}
@@ -237,13 +271,7 @@ function GroupRow({ group, pathname }: { group: SidebarGroup; pathname: string }
 
   return (
     <div className="shrink-0 rounded-control bg-primary flex flex-col gap-1 p-1">
-      {group.href ? (
-        <Link href={group.href} className="px-2 py-1.5 text-tiny font-semibold text-white hover:underline">
-          {group.label}
-        </Link>
-      ) : (
-        <span className="px-2 py-1.5 text-tiny font-semibold text-white">{group.label}</span>
-      )}
+      <span className="px-2 py-1.5 text-tiny font-semibold text-white">{group.label}</span>
       {group.children.map((child) =>
         child.href ? (
           <Link
