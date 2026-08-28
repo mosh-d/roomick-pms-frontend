@@ -120,6 +120,12 @@ const RESERVATIONS_SECTION: TopLevelSection = {
     leaf({ label: 'Cancel Reservation', href: '/dashboard/reservations/cancel' }),
     leaf({ label: 'Waitlist Management', href: '/dashboard/reservations/waitlist' }),
     leaf({ label: 'Rate Plan Management', href: '/dashboard/reservations/rate-plans' }),
+    // Ref has no sidebar entry for this at all (checked the full PDF — it's
+    // a spec-only Month 4 module with no visual design). Placed here
+    // rather than invented as a new top-level section: same "inventory/
+    // policy config a manager sets, not a daily front-desk action" shape
+    // Rate Plan Management already has.
+    leaf({ label: 'Overbooking Management', href: '/dashboard/overbooking' }),
   ],
 };
 

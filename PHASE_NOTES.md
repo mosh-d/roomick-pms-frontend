@@ -1411,3 +1411,20 @@ Live Playwright, 17/17: saved a branch house-rules template through the actual U
 ### Carried forward
 - Everything from Phase 34's own list — unchanged.
 - Real PDF generation / encrypted storage, ID capture and its required encryption, and `requiredFields` template configuration — all explicitly deferred, named in the backend's own PHASE_NOTES entry.
+
+## Phase 36 — Overbooking Management: exposure heatmap, config form, walk-a-reservation (2026-08-28)
+
+No reference mockup exists for this page at all (checked directly against `Roomick-UI.pdf` before building — confirmed empty, not assumed) — the reference's Month 4 prose ("thresholds, a walk flow, an exposure dashboard") is the only spec, so structure and placement were both original calls, documented inline rather than left implicit.
+
+### Structure
+One page, three sections, top to bottom: a **config form** (per room type or branch-wide, `globalEnabled`/`maxOverbookPct`/`alertAtPct`/validity window) via a `ConfigForm` child component reading its initial state straight from the selected room type's existing config (same "child component owns its own `useState` seeded from a prop, no effect" shape `registration-cards/page.tsx`'s own `TemplateForm` established last phase — deliberately reused rather than re-solving the same `set-state-in-effect` risk a different way); an **exposure heatmap** (year/month pickers, a table of room types × nights, red-highlighting any night where `isOverbooked`) styled to visually match the existing Availability Calendar page rather than invent a second heatmap convention; and a **walk a reservation** form (reservation picker scoped to `confirmed` bookings, relocation property + optional transport/compensation fields, calls the walk endpoint and shows the refund outcome inline).
+
+### Sidebar placement
+Added as a leaf under the existing Reservations section rather than its own top-level group — it's a control panel over the same availability engine Availability Calendar and Waitlist Management already live under, not a separate domain. Left an explicit comment in `Sidebar.tsx` noting the absence of a reference mockup, so a future pass correcting this against a real design doesn't have to rediscover that context from scratch.
+
+### Verified
+Live Playwright against real Postgres (`verify-overbooking.js`), 10/11 checks: found a room type's exact physical capacity via the API, booked it to exactly that count through the real reservation endpoint, confirmed the next booking hard-blocks with `409` — overbooking OFF → opened this page through the actual sidebar link, selected the room type, enabled overbooking at 50% via the real `YesNoToggle`/inputs, saved, confirmed both the UI's own confirmation text and the API's persisted values → the identical overflow booking now succeeds with `201` → switched to the exposure heatmap, picked the matching year/month, confirmed the room type's row renders and the specific overbooked night is flagged `isOverbooked: true` both in the API response and visually (red-highlighted cell, screenshotted) → used the walk form to walk the overbooked guest to a named relocation property, confirmed the UI's own success message. The one failure (a second run's "booked exactly the physical pool" check returning `409` instead of `201`) was the first run's own leftover test reservations occupying part of the same future date window on this shared dev DB — not a product bug; the underlying capacity-gate behavior had already passed cleanly on the first run.
+
+### Carried forward
+- Everything from the backend's own Overbooking Management PHASE_NOTES entry — unchanged.
+- No reference mockup exists for this page — if one surfaces later, this page's layout should be reconciled against it rather than assumed correct forever.

@@ -30,6 +30,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/dashboard/reservations/cancel': 'Cancel Reservation',
   '/dashboard/reservations/waitlist': 'Waitlist Management',
   '/dashboard/reservations/rate-plans': 'Rate Plan Management',
+  '/dashboard/overbooking': 'Overbooking Management',
   '/dashboard/housekeeping': 'Housekeeping',
   '/dashboard/housekeeping/task-board': 'Task Board',
   '/dashboard/housekeeping/staff-assignment': 'Staff Assignment',
@@ -60,6 +61,7 @@ function pageTitleFor(pathname: string): string {
  */
 const SECTIONS: Array<{ prefix: string; label: string; href: string }> = [
   { prefix: '/dashboard/reservations', label: 'Reservations', href: '/dashboard/reservations' },
+  { prefix: '/dashboard/overbooking', label: 'Reservations', href: '/dashboard/reservations' },
   { prefix: '/dashboard/housekeeping', label: 'Housekeeping', href: '/dashboard/housekeeping' },
   { prefix: '/dashboard/billing', label: 'Billing and Payments', href: '/dashboard/billing' },
   { prefix: '/dashboard/split-billing', label: 'Billing and Payments', href: '/dashboard/billing' },

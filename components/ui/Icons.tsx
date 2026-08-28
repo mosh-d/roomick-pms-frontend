@@ -54,6 +54,7 @@ import {
   FaCalendarTimes,
   FaTags,
   FaUserSlash,
+  FaLayerGroup,
 } from 'react-icons/fa';
 
 type IconProps = { className?: string };
@@ -126,6 +127,10 @@ export function RatePlanIcon({ className = 'size-4' }: IconProps) {
 
 export function NoShowIcon({ className = 'size-4' }: IconProps) {
   return <FaUserSlash className={className} aria-hidden="true" />;
+}
+
+export function OverbookingIcon({ className = 'size-4' }: IconProps) {
+  return <FaLayerGroup className={className} aria-hidden="true" />;
 }
 
 // --- Table chrome (ref p11/p18: search field, sortable headers, pagination, export) ---
