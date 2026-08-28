@@ -33,8 +33,8 @@ export type CardTone = 'primary' | 'secondary' | 'accent';
 // of sync with Card's own tone colors after the dark-variant fix; sharing
 // the constant makes that class of drift impossible.
 export const CARD_TONE_CLASSES: Record<CardTone, string> = {
-  primary: 'bg-primary-light/15 border-primary/40',
-  secondary: 'bg-secondary/10 border-secondary/20',
+  primary: 'bg-primary-light/5 border-primary/40',
+  secondary: 'bg-secondary/5 border-secondary/20',
   accent: 'bg-accent-dark/10 border-accent-dark/20',
 };
 
