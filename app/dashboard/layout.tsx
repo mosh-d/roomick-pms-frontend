@@ -25,6 +25,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/dashboard/registration-cards': 'Guest Registration Card',
   '/dashboard/shifts': 'Shift Management',
   '/dashboard/comms-log': 'Guest Communications Log',
+  '/dashboard/reports': 'Operational Reports',
   '/dashboard/reservations': 'Reservations',
   '/dashboard/reservations/availability-calendar': 'Availability Calendar',
   '/dashboard/reservations/create': 'Create Reservation',
@@ -72,6 +73,7 @@ const SECTIONS: Array<{ prefix: string; label: string; href: string }> = [
   { prefix: '/dashboard/registration-cards', label: 'Billing and Payments', href: '/dashboard/billing' },
   { prefix: '/dashboard/shifts', label: 'Billing and Payments', href: '/dashboard/billing' },
   { prefix: '/dashboard/comms-log', label: 'Billing and Payments', href: '/dashboard/billing' },
+  { prefix: '/dashboard/reports', label: 'Reports and Analytics', href: '/dashboard/reports' },
 ];
 
 function sectionFor(pathname: string): { label: string; href: string } {

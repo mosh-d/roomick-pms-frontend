@@ -1467,3 +1467,23 @@ Live Playwright against real Postgres (`verify-comms-log.js`), 13/13: created a 
 - Everything from the backend's own Guest Communications Log PHASE_NOTES entry — unchanged.
 - A Guest Profile hub page, and wiring this page's guest-level query onto it once it exists.
 - Real sending, delivery-status transitions past `queued`, and "Resend failed message" — all deferred on the backend side, named there.
+
+## Phase 39 — Operational Reports: Occupancy, ADR, RevPAR, Revenue (2026-08-28)
+
+Per the MVP timeline reference (Month 5) — the last Month 5 item, and with it the last item in the reference's own Month 1–5 MVP deliverable list. "Reports & Analytics" is a real top-level sidebar section here (matching ref p9's own placement — a peer to Front Desk/Reservations/Housekeeping/Billing, not nested under Billing), with two inert leaves (Financial Reports, Custom Report Builder) alongside the one real page, following this project's established convention for reference items confirmed out of MVP scope.
+
+### No charting library — CSS bars, matching this app's own established restraint
+No page anywhere in this project has installed a chart library, despite several earlier reference mockups asking for one (Overbooking's own exposure heatmap is a plain coloured-cell table, not a chart). `TrendBars` renders the trend line as a row of scaled `<div>`s instead — legible, zero new dependency, consistent with the app's whole visual vocabulary so far. Installing a real charting library is a deliberate future call, not something to slip in unnoticed as a side effect of one report page.
+
+### One page, four tabs, sharing date-range/room-type controls
+Occupancy / ADR / RevPAR / Revenue sit behind the same tab-switcher pattern Guest Folio's own Outstanding/Overdue tabs already established, rather than four separate routes — they share the exact same date-range and room-type filter controls, and a caller comparing two of them shouldn't have to re-enter the same range twice.
+
+### CSV export is real; PDF is not
+Each breakdown table has a working "Export CSV" button — a client-side Blob download, no backend endpoint needed, since the data's already in hand. PDF export is NOT built: no PDF generation exists anywhere in this project (the same gap already named against Registration Cards and Shift Reports), and the reference's own "Export CSV / PDF button" tooltip treats them as one interchangeable feature when they're really two very different amounts of work.
+
+### Verified
+Live Playwright against real Postgres (`verify-reports.js`), 10/14 literal checks passed — the 4 that didn't are confirmed test-script issues, not product bugs, verified by screenshot: two assumed an isolated dataset ("exactly 1 room-night sold today") that this session's own long-lived shared dev DB no longer satisfies after many earlier phases' test reservations (the *relational* assertions in the same checks — available-equals-physical-pool, revpar-divides-by-available-not-sold — passed cleanly); two were case-sensitive text matches against section labels a CSS `uppercase` class visually renders differently, the same class of false-failure "Morning"/"Evening" produced for Shift Management last phase. The actual UI: opened the page through the real new "Reports and Analytics" sidebar section, walked through all four tabs, and confirmed KPI cards, the trend chart, and breakdown tables all render real, correct figures — screenshotted at each tab.
+
+### Carried forward
+- Everything from the backend's own Operational Reports PHASE_NOTES entry — unchanged, including its full list of what's explicitly out of MVP scope (Custom Report Builder, scheduled reports, Financial Reports' own charts, cross-property/HQ reporting, PDF export).
+- Arrivals/Departures and Outstanding Balances are intentionally not duplicated here — they already have their own dashboards from earlier phases.

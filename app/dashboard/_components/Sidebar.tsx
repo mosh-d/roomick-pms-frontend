@@ -173,7 +173,21 @@ const BILLING_SECTION: TopLevelSection = {
   ],
 };
 
-const TOP_LEVEL_SECTIONS: TopLevelSection[] = [RESERVATIONS_SECTION, HOUSEKEEPING_SECTION, BILLING_SECTION];
+/**
+ * Ref p9's own sidebar lists "Reports & Analytics" as a top-level section
+ * (peer to Front Desk/Reservations/Housekeeping/Billing), not nested under
+ * Billing — matched here. Only Operational Reports is built: Financial
+ * Reports (tax summary, cash-flow waterfall) and the Custom Report Builder
+ * are the reference's own later-Phase scalability hooks (BI exports,
+ * scheduled reports), explicitly beyond the Month 5 MVP deliverable line.
+ */
+const REPORTS_SECTION: TopLevelSection = {
+  label: 'Reports and Analytics',
+  href: '/dashboard/reports',
+  items: [leaf({ label: 'Operational Reports', href: '/dashboard/reports' }), leaf({ label: 'Financial Reports' }), leaf({ label: 'Custom Report Builder' })],
+};
+
+const TOP_LEVEL_SECTIONS: TopLevelSection[] = [RESERVATIONS_SECTION, HOUSEKEEPING_SECTION, BILLING_SECTION, REPORTS_SECTION];
 
 function childIsActive(child: SidebarChild, pathname: string): boolean {
   if (!child.href) return false;

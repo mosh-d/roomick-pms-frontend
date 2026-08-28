@@ -59,6 +59,7 @@ import {
   FaComments,
   FaEnvelope,
   FaSms,
+  FaChartLine,
 } from 'react-icons/fa';
 
 type IconProps = { className?: string };
@@ -143,6 +144,10 @@ export function ShiftIcon({ className = 'size-4' }: IconProps) {
 
 export function CommsLogIcon({ className = 'size-4' }: IconProps) {
   return <FaComments className={className} aria-hidden="true" />;
+}
+
+export function ReportsIcon({ className = 'size-4' }: IconProps) {
+  return <FaChartLine className={className} aria-hidden="true" />;
 }
 
 /** Channel icon in the communications timeline (ref: "Channel icon (email / SMS / push)"). Push/in-app-chat share the generic chat bubble — neither has a manual-send UI yet, so no channel-specific glyph was worth adding for them alone. */
