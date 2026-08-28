@@ -21,6 +21,12 @@ const ROUTE_TITLES: Record<string, string> = {
   '/dashboard/billing': 'Guest Folio',
   '/dashboard/night-audit': 'Night Audit',
   '/dashboard/split-billing': 'Split Billing',
+  '/dashboard/reservations': 'Reservations',
+  '/dashboard/reservations/availability-calendar': 'Availability Calendar',
+  '/dashboard/reservations/create': 'Create Reservation',
+  '/dashboard/reservations/modify': 'Modify Reservation',
+  '/dashboard/reservations/cancel': 'Cancel Reservation',
+  '/dashboard/reservations/waitlist': 'Waitlist Management',
 };
 
 function pageTitleFor(pathname: string): string {

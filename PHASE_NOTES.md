@@ -1225,3 +1225,54 @@ One assertion of mine was wrong before the code was: the first row-height check 
 
 ### Carried forward
 - Refunds and Corrections, Folio Transfer between reservations, Cloudbeds-style Transfer-to-AR, POS, Housekeeping, Room Change, Reservations calendar, Comms Log — still inert and named in both repos.
+
+## Phase 29 — Root redirect, header icon color, hub-card icons and press states, the Front Desk box (2026-08-28)
+
+A run of direct feedback on the running app, each item small on its own.
+
+### Delivered
+- **`/` now redirects to `/dashboard`** (307, deliberately not 308 — `/` is exactly the route most likely to become something else later, and a permanent redirect would cache that choice hard). The old `app/page.tsx` scaffold — "Real application pages haven't been built yet" — is deleted; it was the style guide's only entry point, which now lives unlinked at `/style-guide` for anyone who knows the URL.
+- **Page-header icons now match their title's color** (`primary-dark`, not the gold `primary-text`) — an icon is part of the title lockup, not a separate accent.
+- **Every Front Desk hub card has its reference icon** — three were missing entirely (Departures, Check-In/Check-Out Flow) and one was wrong: the old "Departures" icon was a bare take-off plane, but the reference (both the p10 card and the p15 header) draws a city skyline WITH the plane, pairing it with the buildings the guest is leaving. Check-In/Check-Out Flow share one hotel-with-stars icon, differing only in which side the door-arrow points — matching how the reference draws that exact pair.
+- **Hub cards deepen by one 10% tint step on hover, another on press** (`/10` rest → `/20` hover → `/30` active) — the same increment the card-nesting mechanic already uses, so a hovered card reads as "one level closer" rather than a new highlight color. Replaced a `hover:brightness-95` filter that dimmed the text and border along with the background, which is why hover used to look greyed-out instead of raised.
+- **Sidebar child pills now carry a real border + fill at rest that both strengthen when selected** (border ~35%→70% white, fill ~20%→50% `primary-light` over the group's gold), bolding only the selected pill — all three pixel-sampled off the reference (p11), not guessed. An unselected pill previously had no border at all.
+- **The Front Desk box.** The reference wraps "Front Desk" + Check-In/Check-Out/In-House Management in one bordered section that closes before Reservations, Housekeeping, Billing and Payments, etc. begin as their own separate top-level rows — missing entirely from an earlier pass that flattened all four groups into one list with no shared wrapper. The box's border color is pixel-solved (its stroke over its fill lands on `primary` at ~30% alpha — the same `border-primary/30` a collapsed group row already used) and has no fill of its own (the reference's box interior and the page around it are close enough to be the same surface). Its children are indented one step relative to "Front Desk" — the reference itself draws them flush, but was told directly to make the hierarchy visually clearer, which the mockups' own stated purpose (convey feel, not literal pixel law) makes a legitimate call rather than a deviation to flag twice.
+
+### Decisions & deviations
+1. **Root redirect chains through the dashboard's own auth gate rather than duplicating it.** An unauthenticated visitor takes two hops (`/` → `/dashboard` → `/login`) instead of one — keeps auth decided in exactly one place.
+2. **A `SidebarGroup` can now declare its own `href`** (only Reservations does, added the same phase it needed one) so its label becomes a link back to a real overview page, collapsed or expanded — Billing and Payments has no such page, so its collapsed click still falls back to its first real child.
+
+### Verified
+`npx tsc --noEmit` clean; `eslint` 0 errors. Live Playwright: root redirects to `/login` logged out and to the Front Desk hub logged in; `/style-guide` still serves; page icon computes to the same `#2e2400` as its title; 18/18 on hub-card icons + tint steps (rest/hover/press alpha measured directly at 0.1/0.2/0.3, an inert card confirmed NOT to react); 6/6 on sidebar pill border/fill/weight measurements; 21/21 on the Front Desk box (wraps exactly its three groups, everything else stays outside, indented, still expands correctly on its own child pages). Two of my own mistakes caught and fixed mid-phase: a `{/* comment */}` placed inside a ternary's JSX slot broke parsing and 500'd every page with a header (which briefly looked like a broken auth gate, until the actual parse error surfaced); and a row-height regression test flagged a legitimately-smaller 27px child pill as "compressed" — its floor was calibrated for a different row type, not a real bug.
+
+### Carried forward
+- Everything from Phase 28's own list — unchanged.
+
+## Phase 30 — Reservations module: search, availability calendar, create/modify/cancel/waitlist (2026-08-28)
+
+Backend half in `roomick-pms-backend/PHASE_NOTES.md`. The reference's own sequence is Front Desk → Reservations → Housekeeping → Billing and Payments; Billing shipped in Phase 26, so this is Reservations — the sidebar row (and hub page) that's been inert since Phase 24 first flagged it.
+
+### Delivered
+- **`/dashboard/reservations`** — the hub (ref p20), mirroring the Front Desk hub's own pattern: six cards, five real with live stats (confirmed/waitlisted/recently-cancelled counts), one inert.
+- **`/dashboard/reservations/availability-calendar`** (ref p21) — year/month pickers, a room-type-by-date grid of available counts, color-coded (green/amber/red) the same three-way read as the reference's own occupancy row.
+- **`/dashboard/reservations/create`** (ref p22) — guest, room type, dates, party size, special requests. On a genuinely full room type, offers **"Join the Waitlist Instead"** — the explicit path the new `joinWaitlist` flag exists for, not an automatic fallback.
+- **`/dashboard/reservations/modify`** (ref p23) — search a confirmed/waitlisted reservation, edit dates/room type/party size, a live new-total preview, a mandatory reason.
+- **`/dashboard/reservations/cancel`** (ref p24) — search, review, optional reason, confirm.
+- **`/dashboard/reservations/waitlist`** — every waitlisted reservation, each with a "Promote" action that re-checks availability live and confirms it if a room has opened up; if not, it says so and the row stays put.
+- **`Sidebar.tsx`**: "Reservations" is now a real expandable group with its own hub link (see Phase 29's `SidebarGroup.href` addition) — five real children, Rate Plan Management stays inert.
+- **Five new icons** (`CalendarIcon`, `CreateReservationIcon`, `ModifyReservationIcon`, `CancelReservationIcon`, `WaitlistIcon`), matching the reference's own hub-card icon for each.
+
+### Decisions & deviations
+The reference's Create/Modify/Cancel screens are each a full page of machinery this pass doesn't build — the backend notes list the reasons in full (no rate-plan resolver, individual-only bookings, pre-check-in-only modification, no cancellation-policy/penalty calculation, per-room-type rather than per-room availability). On the frontend specifically:
+1. **Create Reservation isn't extracted into a shared component with Walk-In Booking**, even though both call the same `createReservation` mutation with the same flat-rate pricing. They only look similar today — Walk-In Booking's dual immediate/future toggle and room picker don't belong on a Reservations-module page, and this page's waitlist path doesn't belong on Walk-In Booking's. Two genuinely different pages sharing a backend call, left as two pages.
+2. **Modify and Cancel fetch confirmed + waitlisted reservations separately and merge client-side**, rather than adding a "status in [...]" query param the general search endpoint doesn't support for a two-value set — a small, honest trade-off for not extending the backend DTO for a shape only these two pages need.
+
+### Verified
+`npx tsc --noEmit` clean; `eslint` 0 errors (5 warnings, the same pre-existing React-Compiler/RHF `watch()` class as four other pages already had — Modify Reservation's own `watch()` usage is the fifth). Live Playwright against real data, 25/25: sidebar "Reservations" is a real link opening the hub; all six hub cards render, Rate Plan Management confirmed inert; the sidebar group expands correctly on a child page with the active pill marked; the availability calendar renders a real multi-cell grid; Create Reservation books a real advance reservation and navigates to Arrivals; Modify Reservation finds a reservation, edits it, and saves; Cancel Reservation cancels a real reservation end to end; Waitlist Management renders. A second run specifically exhausted every unit of a real room type via direct API calls (not a mock) and confirmed the full loop live: Create Reservation genuinely fails with `RESERVATION_NOT_AVAILABLE`, offers the waitlist path, joining it creates a real `waitlisted` reservation, and promoting it while still full correctly fails and leaves it waitlisted.
+
+One real bug found and fixed live, not by inspection: Modify Reservation's form-reset `useEffect` depended on the `selected` reservation object rather than its `id`. A successful save invalidates the confirmed/waitlisted queries, which refetches and hands back a **new object** for the same reservation — the effect re-ran on that new reference, wiping the just-shown "Changes saved." message and the reason field a moment after they appeared. Fixed by keying the effect on `selectedId` (a stable primitive) instead.
+
+### Carried forward
+- Rate Plan Management, group/multi-room bookings, ID capture, payment/deposit at booking, cancellation policy + penalty/refund, per-room Gantt-view availability, Modify for an already-checked-in stay — all named in the backend notes, all deferred.
+- Housekeeping (ref p27-31) is next in the reference's own sequence and hasn't been started.
+- Everything else already carried forward from Phase 29 — unchanged.

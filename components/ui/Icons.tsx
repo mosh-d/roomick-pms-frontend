@@ -110,6 +110,67 @@ export function ClipboardListIcon({ className = 'size-4' }: IconProps) {
   );
 }
 
+/** Availability Calendar (ref p10 card, p21 header) — a calendar grid. */
+export function CalendarIcon({ className = 'size-4' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} className={className} aria-hidden="true">
+      <path d="M4.5 5.5h15v14h-15z" strokeLinejoin="round" />
+      <path d="M4.5 9.5h15" strokeLinecap="round" />
+      <path d="M8 3.5v3.5M16 3.5v3.5" strokeLinecap="round" />
+      <path d="M8 13h2M8 16.5h2M14 13h2M14 16.5h2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Create Reservation (ref p10 card, p22 header) — two people, one with a plus. */
+export function CreateReservationIcon({ className = 'size-4' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} className={className} aria-hidden="true">
+      <circle cx="9" cy="7.5" r="2.6" />
+      <path d="M3.5 20v-1.5A4.5 4.5 0 0 1 8 14h2a4.5 4.5 0 0 1 4.5 4.5V20" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M17 5.5v5M14.5 8h5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Modify Reservation (ref p10 card, p23 header) — a clipboard with a pencil, distinguishing it from the plain `ClipboardListIcon`. */
+export function ModifyReservationIcon({ className = 'size-4' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} className={className} aria-hidden="true">
+      <path d="M5 4.5h9.5v6.5" strokeLinejoin="round" />
+      <path d="M5 4.5v15h7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.5 9h6.5M8.5 12.5h3.5" strokeLinecap="round" />
+      <path d="M20.3 12.7l1.4 1.4-7.2 7.2H12.7v-1.8z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Cancel Reservation (ref p10 card, p24 header) — a clipboard with a circled X. */
+export function CancelReservationIcon({ className = 'size-4' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} className={className} aria-hidden="true">
+      <path d="M5 4.5h14v10.5" strokeLinejoin="round" />
+      <path d="M5 4.5v15h7.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.5 9h7M8.5 12.5h4" strokeLinecap="round" />
+      <circle cx="17.5" cy="17.5" r="3.7" />
+      <path d="M16.2 16.2l2.6 2.6M18.8 16.2l-2.6 2.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Waitlist Management (ref p10 card) — a clipboard with a clock. */
+export function WaitlistIcon({ className = 'size-4' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} className={className} aria-hidden="true">
+      <path d="M5 4.5h10.5v9" strokeLinejoin="round" />
+      <path d="M5 4.5v15h7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.5 9h6M8.5 12.5h3" strokeLinecap="round" />
+      <circle cx="17" cy="17" r="4.3" />
+      <path d="M17 14.7v2.3l1.6 1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 /**
  * Check-In Flow (ref p10 card, p12 header) — a starred hotel with an arrow
  * entering its door from the left. The stars are what make it a *hotel*

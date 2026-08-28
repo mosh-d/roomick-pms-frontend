@@ -47,6 +47,16 @@ interface SidebarChild {
 interface SidebarGroup {
   label: string;
   children: SidebarChild[];
+  /**
+   * A group with its own overview/hub page (only Reservations, so far —
+   * mirrors the Front Desk hub pattern at `/dashboard`) sets this so the
+   * group's own label becomes a link back to it, collapsed or expanded.
+   * Without it, the label is plain text when expanded, and the collapsed
+   * link falls back to the first child with an href (Billing and
+   * Payments has no hub of its own — its collapsed click goes straight to
+   * Guest Folio, its most useful default).
+   */
+  href?: string;
 }
 
 /**
@@ -84,6 +94,19 @@ const FRONT_DESK_GROUPS: SidebarGroup[] = [
   },
 ];
 
+const RESERVATIONS_GROUP: SidebarGroup = {
+  label: 'Reservations',
+  href: '/dashboard/reservations',
+  children: [
+    { label: 'Availability Calendar', href: '/dashboard/reservations/availability-calendar' },
+    { label: 'Create Reservation', href: '/dashboard/reservations/create' },
+    { label: 'Modify Reservation', href: '/dashboard/reservations/modify' },
+    { label: 'Cancel Reservation', href: '/dashboard/reservations/cancel' },
+    { label: 'Waitlist Management', href: '/dashboard/reservations/waitlist' },
+    { label: 'Rate Plan Management' },
+  ],
+};
+
 const BILLING_GROUP: SidebarGroup = {
   label: 'Billing and Payments',
   children: [
@@ -107,7 +130,7 @@ type TopLevelItem = { kind: 'group'; group: SidebarGroup } | { kind: 'inert'; la
  * so the documented architecture still reads, but honestly non-interactive.
  */
 const TOP_LEVEL: TopLevelItem[] = [
-  { kind: 'inert', label: 'Reservations' },
+  { kind: 'group', group: RESERVATIONS_GROUP },
   { kind: 'inert', label: 'Housekeeping' },
   { kind: 'group', group: BILLING_GROUP },
   { kind: 'inert', label: 'Folio Transfer' },
@@ -175,13 +198,14 @@ function GroupRow({ group, pathname }: { group: SidebarGroup; pathname: string }
   const expanded = group.children.some((c) => childIsActive(c, pathname));
 
   if (!expanded) {
-    const firstReal = group.children.find((c) => c.href)?.href;
-    // A collapsed group is still a real link to its first child — otherwise
-    // a group you aren't already inside is a dead end.
-    if (!firstReal) return <InertRow label={group.label} />;
+    // A group with its own hub (Reservations) collapses to a link there;
+    // one without (Billing and Payments has none) falls back to its first
+    // real child — either way, a collapsed group is never a dead end.
+    const collapsedTarget = group.href ?? group.children.find((c) => c.href)?.href;
+    if (!collapsedTarget) return <InertRow label={group.label} />;
     return (
       <Link
-        href={firstReal}
+        href={collapsedTarget}
         className="shrink-0 rounded-control px-3 py-2 text-tiny font-semibold text-primary-dark border border-primary/30 hover:bg-primary-light/40 transition-colors"
       >
         {group.label}
@@ -191,7 +215,13 @@ function GroupRow({ group, pathname }: { group: SidebarGroup; pathname: string }
 
   return (
     <div className="shrink-0 rounded-control bg-primary flex flex-col gap-1 p-1">
-      <span className="px-2 py-1.5 text-tiny font-semibold text-white">{group.label}</span>
+      {group.href ? (
+        <Link href={group.href} className="px-2 py-1.5 text-tiny font-semibold text-white hover:underline">
+          {group.label}
+        </Link>
+      ) : (
+        <span className="px-2 py-1.5 text-tiny font-semibold text-white">{group.label}</span>
+      )}
       {group.children.map((child) =>
         child.href ? (
           <Link
