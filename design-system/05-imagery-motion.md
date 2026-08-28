@@ -6,12 +6,17 @@ matter (no hero shots, no brand photography).
 
 ## Iconography
 
-Hand-rolled inline SVGs only ([`components/ui/Icons.tsx`](../components/ui/Icons.tsx))
-— no icon library dependency, matching Roomick's "no dependency we don't
-need" stance and keeping the bundle lean (`00-brand-voice.md`'s "fast,
-lightweight" mandate). Icons are `currentColor`-based (inherit text color)
-and `aria-hidden`, always paired with visible text or an `aria-label` on
-their containing interactive element.
+Sourced from `react-icons` (Feather for generic UI chrome, Font Awesome
+where an exact semantic match exists — a landing plane, a receipt, a "ban"
+glyph for Room Blocking/OOO), wrapped one-to-one in named exports in
+[`components/ui/Icons.tsx`](../components/ui/Icons.tsx) — every page still
+imports from that one module, not from `react-icons` directly, so the
+underlying library is swappable in one file. Superseded the project's
+original hand-rolled-inline-SVG-only stance (direct instruction) once the
+set grew past ~30 bespoke icons; still `currentColor`-based (react-icons
+components inherit text color the same way) and `aria-hidden`, always
+paired with visible text or an `aria-label` on their containing interactive
+element.
 
 ## Images
 
