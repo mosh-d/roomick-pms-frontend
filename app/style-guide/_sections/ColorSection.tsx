@@ -22,11 +22,18 @@ const STATUS_SWATCHES = [
 ];
 
 // Nesting demo: the same formula documented in design-system/01-color.md,
-// computed here rather than hand-typed so this demo can never drift from
-// the doc's math.
+// computed here rather than hand-typed so the PERCENTAGE LABELS can't
+// drift from the doc's math. The 0.95 base rate itself still has to be
+// kept in sync with `CARD_TONE_CLASSES.secondary` by hand, though — the
+// box below already imports that constant directly and so visually
+// reflects any future change immediately, but this number doesn't read it
+// back out. It drifted once already (secondary moved from a 10% base to
+// 5%, and this stayed at the old rate until caught here) — if it changes
+// again, update both.
 const NESTING_DEPTHS = [1, 2, 3, 4];
+const SECONDARY_BASE_RATE = 0.05;
 function effectiveTint(depth: number) {
-  return (1 - Math.pow(0.9, depth)) * 100;
+  return (1 - Math.pow(1 - SECONDARY_BASE_RATE, depth)) * 100;
 }
 
 function Swatch({ name, className, hex }: { name: string; className: string; hex?: string }) {
@@ -78,7 +85,7 @@ export function ColorSection() {
 
       <div>
         <h3 className="text-subheader font-semibold text-secondary mb-3">
-          Card-nesting opacity mechanic — <code className="text-tiny">1 − 0.9^N</code>
+          Card-nesting opacity mechanic — <code className="text-tiny">1 − 0.95^N</code>
         </h3>
         <div className="flex flex-wrap gap-6 items-start">
           {(() => {
@@ -104,11 +111,11 @@ export function ColorSection() {
           })()}
           <div className={`${CARD_TONE_CLASSES.primary} border rounded-card p-4`}>
             <span className="text-tiny text-secondary block mb-2">
-              mixed tone — primary/15 (the one tone that doesn&apos;t use the dark-variant/10 formula — see
+              mixed tone — primary/5 (the one tone that doesn&apos;t use the dark-variant formula — see
               CARD_TONE_CLASSES)
             </span>
             <div className={`${CARD_TONE_CLASSES.secondary} border rounded-card p-4`}>
-              <span className="text-tiny text-secondary">secondary/10 nested inside</span>
+              <span className="text-tiny text-secondary">secondary/5 nested inside</span>
             </div>
           </div>
         </div>

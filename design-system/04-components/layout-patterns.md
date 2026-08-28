@@ -8,7 +8,7 @@ by page — these three patterns recur across nearly every screen in it.
 ## `Section` — the primary page-structure pattern
 
 A small-caps gold label + horizontal rule, above a pale, thin-gold-bordered
-box (`bg-primary-light/15 border border-primary/40 rounded-card`). This is
+box (`bg-primary-light/5 border border-primary/40 rounded-card`). This is
 the **only** place `primary-light` appears as a background in the whole
 system, reserved for section-level content grouping — e.g. "EARLY
 CHECK-IN", "GUEST DETAILS", "RESERVATION DETAILS", "ID CAPTURE" in the
@@ -23,12 +23,13 @@ either/or choice inside a Section (Early Check-In Surcharge, Digital/Manual
 Capture, Fixed/Percentage Rate — see `forms.md`'s `RadioCard` note), not a
 second described-card layer.
 
-**Not the same thing as a solid primary navigation panel** — a separate,
-not-yet-built pattern (see the reference's "Check-In" sidebar nav group:
-full-opacity primary background, white text, white pill buttons). `Section`
-is a translucent content-grouping tint with dark text; a nav panel is solid
-chrome with white text. Don't reach for `Section` when that pattern
-eventually gets built.
+**Not the same thing as a solid primary navigation panel** — a separate
+pattern, now built: `Sidebar.tsx`'s `GroupRow` (Front Desk's nested
+Check-In/Check-Out/In-House Management groups), which renders full-opacity
+`bg-primary` with white text and white pill buttons when a page inside it
+is open. `Section` is a translucent content-grouping tint with dark text; a
+nav panel is solid chrome with white text — don't reach for `Section` for
+navigation chrome, or for `GroupRow`'s pattern inside a content page.
 
 ## `EntryCard` — titled, removable, repeatable entries
 
@@ -53,7 +54,7 @@ today"). Unlike `Card` (a passive content surface), a `FeatureCard` is
 always interactive and always navigates somewhere — it renders as a real
 `<Link>` when given `href` (or a `<button>` when given `onClick` instead),
 never a `<div>` with a click handler bolted on. Uses `Card`'s
-`secondary`-family tint (`bg-secondary/10`).
+`secondary`-family tint (`bg-secondary/5`).
 
 No real icon set exists yet for this pattern (the reference uses simple
 line icons — airplane, building, person-walking — none of which are in

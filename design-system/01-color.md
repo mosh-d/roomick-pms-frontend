@@ -116,16 +116,18 @@ doesn't add linearly, it *compounds* (alpha-over compositing):
 effective_tint(N) = 1 − (1 − tint)^N
 ```
 
-`secondary`/`accent` use a 10% base tint; `primary` is the one exception at
-15% (see below for why):
+`secondary` and `primary` share a 5% base tint (revised down from an
+earlier 10%/15% — see the two subsections below for why each started at a
+different number, and why both now land on the same lighter rate);
+`accent` is unchanged at 10%:
 
-| Nesting depth (N) | secondary / accent (10%) | primary (15%) |
+| Nesting depth (N) | secondary / primary (5%) | accent (10%) |
 |---|---|---|
-| 1 | 10.0% | 15.0% |
-| 2 | 19.0% | 27.8% |
-| 3 | 27.1% | 38.6% |
-| 4 | 34.4% | 47.8% |
-| 5 | 41.0% | 55.6% |
+| 1 | 5.0% | 10.0% |
+| 2 | 9.8% | 19.0% |
+| 3 | 14.3% | 27.1% |
+| 4 | 18.5% | 34.4% |
+| 5 | 22.6% | 41.0% |
 
 The curve flattens out — each additional layer adds less than the one
 before — which is why depth 1–3 is the practically useful range; beyond that
@@ -135,7 +137,7 @@ the visual difference between consecutive depths gets hard to perceive.
 route's color section computes this same formula live (not hand-typed
 percentages) so the demo can never drift from the number above.
 
-### `secondary`/`accent` tint with the dark variant, not the base color
+### `secondary` and `accent` tint with the dark variant, not the base color
 
 `secondary`/`accent` map to `secondary`/`accent-dark` — **not** raw
 `accent` — even though `secondary` needs no separate dark variant (`#160029`
@@ -149,17 +151,33 @@ legible under plain `text-secondary` (the app's default near-black body
 text) at every practical nesting depth — **always use `text-secondary` for
 text placed directly on a `Card`, never `text-secondary-light`.**
 
-### `primary` is the one tone that doesn't follow that rule
+`secondary`'s own base rate was later revised down from 10% to 5% (see
+below) — that revision only softens the rest state; it doesn't reopen the
+depth-4-legibility problem the dark-variant fix above already solved, since
+a lighter starting tint still compounds toward the same darker asymptote,
+just more gradually.
 
-`primary` uses `bg-primary-light/15 border-primary/40` instead of a
-dark-variant/10 tint — the same pairing `Section` already uses for its own
-background (see `04-components/cards.md`). Checked directly against the UI
-reference, which renders a primary-toned highlight as a pale warm-gold box,
-not a muddy tan — the dark-variant/10 formula (`bg-primary-dark/10`, an
-earlier version of this token) didn't match it. `primary-light` (`#FFF0B9`)
-is already pale, so diluting it to 10% over white is nearly invisible; 15%
-is the minimum that reads clearly, which is why `primary`'s nesting math
-uses a different base rate than `secondary`/`accent`. Accepted trade-off: a
-primary-toned box is meant as a one-off highlight (matching `Section`), not
-deep neutral hierarchy, so nesting it several levels deep isn't a real usage
-pattern the way `secondary`/`accent` nesting is.
+### `primary` — a different base color, and a base rate that's moved twice
+
+`primary` uses `bg-primary-light/5 border-primary/40` instead of a
+dark-variant tint — the same `primary-light` pairing `Section` already uses
+for its own background (see `04-components/cards.md`), just diluted much
+further. Checked directly against the UI reference, which renders a
+primary-toned highlight as a pale warm-gold box, not a muddy tan — the
+dark-variant formula (`bg-primary-dark/10`, an earlier version of this
+token) didn't match it, which is why `primary` tints from `primary-light`
+rather than `primary-dark` the way `secondary`/`accent` tint from their own
+dark variants.
+
+The RATE has moved twice, in opposite directions, and both moves were
+direct calls, not measurements: first to 15% ("`primary-light` is already
+pale, so 10% is nearly invisible" — true as a description of that specific
+value at the time), then down to 5% — a later, deliberate preference for a
+lighter rest state overall, applied to `secondary` at the same time (both
+now share the one 5% base rate; only `accent` is still 10%). Whatever "the
+minimum that reads clearly" claim held for 15% is superseded by that later
+call — don't reintroduce it as a floor. Accepted trade-off, unchanged since
+the original 15% reasoning: a primary-toned box is meant as a one-off
+highlight (matching `Section`), not deep neutral hierarchy, so nesting it
+several levels deep isn't a real usage pattern the way `secondary`/`accent`
+nesting is.

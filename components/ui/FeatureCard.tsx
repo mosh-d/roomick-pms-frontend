@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { CARD_TONE_CLASSES } from './Card';
 
 type FeatureCardContentProps = {
   icon: ReactNode;
@@ -9,8 +10,14 @@ type FeatureCardContentProps = {
   stats?: string[];
 };
 
-const cardClasses =
-  'text-left rounded-card bg-secondary/10 border border-secondary/20 p-4 flex flex-col gap-2 cursor-pointer transition-[filter] hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2';
+// Imports `CARD_TONE_CLASSES.secondary` rather than hand-copying its class
+// string — this drifted once already (stayed at the old `/10` rate after
+// `Card.tsx`'s own secondary tint moved to `/5`, caught only when auditing
+// every hand-copied instance of it), which is exactly the class of bug
+// sharing the constant is meant to prevent. `CARD_TONE_CLASSES` only carries
+// the border COLOR, not its width — same as `Card.tsx`'s own usage, the
+// bare `border` utility still has to be added alongside it.
+const cardClasses = `text-left rounded-card border ${CARD_TONE_CLASSES.secondary} p-4 flex flex-col gap-2 cursor-pointer transition-[filter] hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2`;
 
 function FeatureCardContent({ icon, title, description, stats }: FeatureCardContentProps) {
   return (

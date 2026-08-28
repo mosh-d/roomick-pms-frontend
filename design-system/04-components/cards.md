@@ -13,21 +13,22 @@ into a visibly darker/richer fill, with zero extra markup or props beyond
 just... nesting the component.
 
 `secondary`/`accent` tint with their **dark-variant** hex (`secondary`,
-`accent-dark`) rather than the base color — see `01-color.md`'s "`secondary`/
-`accent` tint with the dark variant, not the base color" for why (a real
+`accent-dark`) rather than the base color — see `01-color.md`'s "`secondary`
+and `accent` tint with the dark variant, not the base color" for why (a real
 legibility bug, not a style preference). `primary` is the one tone that
-doesn't follow this: it uses `bg-primary-light/15 border-primary/40`,
-reusing `Section`'s own pale-gold pairing, checked directly against the UI
-reference (see `01-color.md`'s "`primary` is the one tone that doesn't
-follow that rule" for the full reasoning and why it's a 15% base tint, not
-10%). Text placed directly on a `Card` should use `text-secondary`, never
-`text-secondary-light`.
+doesn't follow this: it uses `bg-primary-light/5 border-primary/40`,
+reusing `Section`'s own pale-gold pairing (much more diluted), checked
+directly against the UI reference (see `01-color.md`'s "`primary` — a
+different base color, and a base rate that's moved twice" for the full
+reasoning). `secondary` and `primary` both currently rest at a 5% base tint
+— `accent` is the one still at 10%. Text placed directly on a `Card` should
+use `text-secondary`, never `text-secondary-light`.
 
 ```tsx
 <Card tone="secondary">
-  {/* one 10%-opacity secondary layer */}
+  {/* one 5%-opacity secondary layer */}
   <Card tone="secondary">
-    {/* a second, compounding to ~19% */}
+    {/* a second, compounding to ~9.8% */}
   </Card>
 </Card>
 ```
@@ -66,12 +67,13 @@ exactly this reason — see `forms.md`.
 The reference navigation panel (a "Check-In" section listing Arrivals
 Dashboard / Check-In Flow / Walk-In Booking as pill buttons) uses a
 **solid, full-opacity** primary background with white text and white pill
-buttons — this is *not* an instance of `Card`'s translucent `/10` tint
+buttons — this is *not* an instance of `Card`'s translucent `/5` tint
 mechanic, and not the same as `Section`'s translucent `primary-light`
 either. `Card`/`Section` are for tinted content surfaces; a solid primary
-panel is specifically for navigation chrome. No navigation component exists
-yet (next phase) — noted here so it isn't accidentally built as a `Card`
-or `Section` with a solid override.
+panel is specifically for navigation chrome — `Sidebar.tsx`'s own
+`GroupRow` is exactly this pattern, live, for Front Desk's nested Check-In/
+Check-Out/In-House Management groups (its expanded state IS this solid
+panel, not a `Card`).
 
 ## Mixed-tone nesting
 
