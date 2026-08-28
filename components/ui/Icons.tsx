@@ -53,6 +53,7 @@ import {
   FaClock,
   FaCalendarTimes,
   FaTags,
+  FaUserSlash,
 } from 'react-icons/fa';
 
 type IconProps = { className?: string };
@@ -121,6 +122,10 @@ export function ReceiptIcon({ className = 'size-4' }: IconProps) {
 
 export function RatePlanIcon({ className = 'size-4' }: IconProps) {
   return <FaTags className={className} aria-hidden="true" />;
+}
+
+export function NoShowIcon({ className = 'size-4' }: IconProps) {
+  return <FaUserSlash className={className} aria-hidden="true" />;
 }
 
 // --- Table chrome (ref p11/p18: search field, sortable headers, pagination, export) ---

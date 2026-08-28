@@ -6,6 +6,21 @@ import type { GuestSummary, GuestInput } from './guests';
 export type ReservationStatus = 'waitlisted' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show' | 'walked';
 export type ReservationChannel = 'direct' | 'walk_in' | 'booking_com' | 'expedia' | 'agoda' | 'airbnb';
 
+export type PenaltyType = 'first_night' | 'full_stay' | 'flat_fee' | 'none';
+
+/** Mirrors `NoShowRecord` (roomick-pms-backend/prisma/schema.prisma). */
+export interface NoShowRecord {
+  id: string;
+  reservationId: string;
+  penaltyType: PenaltyType;
+  penaltyAmount: string | null;
+  penaltyWaived: boolean;
+  waivedBy: string | null;
+  refundAmount: string | null;
+  markedAt: string;
+  markedBy: string | null;
+}
+
 /** Mirrors `ReservationsService`'s response shape (RESERVATION_INCLUDE, roomick-pms-backend/src/modules/reservations/reservations.service.ts). */
 export interface ReservationSummary {
   id: string;
@@ -24,6 +39,8 @@ export interface ReservationSummary {
   room: { id: string; number: string } | null;
   /** The branch's ISO 4217 code — feed to `currencySymbolFor` for display. */
   branch: { currency: string };
+  /** Latest mark only, if any — see the backend's own `RESERVATION_INCLUDE` comment. */
+  noShowRecords: NoShowRecord[];
 }
 
 export interface AvailabilityNight {
@@ -229,5 +246,56 @@ export function useCancelReservationMutation(branchId: string, { accessToken, te
     mutationFn: ({ reservationId, reason }: { reservationId: string; reason?: string }) =>
       apiFetch<ReservationSummary>(`/reservations/${reservationId}/cancel`, { method: 'POST', accessToken, tenantId, body: { reason } }),
     onSuccess: () => invalidateAfterLifecycleChange(queryClient, branchId),
+  });
+}
+
+// -------------------------------------------------------------------------
+// No-Show Handling
+// -------------------------------------------------------------------------
+
+export function usePendingNoShowsQuery(branchId: string | null, { accessToken, tenantId }: AuthOpts) {
+  return useQuery({
+    queryKey: ['no-shows', 'pending', branchId ?? ''] as const,
+    queryFn: () => apiFetch<ReservationSummary[]>(`/branches/${branchId}/no-shows/pending`, { accessToken, tenantId }),
+    enabled: branchId !== null,
+  });
+}
+
+function invalidateAfterNoShowChange(queryClient: ReturnType<typeof useQueryClient>, branchId: string) {
+  invalidateAfterLifecycleChange(queryClient, branchId);
+  queryClient.invalidateQueries({ queryKey: ['no-shows', 'pending', branchId] });
+}
+
+export function useMarkNoShowMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (reservationId: string) =>
+      apiFetch<{ reservation: ReservationSummary; noShowRecord: NoShowRecord }>(`/reservations/${reservationId}/no-show`, { method: 'POST', accessToken, tenantId }),
+    onSuccess: () => invalidateAfterNoShowChange(queryClient, branchId),
+  });
+}
+
+export function useWaiveNoShowPenaltyMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (noShowRecordId: string) =>
+      apiFetch<NoShowRecord>(`/no-show-records/${noShowRecordId}/waive`, { method: 'POST', accessToken, tenantId }),
+    onSuccess: () => invalidateAfterNoShowChange(queryClient, branchId),
+  });
+}
+
+export function useReinstateFromNoShowMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      reservationId,
+      ...body
+    }: {
+      reservationId: string;
+      checkInDate: string;
+      checkOutDate: string;
+      waivePenalty?: boolean;
+    }) => apiFetch<ReservationSummary>(`/reservations/${reservationId}/reinstate`, { method: 'POST', accessToken, tenantId, body }),
+    onSuccess: () => invalidateAfterNoShowChange(queryClient, branchId),
   });
 }

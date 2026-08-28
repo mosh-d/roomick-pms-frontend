@@ -1364,3 +1364,25 @@ Live Playwright end to end: created a Weekend cascade plan through the actual UI
 - Promo-code / corporate-account picker UI on Create Reservation and Walk-In Booking.
 - A branch-currency source reachable by non-Owner roles, so `RatePreview` (and any other pre-reservation money display) can show a real currency symbol.
 - Carrying a promo/negotiated override forward across Modify Reservation (currently re-resolves through base/cascade tiers only — see the backend's own PHASE_NOTES entry).
+
+## Phase 34 — No-Show Handling, and a sidebar structure correction found while placing it (2026-08-28)
+
+The backend's `ReservationsService` gained `markNoShow`/`waiveNoShowPenalty`/`reinstateFromNoShow`/`listPendingNoShows` (see its own PHASE_NOTES entry — it also unifies this with Night Audit's pre-existing automated sweep and closes a real gap where a computed penalty was never actually posted as a folio charge). This phase is the frontend for it: `/dashboard/no-shows` — a Pending No-Shows list with a one-click "Mark as No-Show" (behind a `ConfirmDialog`, since it's a real financial/status action), and a Recent No-Shows list showing each penalty with Waive and Reinstate actions. Reinstate opens a `Modal` for the revised dates a late arrival needs (the original check-in date has necessarily already passed) plus an optional "also waive the penalty" checkbox.
+
+### Where it actually belongs — checked the reference, not assumed
+Before wiring the sidebar, checked `Roomick-UI.pdf` p9 directly rather than guessing a placement: its own sidebar nests No-Show Handling — along with Folio Transfer, Point of Sale, Shift Management, Guest Registration Card, and Comms Log — under **Billing and Payments**, not as a standalone top-level item. Roomick's own sidebar had all six of those living as a SEPARATE flat list (`INERT_TOP_LEVEL`) rendered below the real top-level sections — a structural mismatch from the reference that predates this phase, just never mattered until one of the six needed a real page. Fixed properly rather than adding a seventh special case: all six moved into `BILLING_SECTION.items` (the five still-unbuilt ones as inert leaves — already a supported, existing pattern, see `Refunds and Corrections` — the No-Show Handling leaf now real), and `INERT_TOP_LEVEL` together with its own render block removed entirely now that it's empty. `layout.tsx`'s `sectionFor()` breadcrumb helper and `ROUTE_TITLES` both gained the new route.
+
+### A real accessibility gap, found building this page's own Reinstate form
+Reused `Input`/`Modal` for the reinstate date fields and hit `getByLabel` failing to find them in Playwright — traced to `Input.tsx`'s `fieldId = id ?? name`: without either prop, `<label htmlFor>` has nothing to point at, so the label is visually present but not actually associated with the field for assistive tech either. Not a testing-only issue — a real a11y gap. Fixed by giving every `Input` on this page an explicit `name`. Other plain-`useState` forms elsewhere in the app (e.g. Room Blocking) have the same latent gap; out of scope to sweep in this phase, since none of them happened to need `getByLabel` to notice it yet — worth a dedicated pass later.
+
+`ReservationSummary` (`lib/reservations.ts`) gained `noShowRecords` (mirrors the backend's own `RESERVATION_INCLUDE` addition — latest mark only) so the Recent No-Shows list can show penalty state without a second round-trip. Added `NoShowIcon` (`FaUserSlash`) to the react-icons wrapper set.
+
+### Verified
+`npx tsc --noEmit` clean, `eslint` 0 errors (same 6 pre-existing React-Compiler/RHF `watch()` warnings — none new, this page uses plain `useState`), `npm run build` clean (`/dashboard/no-shows` registered as a static route).
+
+Live Playwright, 16/16: created a real confirmed reservation via the API → appeared in Pending No-Shows → marked as a no-show through the actual UI (confirm dialog and all) → confirmed via the API that the reservation flipped status, a `NoShowRecord` was created with the right penalty, and the folio's `guestStatus` was `"city_ledger"` (the backend's own fix, confirmed end-to-end through this UI, not just at the API layer) → Recent No-Shows showed the penalty → waived it through the UI → confirmed the folio auto-settled to zero → reinstated through the Modal with new dates → confirmed the reservation was `confirmed` again with a freshly re-resolved rate. Two real backend bugs (the City Ledger gap above, and the nested-transaction risk in `reinstateFromNoShow`'s waive path) were caught while building THIS page's own verification flow, not found by backend inspection alone — the same pattern as Phase 33's audit-trail bugs.
+
+### Carried forward
+- Everything from Phase 33's own list — unchanged.
+- The other five reference items now correctly nested under Billing and Payments (Folio Transfer, Point of Sale, Shift Management, Guest Registration Card, Comms Log) are still inert — this phase only moved and correctly placed them, it didn't build them.
+- The pre-existing `Input.tsx` label-association gap on other plain-`useState` forms (Room Blocking named specifically) — real, not urgent, not swept here.

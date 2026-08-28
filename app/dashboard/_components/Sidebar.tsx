@@ -134,6 +134,19 @@ const HOUSEKEEPING_SECTION: TopLevelSection = {
   ],
 };
 
+/**
+ * Ref p9's own sidebar: everything under "Billing and Payments" is
+ * Guest Folio, Folio Transfer, Point of Sale, Shift Management, No-Show
+ * Handling, Guest Registration Card, Comms Log — this list, in that
+ * order, `Split Billing`/`Night Audit`/`Refunds and Corrections` are
+ * Roomick's own additions beyond the reference. A row with no `href` is a
+ * plain inert pill (see `LeafPill`) — moved to a real one the moment its
+ * own page exists, no other change needed. Previously these lived as a
+ * SEPARATE flat top-level list (`INERT_TOP_LEVEL`) rendered below the real
+ * sections, which didn't match the reference's own nesting at all — moved
+ * here, matching it exactly, when No-Show Handling's own page made the
+ * mismatch worth fixing properly rather than adding a 7th special case.
+ */
 const BILLING_SECTION: TopLevelSection = {
   label: 'Billing and Payments',
   // No dedicated hub page — Guest Folio (its first, most useful page) is
@@ -142,16 +155,19 @@ const BILLING_SECTION: TopLevelSection = {
   href: '/dashboard/billing',
   items: [
     leaf({ label: 'Guest Folio', href: '/dashboard/billing', isActive: (p) => p.startsWith('/dashboard/billing') }),
+    leaf({ label: 'Folio Transfer' }),
     leaf({ label: 'Split Billing', href: '/dashboard/split-billing' }),
+    leaf({ label: 'Point of Sale' }),
+    leaf({ label: 'Shift Management' }),
     leaf({ label: 'Night Audit', href: '/dashboard/night-audit' }),
+    leaf({ label: 'No-Show Handling', href: '/dashboard/no-shows' }),
+    leaf({ label: 'Guest Registration Card' }),
+    leaf({ label: 'Comms Log' }),
     leaf({ label: 'Refunds and Corrections' }),
   ],
 };
 
 const TOP_LEVEL_SECTIONS: TopLevelSection[] = [RESERVATIONS_SECTION, HOUSEKEEPING_SECTION, BILLING_SECTION];
-
-/** Sidebar rows with no backend module yet (see PHASE_NOTES.md's build order) — visible so the documented architecture still reads, but honestly non-interactive. */
-const INERT_TOP_LEVEL = ['Folio Transfer', 'Point of Sale', 'Shift Management', 'No-Show Handling', 'Guest Registration Card', 'Comms Log'];
 
 function childIsActive(child: SidebarChild, pathname: string): boolean {
   if (!child.href) return false;
@@ -174,9 +190,6 @@ export function Sidebar() {
       <TopLevelSectionRow section={FRONT_DESK_SECTION} pathname={pathname} />
       {TOP_LEVEL_SECTIONS.map((section) => (
         <TopLevelSectionRow key={section.label} section={section} pathname={pathname} />
-      ))}
-      {INERT_TOP_LEVEL.map((label) => (
-        <InertRow key={label} label={label} />
       ))}
     </aside>
   );
