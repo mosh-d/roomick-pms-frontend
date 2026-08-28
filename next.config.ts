@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { withSentryConfig } from '@sentry/nextjs';
 
 const nextConfig: NextConfig = {
   // Pin the Turbopack workspace root to this project. Without it, Next.js
@@ -35,5 +36,18 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Only wraps the config (and only then invokes the Sentry build plugin at
+// all) when a DSN is actually configured — an unconfigured build must never
+// even ask Sentry's webpack/turbopack plugin to run, since `org`/`project`
+// aren't set either and there's nothing for it to do. `SENTRY_ORG`/
+// `SENTRY_PROJECT` are only needed here for source-map upload, which itself
+// only runs with a real auth token in CI — neither is required to boot or
+// build without one.
+export default process.env.SENTRY_DSN
+  ? withSentryConfig(nextConfig, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      silent: !process.env.CI,
+    })
+  : nextConfig;
 
