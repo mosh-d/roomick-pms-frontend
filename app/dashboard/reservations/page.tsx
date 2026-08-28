@@ -45,7 +45,7 @@ export default function ReservationsHubPage() {
       <PageHeader title="Reservations" subtitle="Full booking lifecycle management." />
 
       <Section label="Reservations">
-        <div className="flex flex-wrap gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <HubCard
             icon={<CalendarIcon className="size-5" />}
             title="Availability Calendar"

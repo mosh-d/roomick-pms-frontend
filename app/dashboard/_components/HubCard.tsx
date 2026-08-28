@@ -63,7 +63,15 @@ export function HubCard({
         ) : null}
         <span className="text-body font-bold text-secondary">{title}</span>
       </div>
-      <p className="text-small text-secondary-light pb-2 border-b border-secondary/20">{description}</p>
+      {/* Full-strength `secondary`, not `-light` — pixel-sampled against
+          the reference (ref p10): the description's peak ink color lands
+          on the exact same near-black as the bold title above it (both
+          `#160029`-ish). It only READS lighter because it's a normal font
+          weight over a smaller stroke area, not because it's a different,
+          lighter color token. The stats line below, by contrast, pixel-
+          samples to an exact match for `secondary-light` (`#A698B2`) — a
+          real, different, genuinely lighter color, not a weight illusion. */}
+      <p className="text-small text-secondary pb-2 border-b border-secondary/20">{description}</p>
       {stats && stats.length > 0 ? (
         <div className="flex flex-col gap-1">
           {stats.map((stat) => (
@@ -80,7 +88,7 @@ export function HubCard({
     return (
       <Link
         href={href}
-        className={`flex-1 min-w-64 flex flex-col gap-2 rounded-card border p-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${CARD_TONE_CLASSES.secondary} ${INTERACTIVE_TINT_STEPS}`}
+        className={`flex flex-col gap-2 rounded-card border p-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${CARD_TONE_CLASSES.secondary} ${INTERACTIVE_TINT_STEPS}`}
       >
         {content}
       </Link>

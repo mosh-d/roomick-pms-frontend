@@ -76,7 +76,7 @@ export default function FrontDeskHubPage() {
       />
 
       <Section label="Check-In">
-        <div className="flex flex-wrap gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <HubCard
             icon={<PlaneLandingIcon className="size-5" />}
             title="Arrivals Dashboard"
@@ -100,7 +100,7 @@ export default function FrontDeskHubPage() {
       </Section>
 
       <Section label="Check-Out">
-        <div className="flex flex-wrap gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <HubCard
             icon={<CityDepartureIcon className="size-5" />}
             title="Departures Dashboard"
@@ -119,7 +119,7 @@ export default function FrontDeskHubPage() {
       </Section>
 
       <Section label="In-House Management">
-        <div className="flex flex-wrap gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <HubCard
             icon={<ClipboardListIcon className="size-5" />}
             title="In-House Guest List"
