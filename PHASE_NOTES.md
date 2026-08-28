@@ -1386,3 +1386,28 @@ Live Playwright, 16/16: created a real confirmed reservation via the API → app
 - Everything from Phase 33's own list — unchanged.
 - The other five reference items now correctly nested under Billing and Payments (Folio Transfer, Point of Sale, Shift Management, Guest Registration Card, Comms Log) are still inert — this phase only moved and correctly placed them, it didn't build them.
 - The pre-existing `Input.tsx` label-association gap on other plain-`useState` forms (Room Blocking named specifically) — real, not urgent, not swept here.
+
+## Phase 35 — Guest Registration Card: signature pad, auto-redirect from check-in (2026-08-28)
+
+The backend now auto-generates a `RegistrationCard` inside `checkIn`/`walkIn`'s own transaction (see its own PHASE_NOTES entry — DB-only by explicit choice, no PDF/S3 infrastructure exists in this project, so the guest snapshot and signature live directly in Postgres). This phase is the frontend: a hand-rolled canvas `SignaturePad`, the `[cardId]` view/sign page, a hub page for the branch's own card template and looking up an existing card, and — the biggest UX piece — Check-In Flow and Walk-In Booking (immediate mode) now redirect straight to the freshly generated card instead of back to a list, so the front-desk agent has the guest sign it right there as part of the same interaction, matching the reference's own framing of this as one continuous check-in step, not a separate errand.
+
+### `SignaturePad` — Pointer Events, not three separate handlers
+One code path (`onPointerDown`/`onPointerMove`/`onPointerUp`) covers mouse, touch, AND stylus — exactly what the reference's "touch/mouse/stylus" calls for, without hand-rolling separate mouse and touch listeners the way an older browser API would have forced. Uncontrolled by design: the canvas owns its drawing state internally, and the parent reads it out via `ref.current.getDataUrl()` only at the moment the Sign button is actually clicked — a controlled version re-rendering (and losing the in-progress stroke) on every parent state change would be a real bug, not just wasted work.
+
+### The redirect chain
+Both Check-In Flow and Walk-In Booking's immediate mode now do: complete the check-in mutation → fetch `GET /reservations/:id/registration-card` (the card the backend just auto-generated in the same transaction) → `router.push` to it, falling back to the old destination (Arrivals / Room Status Board) only if no card comes back (shouldn't happen given the backend guarantee, but a network hiccup on that one extra fetch shouldn't strand the agent on a blank state).
+
+### `window.print()` as the closest thing to a document, made to actually look clean
+Added `print:hidden` to the sidebar `<aside>` and the dashboard `<header>` — a print/print-to-PDF of the card page without this would include the nav chrome and breadcrumb, not just the card itself.
+
+### A real `react-hooks/set-state-in-effect` catch on the template form
+First draft synced the branch's saved template into local `useState` fields via a `useEffect` — flagged by lint as cascading-render-prone (multiple `setState` calls firing synchronously inside one effect). Fixed by extracting a `TemplateForm` child component that only ever mounts once `templateQuery.data` is already loaded (the parent gates it behind the same loading check already on screen), so each field's `useState` reads its initial value directly from a prop — no sync effect needed at all, and the lint error is structurally impossible rather than suppressed.
+
+### Verified
+`npx tsc --noEmit` clean, `eslint` 0 errors (same 6 pre-existing React-Compiler/RHF `watch()` warnings — none new), `npm run build` clean (`/dashboard/registration-cards` and `/dashboard/registration-cards/[cardId]` both registered).
+
+Live Playwright, 17/17: saved a branch house-rules template through the actual UI, confirmed it persisted via the API → walked a guest in through the real Walk-In Booking form (picking a room type with genuinely available inventory in this shared dev DB, not blindly the first option) → check-in auto-redirected straight to a freshly generated card with no intermediate step → confirmed the snapshot showed the right guest/room/dates AND the saved house rules, with no ID-document fields anywhere in it → signed it with a real mouse-drawn stroke on the canvas → confirmed `signedAt`/`witnessedBy`/a genuine non-trivial base64 PNG all landed via the API → confirmed the backend rejects a second sign attempt with `409` → reloaded and confirmed the page correctly shows a view-only signed state (no pad, a Print button) rather than re-offering the form.
+
+### Carried forward
+- Everything from Phase 34's own list — unchanged.
+- Real PDF generation / encrypted storage, ID capture and its required encryption, and `requiredFields` template configuration — all explicitly deferred, named in the backend's own PHASE_NOTES entry.

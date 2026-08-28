@@ -16,7 +16,7 @@ import { walkInBookingSchema, type WalkInBookingFormValues } from '@/lib/schemas
 import { useRoomsQuery, useRoomTypesQuery } from '@/lib/rooms';
 import { groupRoomsByFloor } from '@/lib/groupRoomsByFloor';
 import { useCreateReservationMutation, useCreateWalkInMutation } from '@/lib/reservations';
-import { ApiError } from '@/lib/api';
+import { ApiError, apiFetch } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 import { RoomGrid } from '../_components/RoomGrid';
 import { RatePreview } from '../_components/RatePreview';
@@ -111,7 +111,7 @@ export default function WalkInBookingPage() {
           setFormError('Pick a room to check the guest in now.');
           return;
         }
-        await createWalkInMutation.mutateAsync({
+        const reservation = await createWalkInMutation.mutateAsync({
           guest,
           roomTypeId: values.roomTypeId,
           roomId: selectedRoomId,
@@ -120,19 +120,23 @@ export default function WalkInBookingPage() {
           children: values.children,
           specialRequests: values.specialRequests || undefined,
         });
-      } else {
-        await createReservationMutation.mutateAsync({
-          guest,
-          roomTypeId: values.roomTypeId,
-          checkInDate: values.checkInDate,
-          checkOutDate: values.checkOutDate,
-          adults: values.adults,
-          children: values.children,
-          specialRequests: values.specialRequests || undefined,
-          channel: 'direct',
-        });
+        // A walk-in IS a check-in — same auto-generated registration card,
+        // same "send the agent to sign it" redirect as Check-In Flow's own.
+        const card = await apiFetch<{ id: string } | null>(`/reservations/${reservation.id}/registration-card`, auth);
+        router.push(card ? `/dashboard/registration-cards/${card.id}` : '/dashboard/room-status-board');
+        return;
       }
-      router.push(isImmediate ? '/dashboard/room-status-board' : '/dashboard/arrivals');
+      await createReservationMutation.mutateAsync({
+        guest,
+        roomTypeId: values.roomTypeId,
+        checkInDate: values.checkInDate,
+        checkOutDate: values.checkOutDate,
+        adults: values.adults,
+        children: values.children,
+        specialRequests: values.specialRequests || undefined,
+        channel: 'direct',
+      });
+      router.push('/dashboard/arrivals');
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
     }

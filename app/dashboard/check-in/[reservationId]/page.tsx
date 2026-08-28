@@ -11,7 +11,7 @@ import { useReservationQuery, useCheckInMutation } from '@/lib/reservations';
 import { useRoomsQuery } from '@/lib/rooms';
 import { groupRoomsByFloor } from '@/lib/groupRoomsByFloor';
 import { RoomGrid } from '../../_components/RoomGrid';
-import { ApiError } from '@/lib/api';
+import { ApiError, apiFetch } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 
 /**
@@ -60,7 +60,11 @@ export default function CheckInFlowPage() {
     setActionError(null);
     try {
       await checkInMutation.mutateAsync({ reservationId: params.reservationId, roomId: selectedRoomId });
-      router.push('/dashboard/arrivals');
+      // Check-in auto-generates the registration card server-side (ref:
+      // "auto-generated when check-in is triggered") — send the agent
+      // straight there to have the guest sign, rather than back to a list.
+      const card = await apiFetch<{ id: string } | null>(`/reservations/${params.reservationId}/registration-card`, auth);
+      router.push(card ? `/dashboard/registration-cards/${card.id}` : '/dashboard/arrivals');
     } catch (error) {
       setActionError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
     }

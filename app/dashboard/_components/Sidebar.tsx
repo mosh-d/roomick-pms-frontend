@@ -161,7 +161,7 @@ const BILLING_SECTION: TopLevelSection = {
     leaf({ label: 'Shift Management' }),
     leaf({ label: 'Night Audit', href: '/dashboard/night-audit' }),
     leaf({ label: 'No-Show Handling', href: '/dashboard/no-shows' }),
-    leaf({ label: 'Guest Registration Card' }),
+    leaf({ label: 'Guest Registration Card', href: '/dashboard/registration-cards' }),
     leaf({ label: 'Comms Log' }),
     leaf({ label: 'Refunds and Corrections' }),
   ],
@@ -186,7 +186,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-60 shrink-0 overflow-y-auto border-r border-primary/20 px-4 py-6 flex flex-col gap-2">
+    <aside className="w-60 shrink-0 overflow-y-auto border-r border-primary/20 px-4 py-6 flex flex-col gap-2 print:hidden">
       <TopLevelSectionRow section={FRONT_DESK_SECTION} pathname={pathname} />
       {TOP_LEVEL_SECTIONS.map((section) => (
         <TopLevelSectionRow key={section.label} section={section} pathname={pathname} />

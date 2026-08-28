@@ -22,6 +22,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/dashboard/night-audit': 'Night Audit',
   '/dashboard/split-billing': 'Split Billing',
   '/dashboard/no-shows': 'No-Show Handling',
+  '/dashboard/registration-cards': 'Guest Registration Card',
   '/dashboard/reservations': 'Reservations',
   '/dashboard/reservations/availability-calendar': 'Availability Calendar',
   '/dashboard/reservations/create': 'Create Reservation',
@@ -39,6 +40,7 @@ const ROUTE_TITLES: Record<string, string> = {
 function pageTitleFor(pathname: string): string {
   if (pathname.startsWith('/dashboard/check-in/')) return 'Check-In Flow';
   if (pathname.startsWith('/dashboard/billing/')) return 'Guest Folio';
+  if (pathname.startsWith('/dashboard/registration-cards/')) return 'Guest Registration Card';
   return ROUTE_TITLES[pathname] ?? '';
 }
 
@@ -63,6 +65,7 @@ const SECTIONS: Array<{ prefix: string; label: string; href: string }> = [
   { prefix: '/dashboard/split-billing', label: 'Billing and Payments', href: '/dashboard/billing' },
   { prefix: '/dashboard/night-audit', label: 'Billing and Payments', href: '/dashboard/billing' },
   { prefix: '/dashboard/no-shows', label: 'Billing and Payments', href: '/dashboard/billing' },
+  { prefix: '/dashboard/registration-cards', label: 'Billing and Payments', href: '/dashboard/billing' },
 ];
 
 function sectionFor(pathname: string): { label: string; href: string } {
@@ -161,7 +164,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   // part with its own `overflow-y-auto`.
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <header className="shrink-0 flex items-center justify-between gap-4 border-b border-accent/20 px-6 py-4">
+      <header className="shrink-0 flex items-center justify-between gap-4 border-b border-accent/20 px-6 py-4 print:hidden">
         <div className="flex items-center gap-3 text-small min-w-0">
           <span className="font-display text-header font-bold text-primary-text shrink-0">Roomick</span>
           {activeBranchName ? (
