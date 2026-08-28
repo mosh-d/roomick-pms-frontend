@@ -1517,3 +1517,22 @@ A production build with `SENTRY_DSN` unset produced the identical 35-route outpu
 
 ### Carried forward
 - Everything from the backend's own Production Readiness entry — unchanged. With this, frontend error tracking is no longer a Month 6 gap; only backups and uptime monitoring remain, both genuinely blocked on infrastructure this environment doesn't have (a `pg_dump` binary and real S3/monitoring-service credentials, respectively).
+
+## Phase 42 — Real PDF downloads for Registration Cards and Reports (2026-08-28)
+
+The backend's own "Closing Month 1–6 gaps" pass added real PDF generation (`pdfkit`) behind two new routes — `GET /registration-cards/:id/download` and `GET /branches/:branchId/reports/<type>/pdf`. This phase is the minimal frontend surface for both: real download buttons where a `window.print()`/CSV-only stand-in previously was.
+
+### `downloadFile` — a second fetch helper, because `apiFetch` can't do this
+`apiFetch` (`lib/api.ts`) always calls `response.json()` — no way to hand it a binary PDF response. `downloadFile(path, filename, auth)` is a small sibling: the same base URL and `Authorization`/`X-Tenant-ID` headers, but reads a `Blob` and triggers a normal save via a throwaway `URL.createObjectURL` + `<a>` click — necessary because a plain `<a href>` can't carry those auth headers itself, and this project's API requires them on every route.
+
+### Registration Card page
+The page's own header comment previously named `window.print()` as "the closest thing to a downloadable PDF this pass offers" — now stale, since a real generated PDF exists. A `Download PDF` button sits next to the page header (works for both a signed card — the persisted, encrypted document — and an unsigned one, which the backend renders live as a preview); `Print` stays alongside it as the quick same-tab option, not replaced.
+
+### Reports page
+`reportPdfPath(branchId, type, params)` added to `lib/reports.ts`, mirroring the file's own existing `useXReportQuery` URL-building exactly (same `reportQueryString` helper, just `/pdf` appended). An `Export PDF` button next to the report-type tabs downloads whichever report is currently selected, with its current date range/group-by/room-type filters — a page-level export of the full report, distinct from (and additive to) the per-table `Export CSV` buttons `BreakdownSection` already had.
+
+### Verified
+`npx tsc --noEmit`, `eslint` (both clean) on every touched file. `npm run build` — all 35 routes, unaffected. Not live-clicked in a running browser this pass (no dev server verification round for these two buttons specifically) — worth a quick manual check before this is considered fully proven, though both routes are exactly what the backend's own registration-cards/reports test suites already exercise directly.
+
+### Carried forward
+- ID-document capture has no frontend surface yet — the backend now accepts `idDocument` on check-in/walk-in (`RecordIdDocumentDto`) and exposes a masked/reveal read at `GET /guests/:guestId/id-document`, but no page collects it. The Check-In Flow page (ref p16) is the natural place — its own reference spec already names "ID document upload / camera capture" as a UI component.

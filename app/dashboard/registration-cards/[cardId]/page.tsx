@@ -11,19 +11,17 @@ import { HotelCheckInIcon } from '@/components/ui/Icons';
 import { useRegistrationCardQuery, useSignRegistrationCardMutation } from '@/lib/registration-cards';
 import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
-import { ApiError } from '@/lib/api';
+import { ApiError, downloadFile } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 
 /**
  * Guest Registration Card (ref: Month 3) — "auto-generated when check-in
  * is triggered", so this page's usual entry point is a redirect straight
  * from Check-In Flow / Walk-In Booking, not a link someone clicks into
- * cold. Scoped to DB-only storage, by explicit choice: no S3/PDF-
- * generation infrastructure exists in this project, so `signatureData` is
- * a plain base64 PNG stored on the row and this page itself — not a
- * generated file — stands in for the "document". `window.print()` is the
- * closest thing to a downloadable PDF this pass offers (see the sidebar
- * and header both gaining `print:hidden` for a clean printed page).
+ * cold. This page itself is still the primary view; `Download PDF` now
+ * hits the real generated document (`GET /registration-cards/:id/download`
+ * — a persisted, encrypted PDF once signed, a live preview before that),
+ * `window.print()` stays alongside it as the quick same-tab option.
  */
 export default function RegistrationCardPage() {
   const params = useParams<{ cardId: string }>();
@@ -32,6 +30,7 @@ export default function RegistrationCardPage() {
   const auth = { accessToken: accessToken ?? undefined, tenantId: user?.tenantId };
 
   const [formError, setFormError] = useState<string | null>(null);
+  const [downloadPending, setDownloadPending] = useState(false);
   const padRef = useRef<SignaturePadHandle>(null);
 
   const cardQuery = useRegistrationCardQuery(params.cardId, auth);
@@ -53,9 +52,29 @@ export default function RegistrationCardPage() {
     }
   }
 
+  async function handleDownload() {
+    if (!card) return;
+    setFormError(null);
+    setDownloadPending(true);
+    try {
+      await downloadFile(`/registration-cards/${card.id}/download`, `registration-card-${card.fields.confirmationNumber}.pdf`, auth);
+    } catch (error) {
+      setFormError(error instanceof ApiError ? error.message : 'Could not download the PDF. Please try again.');
+    } finally {
+      setDownloadPending(false);
+    }
+  }
+
   return (
     <Container className="max-w-3xl py-10 flex flex-col gap-6">
-      <PageHeader icon={<HotelCheckInIcon className="size-8" />} title="Guest Registration Card" subtitle="Check-in record" />
+      <div className="flex items-center justify-between gap-4 print:hidden">
+        <PageHeader icon={<HotelCheckInIcon className="size-8" />} title="Guest Registration Card" subtitle="Check-in record" />
+        {card ? (
+          <Button type="button" variant="outline" loading={downloadPending} onClick={handleDownload}>
+            Download PDF
+          </Button>
+        ) : null}
+      </div>
 
       {cardQuery.isLoading ? (
         <p className="text-body text-primary-dark/70">Loading…</p>

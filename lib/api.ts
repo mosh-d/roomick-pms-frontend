@@ -126,3 +126,30 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
 
   return data as T;
 }
+
+/**
+ * `apiFetch` always parses JSON, so binary downloads (PDF exports) go
+ * through this instead — same base URL/auth headers, but reads a `Blob`
+ * and triggers a normal browser save via a throwaway object URL, since an
+ * `<a href>` alone can't carry the Authorization/X-Tenant-ID headers these
+ * routes require.
+ */
+export async function downloadFile(path: string, filename: string, { accessToken, tenantId }: { accessToken?: string; tenantId?: string }): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: {
+      ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+  if (!response.ok) {
+    const problem = (await response.json().catch(() => null)) as { code?: string; detail?: string } | null;
+    throw new ApiError(response.status, problem?.code ?? 'INTERNAL', problem?.detail ?? 'Could not download the file.');
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}

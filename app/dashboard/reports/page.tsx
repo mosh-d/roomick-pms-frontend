@@ -9,9 +9,10 @@ import { Select, type SelectOption } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ReportsIcon, DownloadIcon } from '@/components/ui/Icons';
-import { useOccupancyReportQuery, useAdrReportQuery, useRevparReportQuery, useRevenueReportQuery, type ReportGroupBy } from '@/lib/reports';
+import { useOccupancyReportQuery, useAdrReportQuery, useRevparReportQuery, useRevenueReportQuery, reportPdfPath, type ReportGroupBy } from '@/lib/reports';
 import { useRoomTypesQuery } from '@/lib/rooms';
 import { currencySymbolFor } from '@/lib/currencies';
+import { downloadFile, ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 
 type ReportType = 'occupancy' | 'adr' | 'revpar' | 'revenue';
@@ -99,6 +100,8 @@ export default function ReportsPage() {
   const [{ from, to }, setRange] = useState(defaultRange);
   const [groupBy, setGroupBy] = useState<string | null>('day');
   const [roomTypeId, setRoomTypeId] = useState<string | null>(null);
+  const [pdfPending, setPdfPending] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   const roomTypesQuery = useRoomTypesQuery(activeBranchId, auth);
   const roomTypeOptions: SelectOption[] = useMemo(
@@ -111,6 +114,19 @@ export default function ReportsPage() {
   const adrQuery = useAdrReportQuery(activeBranchId, params, auth);
   const revparQuery = useRevparReportQuery(activeBranchId, params, auth);
   const revenueQuery = useRevenueReportQuery(activeBranchId, params, auth);
+
+  async function handleExportPdf() {
+    if (!activeBranchId) return;
+    setPdfError(null);
+    setPdfPending(true);
+    try {
+      await downloadFile(reportPdfPath(activeBranchId, reportType, params), `${reportType}-report-${from}-to-${to}.pdf`, auth);
+    } catch (error) {
+      setPdfError(error instanceof ApiError ? error.message : 'Could not export the PDF. Please try again.');
+    } finally {
+      setPdfPending(false);
+    }
+  }
 
   if (!activeBranchId) return null;
 
@@ -135,6 +151,12 @@ export default function ReportsPage() {
               {tab.label}
             </button>
           ))}
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <Button type="button" variant="outline" loading={pdfPending} onClick={handleExportPdf}>
+            <DownloadIcon className="size-4" /> Export PDF
+          </Button>
+          {pdfError ? <p className="text-tiny text-red-600">{pdfError}</p> : null}
         </div>
       </div>
 

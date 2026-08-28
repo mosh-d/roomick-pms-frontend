@@ -81,3 +81,10 @@ export function useRevenueReportQuery(branchId: string | null, params: ReportPar
     enabled: branchId !== null,
   });
 }
+
+export type ReportType = 'occupancy' | 'adr' | 'revpar' | 'revenue';
+
+/** Path for `downloadFile` — mirrors this file's own query-hook URLs exactly, just `/pdf` appended (`ReportsController`'s own routes). */
+export function reportPdfPath(branchId: string, type: ReportType, params: ReportParams): string {
+  return `/branches/${branchId}/reports/${type}/pdf?${reportQueryString(params)}`;
+}
