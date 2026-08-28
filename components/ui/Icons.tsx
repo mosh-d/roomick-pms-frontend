@@ -55,6 +55,7 @@ import {
   FaTags,
   FaUserSlash,
   FaLayerGroup,
+  FaCashRegister,
 } from 'react-icons/fa';
 
 type IconProps = { className?: string };
@@ -131,6 +132,10 @@ export function NoShowIcon({ className = 'size-4' }: IconProps) {
 
 export function OverbookingIcon({ className = 'size-4' }: IconProps) {
   return <FaLayerGroup className={className} aria-hidden="true" />;
+}
+
+export function ShiftIcon({ className = 'size-4' }: IconProps) {
+  return <FaCashRegister className={className} aria-hidden="true" />;
 }
 
 // --- Table chrome (ref p11/p18: search field, sortable headers, pagination, export) ---

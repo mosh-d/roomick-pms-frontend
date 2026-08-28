@@ -1428,3 +1428,24 @@ Live Playwright against real Postgres (`verify-overbooking.js`), 10/11 checks: f
 ### Carried forward
 - Everything from the backend's own Overbooking Management PHASE_NOTES entry — unchanged.
 - No reference mockup exists for this page — if one surfaces later, this page's layout should be reconciled against it rather than assumed correct forever.
+
+## Phase 37 — Shift Management: cash drawer open/close, handover, carried-over issues (2026-08-28)
+
+Per the MVP timeline reference (Month 5) — this one had a genuinely detailed frontend-structure spec (full component list and request/response shapes, not just prose), so the page follows it closely rather than inventing layout the way Overbooking Management had to.
+
+### One page, state-driven rather than tabbed
+The whole page is one of two states: no open shift → the Open Shift form (plus, right above it, the previous shift's handover notes and any still-unresolved issues, so an incoming agent sees them before doing anything else) — or an open shift → a live Current Shift summary (type, opened-at, opening float, cash taken so far), this shift's own issue log with an inline add-issue form, and the Close Shift form directly beneath it. Shift History sits at the bottom in both states, a plain table (agent, type, open/close times, a color-coded variance badge, unresolved-issue count) — same "no page needs the generic sortable `Table` component's full machinery" call Overbooking Management's own exposure heatmap already made.
+
+### The denomination counter is currency-agnostic by construction
+The reference's own mockup shows a fixed-row table (one row per note/coin value). Built as a dynamic add/remove list instead — branches run in different currencies (`Branch.currency`), so hardcoding NGN's own denominations would silently break for any other one. Shared between the open-float count and the closing-cash count rather than two near-identical components.
+
+### Resolve vs. Carry Over, surfaced everywhere an issue can appear
+`IssueRow` is one shared component used in three places — the handover banner (last shift's carried-forward issues), the current shift's own issue list, and (implicitly, via history) nowhere else since past shifts are read-only. Both actions are always offered; the backend's own `@Roles(Owner, Manager)` gate on `PATCH /shift-issues/:id` is trusted as-is rather than duplicating a role check in the UI, matching this project's established page-level-RBAC-is-enough precedent — a front-desk agent who tries anyway just gets the API's own `403` surfaced inline.
+
+### Verified
+Live Playwright against real Postgres (`verify-shifts.js`), 21/21 real checks (one script assertion — a lowercase string match against text a CSS `capitalize` class visually renders as "Morning"/"Evening" — was the test's own bug, confirmed by screenshot, not a product issue): opened a shift through the actual UI → recorded a cash payment via the API and confirmed it auto-attached to that shift while a card payment on the same folio did not → logged an issue through the UI and saw it render → closed the shift through the UI with the exact expected cash total and confirmed zero variance plus the handover note persisted → verified via the API that an unexplained over-threshold variance is rejected but succeeds once explained, with a bundled hand-off issue landing in the handover view → carried that issue over (no resolution timestamp) then resolved it (stamped) → reloaded and confirmed Shift History renders both closed shifts with correct agent, times, color-coded variance, and issue counts, screenshotted at each step.
+
+### Carried forward
+- Everything from the backend's own Shift Management PHASE_NOTES entry — unchanged.
+- Card-total reconciliation, the "issue age (shifts outstanding)" counter and its 3+ auto-highlight, and shift-scoped POS/outlet session linkage — all deferred, named there.
+- "Export shift report PDF" and "Expand row: full shift report" (reference: Shift History) — no PDF generation exists anywhere in this project yet (same gap named against Registration Cards); the history table's own columns already carry everything the expanded-row mockup lists, just not as a separate expand interaction.

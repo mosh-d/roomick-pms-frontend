@@ -164,7 +164,7 @@ const BILLING_SECTION: TopLevelSection = {
     leaf({ label: 'Folio Transfer' }),
     leaf({ label: 'Split Billing', href: '/dashboard/split-billing' }),
     leaf({ label: 'Point of Sale' }),
-    leaf({ label: 'Shift Management' }),
+    leaf({ label: 'Shift Management', href: '/dashboard/shifts' }),
     leaf({ label: 'Night Audit', href: '/dashboard/night-audit' }),
     leaf({ label: 'No-Show Handling', href: '/dashboard/no-shows' }),
     leaf({ label: 'Guest Registration Card', href: '/dashboard/registration-cards' }),
