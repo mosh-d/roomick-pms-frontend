@@ -38,7 +38,7 @@ import { CARD_TONE_CLASSES } from '@/components/ui/Card';
  * Applied only to the linked variant. An inert card doesn't respond to a
  * pointer, because nothing happens when you click it.
  */
-const INTERACTIVE_TINT_STEPS = 'hover:bg-secondary/20 active:bg-secondary/30';
+const INTERACTIVE_TINT_STEPS = 'hover:bg-secondary/10 active:bg-secondary/15';
 
 export function HubCard({
   icon,
