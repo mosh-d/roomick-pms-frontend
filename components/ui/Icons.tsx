@@ -56,6 +56,9 @@ import {
   FaUserSlash,
   FaLayerGroup,
   FaCashRegister,
+  FaComments,
+  FaEnvelope,
+  FaSms,
 } from 'react-icons/fa';
 
 type IconProps = { className?: string };
@@ -136,6 +139,17 @@ export function OverbookingIcon({ className = 'size-4' }: IconProps) {
 
 export function ShiftIcon({ className = 'size-4' }: IconProps) {
   return <FaCashRegister className={className} aria-hidden="true" />;
+}
+
+export function CommsLogIcon({ className = 'size-4' }: IconProps) {
+  return <FaComments className={className} aria-hidden="true" />;
+}
+
+/** Channel icon in the communications timeline (ref: "Channel icon (email / SMS / push)"). Push/in-app-chat share the generic chat bubble — neither has a manual-send UI yet, so no channel-specific glyph was worth adding for them alone. */
+export function CommsChannelIcon({ channel, className = 'size-4' }: IconProps & { channel: 'email' | 'sms' | 'push' | 'in_app_chat' }) {
+  if (channel === 'email') return <FaEnvelope className={className} aria-hidden="true" />;
+  if (channel === 'sms') return <FaSms className={className} aria-hidden="true" />;
+  return <FaComments className={className} aria-hidden="true" />;
 }
 
 // --- Table chrome (ref p11/p18: search field, sortable headers, pagination, export) ---

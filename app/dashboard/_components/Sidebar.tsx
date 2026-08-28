@@ -168,7 +168,7 @@ const BILLING_SECTION: TopLevelSection = {
     leaf({ label: 'Night Audit', href: '/dashboard/night-audit' }),
     leaf({ label: 'No-Show Handling', href: '/dashboard/no-shows' }),
     leaf({ label: 'Guest Registration Card', href: '/dashboard/registration-cards' }),
-    leaf({ label: 'Comms Log' }),
+    leaf({ label: 'Comms Log', href: '/dashboard/comms-log' }),
     leaf({ label: 'Refunds and Corrections' }),
   ],
 };

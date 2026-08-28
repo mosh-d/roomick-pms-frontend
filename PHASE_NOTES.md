@@ -1449,3 +1449,21 @@ Live Playwright against real Postgres (`verify-shifts.js`), 21/21 real checks (o
 - Everything from the backend's own Shift Management PHASE_NOTES entry — unchanged.
 - Card-total reconciliation, the "issue age (shifts outstanding)" counter and its 3+ auto-highlight, and shift-scoped POS/outlet session linkage — all deferred, named there.
 - "Export shift report PDF" and "Expand row: full shift report" (reference: Shift History) — no PDF generation exists anywhere in this project yet (same gap named against Registration Cards); the history table's own columns already carry everything the expanded-row mockup lists, just not as a separate expand interaction.
+
+## Phase 38 — Guest Communications Log: reservation-scoped timeline, manual send (2026-08-28)
+
+Per the MVP timeline reference (Month 5) — its own route is guest-profile-scoped (`/guests/:guestId/comms`), but this app has no Guest Profile hub page for a tab to hang off of yet.
+
+### Reservation-centric, not guest-profile-centric — a deliberate substitution, matching an existing precedent
+Rather than block this feature on building a Guest Profile page first (a bigger, separate piece of scope), the page is its own hub: search a reservation by confirmation number or guest name (reusing the exact same `useReservationsQuery` search the app already has elsewhere), select it, see its full timeline, send a one-off message. This is the same shape of trade-off Guest Registration Card made last phase for the identical "the reference assumes a page that doesn't exist here" situation. `GET /guests/:guestId/communications` is fully built and tested on the backend with nothing pointed at it in the UI yet — ready the moment a Guest Profile page exists to host it.
+
+### Timeline entries read the delivery-status badge honestly
+Every row shows `queued` right now — not because the UI is wrong, but because the backend's own schema comment says the sending adapter is stubbed for MVP. `DELIVERY_TONE` still maps all six real `DeliveryStatus` values (including `sent`/`delivered`/`opened`/`failed`/`bounced`) so the page needs no changes the day real sending lands and those statuses start actually appearing.
+
+### Verified
+Live Playwright against real Postgres (`verify-comms-log.js`), 13/13: created a reservation via the API and confirmed `booking_confirmation` auto-logged → cancelled it with a reason and confirmed the cancellation entry's body names that exact reason → opened the page through the actual sidebar link, searched by the guest's name, and confirmed both entries render with correct labels and status badges → expanded a message and saw its full body → sent a manual message through the real composer, confirmed the UI's own "Logged." confirmation and the new entry appearing in the timeline, then confirmed via the API it's stamped with the real logged-in agent as `sentBy` → confirmed the (UI-less) guest-level endpoint returns the identical set of entries, screenshotted throughout.
+
+### Carried forward
+- Everything from the backend's own Guest Communications Log PHASE_NOTES entry — unchanged.
+- A Guest Profile hub page, and wiring this page's guest-level query onto it once it exists.
+- Real sending, delivery-status transitions past `queued`, and "Resend failed message" — all deferred on the backend side, named there.
