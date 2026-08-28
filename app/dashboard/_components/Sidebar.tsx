@@ -148,6 +148,13 @@ function childIsActive(child: SidebarChild, pathname: string): boolean {
 
 export function Sidebar() {
   const pathname = usePathname();
+  // Whether the current page is anywhere under Front Desk's own umbrella
+  // (the hub itself, or one of its three groups' children) — the same
+  // `childIsActive` test every `GroupRow` already uses, applied here since
+  // the Front Desk box isn't a `SidebarGroup` and has no `GroupRow` of its
+  // own to compute it for.
+  const frontDeskActive =
+    pathname === '/dashboard' || FRONT_DESK_GROUPS.some((group) => group.children.some((child) => childIsActive(child, pathname)));
 
   return (
     <aside className="w-60 shrink-0 overflow-y-auto border-r border-primary/20 px-4 py-6 flex flex-col gap-2">
@@ -157,11 +164,14 @@ export function Sidebar() {
        * solves to primary (`#CCA000`) at ~30% alpha over that fill — the
        * exact same `border-primary/30` this file already uses for a
        * collapsed group row, reused rather than a new one-off value.
-       * No fill of its own: the reference's box interior (`#fffaeb`) and
-       * the page around it (`#fffdf8`) are close enough to be the same
-       * surface — the box reads as a border only, not a tinted panel.
+       *
+       * Fill is conditional: `bg-primary/10` while Front Desk is the
+       * active section, transparent otherwise — the same 10%-opacity-at-
+       * rest convention `CARD_TONE_CLASSES` already uses for a tinted
+       * surface, so "this section is where you are" reads the same way a
+       * `Card`'s own tone does, not a one-off invented for this box.
        */}
-      <div className="shrink-0 rounded-card border border-primary/30 p-3 flex flex-col gap-2">
+      <div className={`shrink-0 rounded-card border border-primary/30 p-3 flex flex-col gap-2 transition-colors ${frontDeskActive ? 'bg-primary/10' : ''}`}>
         <Link href="/dashboard" className="shrink-0 text-small font-bold text-primary-dark hover:text-primary-text transition-colors">
           Front Desk
         </Link>
