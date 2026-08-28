@@ -27,12 +27,42 @@ const ROUTE_TITLES: Record<string, string> = {
   '/dashboard/reservations/modify': 'Modify Reservation',
   '/dashboard/reservations/cancel': 'Cancel Reservation',
   '/dashboard/reservations/waitlist': 'Waitlist Management',
+  '/dashboard/housekeeping': 'Housekeeping',
+  '/dashboard/housekeeping/task-board': 'Task Board',
+  '/dashboard/housekeeping/staff-assignment': 'Staff Assignment',
+  '/dashboard/housekeeping/inspection-workflow': 'Inspection Workflow',
+  '/dashboard/housekeeping/room-blocking': 'Room Blocking / OOO',
 };
 
 function pageTitleFor(pathname: string): string {
   if (pathname.startsWith('/dashboard/check-in/')) return 'Check-In Flow';
   if (pathname.startsWith('/dashboard/billing/')) return 'Guest Folio';
   return ROUTE_TITLES[pathname] ?? '';
+}
+
+/**
+ * The breadcrumb's middle segment — which top-level section a route
+ * belongs to. Front Desk was the only section for most of this app's life,
+ * so the breadcrumb hardcoded "Front Desk" unconditionally; once
+ * Reservations and Housekeeping became real top-level sections (own
+ * sidebar groups, own hub pages) that started rendering literally wrong
+ * breadcrumbs like "Front Desk / Housekeeping" — found live, not by
+ * inspection, the moment a second section existed to make it visible.
+ *
+ * Billing and Payments has no hub page of its own (`Sidebar.tsx`'s
+ * `BILLING_GROUP` sets no `href`) — its section link falls back to Guest
+ * Folio, the same default its collapsed sidebar row already uses.
+ */
+const SECTIONS: Array<{ prefix: string; label: string; href: string }> = [
+  { prefix: '/dashboard/reservations', label: 'Reservations', href: '/dashboard/reservations' },
+  { prefix: '/dashboard/housekeeping', label: 'Housekeeping', href: '/dashboard/housekeeping' },
+  { prefix: '/dashboard/billing', label: 'Billing and Payments', href: '/dashboard/billing' },
+  { prefix: '/dashboard/split-billing', label: 'Billing and Payments', href: '/dashboard/billing' },
+  { prefix: '/dashboard/night-audit', label: 'Billing and Payments', href: '/dashboard/billing' },
+];
+
+function sectionFor(pathname: string): { label: string; href: string } {
+  return SECTIONS.find((s) => pathname.startsWith(s.prefix)) ?? { label: 'Front Desk', href: '/dashboard' };
 }
 
 /**
@@ -119,6 +149,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   if (!activeBranchId) return null;
 
   const activeBranchName = branches?.find((b) => b.id === activeBranchId)?.name;
+  const section = sectionFor(pathname);
 
   // `h-screen` + `overflow-hidden` (not `min-h-screen`) — same reasoning as
   // `WizardShell.tsx`'s identical shell: the browser window itself never
@@ -136,12 +167,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </>
           ) : null}
           <span className="text-accent shrink-0">/</span>
-          {pathname === '/dashboard' ? (
-            <span className="font-semibold text-primary-dark truncate">Front Desk</span>
+          {pathname === section.href ? (
+            <span className="font-semibold text-primary-dark truncate">{section.label}</span>
           ) : (
             <>
-              <Link href="/dashboard" className="text-primary-text shrink-0 hover:underline">
-                Front Desk
+              <Link href={section.href} className="text-primary-text shrink-0 hover:underline">
+                {section.label}
               </Link>
               <span className="text-accent shrink-0">/</span>
               <span className="font-semibold text-primary-dark truncate">{pageTitleFor(pathname)}</span>

@@ -107,6 +107,17 @@ const RESERVATIONS_GROUP: SidebarGroup = {
   ],
 };
 
+const HOUSEKEEPING_GROUP: SidebarGroup = {
+  label: 'Housekeeping',
+  href: '/dashboard/housekeeping',
+  children: [
+    { label: 'Task Board', href: '/dashboard/housekeeping/task-board' },
+    { label: 'Staff Assignment', href: '/dashboard/housekeeping/staff-assignment' },
+    { label: 'Inspection Workflow', href: '/dashboard/housekeeping/inspection-workflow' },
+    { label: 'Room Blocking / OOO', href: '/dashboard/housekeeping/room-blocking' },
+  ],
+};
+
 const BILLING_GROUP: SidebarGroup = {
   label: 'Billing and Payments',
   children: [
@@ -123,15 +134,16 @@ type TopLevelItem = { kind: 'group'; group: SidebarGroup } | { kind: 'inert'; la
  * Everything below the Front Desk box, in the reference's own order:
  * Reservations, Housekeeping, Billing and Payments, Folio Transfer, Point
  * of Sale, Shift Management, No-Show Handling, Guest Registration Card,
- * Comms Log. Billing and Payments is the one real, built group in this
- * list — it renders with `GroupRow`, same as the Front Desk groups do,
- * just outside that box rather than inside it. The rest have no backend
- * module yet (see PHASE_NOTES.md's build order) and render inert — visible
- * so the documented architecture still reads, but honestly non-interactive.
+ * Comms Log. Reservations, Housekeeping, and Billing and Payments are the
+ * three real, built groups in this list — each renders with `GroupRow`,
+ * same as the Front Desk groups do, just outside that box rather than
+ * inside it. The rest have no backend module yet (see PHASE_NOTES.md's
+ * build order) and render inert — visible so the documented architecture
+ * still reads, but honestly non-interactive.
  */
 const TOP_LEVEL: TopLevelItem[] = [
   { kind: 'group', group: RESERVATIONS_GROUP },
-  { kind: 'inert', label: 'Housekeeping' },
+  { kind: 'group', group: HOUSEKEEPING_GROUP },
   { kind: 'group', group: BILLING_GROUP },
   { kind: 'inert', label: 'Folio Transfer' },
   { kind: 'inert', label: 'Point of Sale' },
