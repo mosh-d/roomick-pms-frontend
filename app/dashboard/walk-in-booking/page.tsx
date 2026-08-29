@@ -16,10 +16,12 @@ import { walkInBookingSchema, type WalkInBookingFormValues } from '@/lib/schemas
 import { useRoomsQuery, useRoomTypesQuery } from '@/lib/rooms';
 import { groupRoomsByFloor } from '@/lib/groupRoomsByFloor';
 import { useCreateReservationMutation, useCreateWalkInMutation } from '@/lib/reservations';
+import { dayAfter } from '@/lib/dates';
 import { ApiError, apiFetch } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 import { RoomGrid } from '../_components/RoomGrid';
 import { RatePreview } from '../_components/RatePreview';
+import { CapacityWarning } from '../_components/CapacityWarning';
 
 /** Browser-local "today" for the date input's default/min — the backend is the actual authority on "today" (branch timezone, via `todayInTimezone`) and re-derives it server-side for the walk-in path regardless of what's shown here. */
 function todayString(): string {
@@ -61,16 +63,28 @@ export default function WalkInBookingPage() {
     handleSubmit,
     control,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<WalkInBookingFormValues>({
     resolver: zodResolver(walkInBookingSchema),
-    defaultValues: { checkInDate: today, adults: 1, children: 0 },
+    defaultValues: { checkInDate: today, checkOutDate: dayAfter(today), adults: 1, children: 0 },
   });
 
   const checkInDate = watch('checkInDate');
   const checkOutDate = watch('checkOutDate');
   const roomTypeId = watch('roomTypeId');
   const isImmediate = checkInDate === today;
+
+  // Same fix as Create Reservation: picking a later check-in date (the
+  // "book ahead" branch here) left check-out wherever it was previously
+  // set. Only auto-advances when check-out is missing or no longer valid.
+  useEffect(() => {
+    if (!checkInDate) return;
+    if (!checkOutDate || checkOutDate <= checkInDate) {
+      setValue('checkOutDate', dayAfter(checkInDate));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkInDate]);
 
   const roomTypesQuery = useRoomTypesQuery(activeBranchId, auth);
   const roomsQuery = useRoomsQuery(activeBranchId, auth);
@@ -183,10 +197,11 @@ export default function WalkInBookingPage() {
             />
             <div className="hidden sm:block" aria-hidden />
             <Input label="Check-In Date" type="date" min={today} {...register('checkInDate')} error={errors.checkInDate?.message} />
-            <Input label="Check-Out Date" type="date" min={checkInDate || today} {...register('checkOutDate')} error={errors.checkOutDate?.message} />
+            <Input label="Check-Out Date" type="date" min={checkInDate ? dayAfter(checkInDate) : today} {...register('checkOutDate')} error={errors.checkOutDate?.message} />
             <Input label="Adults" type="number" min={1} max={20} {...register('adults', { valueAsNumber: true })} error={errors.adults?.message} />
             <Input label="Children" type="number" min={0} max={20} {...register('children', { valueAsNumber: true })} error={errors.children?.message} />
           </div>
+          <CapacityWarning roomType={roomTypesQuery.data?.find((rt) => rt.id === roomTypeId)} adults={watch('adults')} childrenCount={watch('children')} />
           <Textarea label="Special Requests" {...register('specialRequests')} error={errors.specialRequests?.message} />
           <RatePreview
             branchId={activeBranchId}

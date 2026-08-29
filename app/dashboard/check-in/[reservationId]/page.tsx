@@ -7,9 +7,10 @@ import { Section } from '@/components/ui/Section';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select, type SelectOption } from '@/components/ui/Select';
-import { LogoUpload } from '@/components/ui/LogoUpload';
+import { CameraCapture } from '@/components/ui/CameraCapture';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { BackButton } from '@/components/ui/BackButton';
+import { ForwardButton } from '@/components/ui/ForwardButton';
 import { HotelCheckInIcon } from '@/components/ui/Icons';
 import { useReservationQuery, useCheckInMutation } from '@/lib/reservations';
 import { useRoomsQuery } from '@/lib/rooms';
@@ -17,6 +18,7 @@ import { groupRoomsByFloor } from '@/lib/groupRoomsByFloor';
 import { RoomGrid } from '../../_components/RoomGrid';
 import { ApiError, apiFetch } from '@/lib/api';
 import type { IdDocType, IdDocumentInput } from '@/lib/guests';
+import { COUNTRIES } from '@/lib/countries';
 import { useAuthStore } from '@/lib/store/authStore';
 
 const ID_DOC_TYPE_OPTIONS: SelectOption[] = [
@@ -24,16 +26,6 @@ const ID_DOC_TYPE_OPTIONS: SelectOption[] = [
   { value: 'national_id', label: 'National ID' },
   { value: 'drivers_license', label: "Driver's License" },
 ];
-
-/** `LogoUpload` only reads/produces a `File` — the backend wants a plain base64 string with no `"data:"` prefix (`IdDocumentInput.photoBase64`'s own doc comment). */
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result).replace(/^data:.*;base64,/, ''));
-    reader.onerror = () => reject(reader.error ?? new Error('Could not read the selected file.'));
-    reader.readAsDataURL(file);
-  });
-}
 
 /**
  * Check-In Flow (Roomick-UI.pdf page 12/13) — guest summary, room
@@ -60,8 +52,8 @@ export default function CheckInFlowPage() {
   const [idDocType, setIdDocType] = useState<string | null>(null);
   const [idDocNumber, setIdDocNumber] = useState('');
   const [idDocExpiryDate, setIdDocExpiryDate] = useState('');
-  const [nationality, setNationality] = useState('');
-  const [idPhoto, setIdPhoto] = useState<File | null>(null);
+  const [nationality, setNationality] = useState<string | null>(null);
+  const [idPhotoBase64, setIdPhotoBase64] = useState<string | null>(null);
 
   const reservationQuery = useReservationQuery(params.reservationId, auth);
   const roomsQuery = useRoomsQuery(activeBranchId, auth);
@@ -101,8 +93,8 @@ export default function CheckInFlowPage() {
         idDocType: idDocType as IdDocType,
         idDocNumber: idDocNumber.trim(),
         idDocExpiryDate: idDocExpiryDate || undefined,
-        nationality: nationality.trim() || undefined,
-        photoBase64: idPhoto ? await fileToBase64(idPhoto) : undefined,
+        nationality: nationality ?? undefined,
+        photoBase64: idPhotoBase64 ?? undefined,
       };
     }
 
@@ -120,7 +112,10 @@ export default function CheckInFlowPage() {
 
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-6">
-      <BackButton fallbackHref="/dashboard/arrivals" />
+      <div className="flex items-center justify-between">
+        <BackButton fallbackHref="/dashboard/arrivals" />
+        <ForwardButton />
+      </div>
       <PageHeader icon={<HotelCheckInIcon className="size-8" />} title="Check-In Flow" subtitle="Check a guest in" />
 
       {reservationQuery.isLoading || roomsQuery.isLoading ? (
@@ -165,18 +160,11 @@ export default function CheckInFlowPage() {
               <div className="w-44">
                 <Input name="idDocExpiryDate" label="Expiry Date" type="date" value={idDocExpiryDate} onChange={(e) => setIdDocExpiryDate(e.target.value)} />
               </div>
-              <div className="w-32">
-                <Input
-                  name="nationality"
-                  label="Nationality"
-                  placeholder="NG"
-                  value={nationality}
-                  onChange={(e) => setNationality(e.target.value.toUpperCase())}
-                  maxLength={2}
-                />
+              <div className="w-56">
+                <Select id="nationality" name="nationality" label="Nationality" options={COUNTRIES} value={nationality} onChange={setNationality} placeholder="Select country" />
               </div>
             </div>
-            <LogoUpload label="ID Document Photo" file={idPhoto} onFileChange={setIdPhoto} hint="Optional — a clear photo of the front of the document" />
+            <CameraCapture label="ID Document Photo" photoBase64={idPhotoBase64} onCapture={setIdPhotoBase64} hint="Optional — a clear photo of the front of the document" />
           </Section>
 
           {actionError ? <p className="text-small text-red-600">{actionError}</p> : null}

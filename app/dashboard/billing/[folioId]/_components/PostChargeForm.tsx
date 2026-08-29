@@ -35,6 +35,11 @@ export function PostChargeForm({
   const [formError, setFormError] = useState<string | null>(null);
   const mutation = usePostChargeMutation(branchId, folioId, auth);
 
+  // The field's own hint claims "Defaults to today" — true only if
+  // `defaultValues` (and the post-submit reset below) actually say so; an
+  // empty string here left the field genuinely blank despite the hint.
+  const today = () => new Date().toISOString().slice(0, 10);
+
   const {
     register,
     handleSubmit,
@@ -43,7 +48,7 @@ export function PostChargeForm({
     formState: { errors, isSubmitting },
   } = useForm<PostChargeFormValues>({
     resolver: zodResolver(postChargeSchema),
-    defaultValues: { chargeType: 'fnb' },
+    defaultValues: { chargeType: 'fnb', serviceDate: today() },
   });
 
   async function onSubmit(values: PostChargeFormValues) {
@@ -55,7 +60,10 @@ export function PostChargeForm({
         chargeType: values.chargeType as ChargeType,
         serviceDate: values.serviceDate || undefined,
       });
-      reset({ chargeType: values.chargeType, description: '', serviceDate: '' });
+      // Charge type carries over (posting several of the same kind in a
+      // row is the common case); description/amount/date all clear —
+      // service date back to today, not blank, matching its own hint.
+      reset({ chargeType: values.chargeType, description: '', amount: undefined, serviceDate: today() });
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
     }

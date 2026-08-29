@@ -1571,3 +1571,35 @@ Dev servers were already running against real Postgres. A Playwright script self
 
 ### Carried forward
 - No websocket push, so an alert can take up to 60s to appear after the underlying state actually changes — see the backend's own note on this tradeoff.
+
+## Phase 45 — A batch of real usage feedback: capacity, dropdowns, dates, camera ID capture (2026-08-29)
+
+Several distinct issues reported from actually using the app in one sitting, plus a research pass against the in-house PMS for anything worth porting (see backend PHASE_NOTES for the full comparison — two of these six fixes came from patterns confirmed already solved there; the other four had no existing pattern to copy and needed building from scratch).
+
+### `Select` dropdown — fixed the "must click away before reopening" bug
+Root cause, found by reading the component rather than guessing: selecting an option calls `inputRef.current?.focus()` (so the field stays keyboard-navigable), but the trigger only ever opened via `onFocus` — and a second click on an *already-focused* input never fires `onFocus` again. Fixed with an `onClick` handler that opens unconditionally, independent of focus transitions. Per the research: the in-house PMS's own hand-rolled popup (a date picker) avoids this class of bug entirely with a plain click-toggle and never relies on focus/blur — the same principle this fix applies. Also simplified `onChange` to only filter once already open, since opening is fully `onClick`/`onFocus`/arrow-keys' job now, not a keystroke's side effect.
+
+### Room-type capacity: live warning, backed by a real backend cap
+`CapacityWarning` (`app/dashboard/_components/`) — a plain echo of the backend's own `assertWithinCapacity`, shown live as an agent types adults/children, before they ever hit submit. Wired into Create Reservation, Walk-In Booking, and Modify Reservation. `RoomTypeSummary` gained a typed `capacity` field — the backend's `listRoomTypes` already returned it (no `select` clause), it just was never typed on this side.
+
+### Check-in/check-out date fields now auto-advance correctly
+Reported: picking a new check-in date left check-out wherever it was previously set, so a 1-night stay moved from the 10th to the 15th stayed checked out on the (now nonsensical) 11th. New shared `lib/dates.ts#dayAfter` helper; a `useEffect` on each of Create Reservation / Walk-In Booking / Modify Reservation auto-advances check-out to check-in + 1 day, but ONLY when the current check-out is missing or no longer valid — a deliberately longer, still-valid stay is left alone. This is the exact same design the in-house PMS's own `Root.jsx` already uses (`handleSetCheckInDate`/`handleSetCheckOutDate`) — confirmed via the research pass before writing this, not arrived at independently.
+
+### Add Charge form (Guest Folio) — date now genuinely defaults to today, form clears after submit
+The field's own hint already claimed "Defaults to today," which was false — the field was just empty. Now genuinely defaults on mount and after every successful submit (charge type carries over for posting several of the same kind in a row; description/amount/date all clear). The backend's own `postCharge` already defaulted an omitted `serviceDate` to branch-timezone "today" server-side — this fix is purely about the visible form UX matching what staff were told to expect, not a correctness gap in the API.
+
+### ID Capture — camera-first, and a real country dropdown for nationality
+Raised directly: front desk is holding the guest's own physical ID at the counter — a file-picker implying "upload from your device" was never the right model. New `CameraCapture` component (`getUserMedia` → live preview → `canvas`-snapshot capture → retake) replaces the file-upload-only picker; a plain "or upload a photo instead" link stays as a fallback for no-webcam/denied-permission cases. Nationality changed from a free-text 2-letter box to a real searchable dropdown using the `COUNTRIES` list (`lib/countries.ts`) that already existed for onboarding's own country field — no new dataset needed, just reused. The in-house PMS has no ID capture at all (camera or upload) to compare against, per the research pass — this is new territory for both systems.
+
+### `ForwardButton` — `BackButton`'s missing companion
+Raised directly: a `Back` button was added to detail pages last phase with nothing to go forward with. `ForwardButton` (`router.forward()`) sits beside `Back` on the same three pages (Check-In Flow, Registration Card, Guest Folio).
+
+### The Sign button, clarified rather than changed
+Asked directly what "Sign" does and whether re-signing should be allowed. Answered: it permanently saves the signature and generates the encrypted PDF in one step; re-signing is deliberately blocked (409) as a "legal document, not a silently editable one" design from an earlier phase. Given three options (keep as-is / allow overwrite / allow versioned re-sign), the answer was to keep it as-is — no code change.
+
+### Verified live, end-to-end, against the real running app
+Dev servers were already running against real Postgres. One Playwright pass covering all of the above: created a reservation exceeding a deliberately small (2 adult/1 child) room type's capacity and confirmed the API's 400 (with the exact numbers in the message) and the live warning text; picked a room type in the `Select` dropdown, immediately clicked the trigger again with no intervening click, and confirmed it reopened; changed a check-in date and confirmed check-out auto-advanced to the following day; opened a real (fake, in test) camera device end-to-end — live preview rendered, Capture produced a static snapshot, Retake appeared — using Chromium's `--use-fake-device-for-media-stream` flag; confirmed the nationality field is a real searchable country list. Zero console/page errors throughout, 11/11 checks passed.
+
+### Carried forward — two open items, not decided yet
+- **Group check-in** — raised directly ("we have folio splitting on one reservation, but no group check-in"). Confirmed via the research pass that the in-house PMS doesn't have this either (an explicit unbuilt roadmap item there too) — this is real, novel design work for both systems, not a quick add. Needs its own scoping conversation before starting.
+- **Guest Profiles & CRM** — raised directly ("we don't have a guest list to view guest profiles"). Confirmed this is a fully specced page in the reference architecture (`pms-frontend-structure-2.html`, route `/[brand]/[branch]/guests`, "Full profile: preferences, history, spend") that was simply never built in the MVP — `GuestProfile`'s own preferences/VIP/tags/loyalty fields sit unused in the schema with no list endpoint or page surfacing them. A real, scoped gap, not new territory — just not started yet.

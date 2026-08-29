@@ -39,6 +39,8 @@ export interface RoomTypeSummary {
   id: string;
   name: string;
   baseRate: string;
+  /** The backend's own `listRoomTypes` already returns every column (no `select`) — this was just never typed on the frontend until the capacity cap needed it. */
+  capacity: { adults: number; children: number };
 }
 
 /** `GET /branches/:branchId/room-types` — already built for onboarding, unused by any post-onboarding screen until Walk-In Booking needed a room-type picker outside the wizard's own local draft state. */

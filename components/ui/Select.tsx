@@ -170,8 +170,21 @@ export function Select({
           onFocus={() => {
             if (!open) openFresh();
           }}
+          onClick={() => {
+            // Selecting an option re-focuses this input (see the option
+            // `onClick` below) so the field stays keyboard-navigable right
+            // after a pick — but that means a SECOND click on the trigger
+            // is a click on an already-focused input, which never fires
+            // `onFocus` again. Found live: every dropdown in the app
+            // required clicking away and back to reopen after any
+            // selection. `onClick` reopens unconditionally, independent of
+            // focus transitions, which `onFocus` alone can never cover.
+            if (!open) openFresh();
+          }}
           onChange={(event) => {
-            if (!open) setOpen(true);
+            // Typing only filters once open — opening is `onFocus`/
+            // `onClick`/arrow-key's job now, not a side effect of a
+            // keystroke landing while closed.
             setFilterText(event.target.value);
             setActiveIndex(0);
           }}

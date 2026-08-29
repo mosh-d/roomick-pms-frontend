@@ -7,6 +7,7 @@ import { Section } from '@/components/ui/Section';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { BackButton } from '@/components/ui/BackButton';
+import { ForwardButton } from '@/components/ui/ForwardButton';
 import { SignaturePad, type SignaturePadHandle } from '@/components/ui/SignaturePad';
 import { HotelCheckInIcon } from '@/components/ui/Icons';
 import { useRegistrationCardQuery, useSignRegistrationCardMutation } from '@/lib/registration-cards';
@@ -68,8 +69,9 @@ export default function RegistrationCardPage() {
 
   return (
     <Container className="max-w-3xl py-10 flex flex-col gap-6">
-      <div className="print:hidden">
+      <div className="flex items-center justify-between print:hidden">
         <BackButton fallbackHref="/dashboard/arrivals" />
+        <ForwardButton />
       </div>
       <PageHeader
         icon={<HotelCheckInIcon className="size-8" />}

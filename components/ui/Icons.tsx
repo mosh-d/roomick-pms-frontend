@@ -36,6 +36,8 @@ import {
   FiEdit3,
   FiMenu,
   FiBell,
+  FiCamera,
+  FiRefreshCw,
 } from 'react-icons/fi';
 import {
   FaPlaneArrival,
@@ -81,6 +83,14 @@ export function MenuIcon({ className = 'size-4' }: IconProps) {
 
 export function AlertsIcon({ className = 'size-4' }: IconProps) {
   return <FiBell className={className} aria-hidden="true" />;
+}
+
+export function CameraIcon({ className = 'size-4' }: IconProps) {
+  return <FiCamera className={className} aria-hidden="true" />;
+}
+
+export function RetakeIcon({ className = 'size-4' }: IconProps) {
+  return <FiRefreshCw className={className} aria-hidden="true" />;
 }
 
 export function UploadCloudIcon({ className = 'size-4' }: IconProps) {

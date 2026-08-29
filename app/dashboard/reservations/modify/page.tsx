@@ -17,6 +17,8 @@ import { useRoomTypesQuery } from '@/lib/rooms';
 import { useReservationsQuery, useModifyReservationMutation, type ReservationSummary } from '@/lib/reservations';
 import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
+import { dayAfter } from '@/lib/dates';
+import { CapacityWarning } from '../../_components/CapacityWarning';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 
@@ -80,6 +82,7 @@ export default function ModifyReservationPage() {
     control,
     reset,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ModifyReservationFormValues>({ resolver: zodResolver(modifyReservationSchema) });
 
@@ -111,6 +114,19 @@ export default function ModifyReservationPage() {
   const roomTypeId = watch('roomTypeId');
   const checkInDate = watch('checkInDate');
   const checkOutDate = watch('checkOutDate');
+
+  // Same fix as Create Reservation/Walk-In Booking: moving check-in date
+  // later than the currently-set check-out left check-out unchanged and
+  // invalid. Never fires right after the reset-on-select effect above —
+  // that always seeds a genuinely valid pair from the real reservation.
+  useEffect(() => {
+    if (!checkInDate) return;
+    if (!checkOutDate || checkOutDate <= checkInDate) {
+      setValue('checkOutDate', dayAfter(checkInDate));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkInDate]);
+
   const newRate = useMemo(() => {
     if (!roomTypeId || !checkInDate || !checkOutDate || checkOutDate <= checkInDate) return null;
     const roomType = (roomTypesQuery.data ?? []).find((rt) => rt.id === roomTypeId);
@@ -171,6 +187,7 @@ export default function ModifyReservationPage() {
                 <Input label="Adults" type="number" min={1} max={20} {...register('adults', { valueAsNumber: true })} error={errors.adults?.message} />
                 <Input label="Children" type="number" min={0} max={20} {...register('children', { valueAsNumber: true })} error={errors.children?.message} />
               </div>
+              <CapacityWarning roomType={roomTypesQuery.data?.find((rt) => rt.id === roomTypeId)} adults={watch('adults')} childrenCount={watch('children')} />
 
               <Card tone="accent" className="flex flex-col gap-2">
                 <Row label="Guest" value={selected.guest.name} />

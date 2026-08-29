@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,9 +13,11 @@ import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { CreateReservationIcon } from '@/components/ui/Icons';
 import { RatePreview } from '../../_components/RatePreview';
+import { CapacityWarning } from '../../_components/CapacityWarning';
 import { createReservationSchema, type CreateReservationFormValues } from '@/lib/schemas/reservations';
 import { useRoomTypesQuery } from '@/lib/rooms';
 import { useCreateReservationMutation } from '@/lib/reservations';
+import { dayAfter } from '@/lib/dates';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 
@@ -61,15 +63,31 @@ export default function CreateReservationPage() {
     handleSubmit,
     control,
     getValues,
+    setValue,
     watch,
     formState: { errors, isSubmitting },
   } = useForm<CreateReservationFormValues>({
     resolver: zodResolver(createReservationSchema),
-    defaultValues: { checkInDate: today, adults: 1, children: 0 },
+    defaultValues: { checkInDate: today, checkOutDate: dayAfter(today), adults: 1, children: 0 },
   });
   const watchedRoomTypeId = watch('roomTypeId');
   const watchedCheckInDate = watch('checkInDate');
   const watchedCheckOutDate = watch('checkOutDate');
+  const watchedAdults = watch('adults');
+  const watchedChildren = watch('children');
+
+  // Found live: picking a new check-in date left check-out wherever it was
+  // previously set — a one-night stay booked for the 10th, then moved to
+  // the 15th, silently stayed checked out on the (now nonsensical) 11th.
+  // Only auto-advances check-out when it's missing or no longer AFTER the
+  // new check-in — a deliberately longer, still-valid stay is left alone.
+  useEffect(() => {
+    if (!watchedCheckInDate) return;
+    if (!watchedCheckOutDate || watchedCheckOutDate <= watchedCheckInDate) {
+      setValue('checkOutDate', dayAfter(watchedCheckInDate));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedCheckInDate]);
 
   const roomTypesQuery = useRoomTypesQuery(activeBranchId, auth);
   const createMutation = useCreateReservationMutation(activeBranchId ?? '', auth);
@@ -140,10 +158,11 @@ export default function CreateReservationPage() {
             />
             <div className="hidden sm:block" aria-hidden />
             <Input label="Check-In Date" type="date" min={today} {...register('checkInDate')} error={errors.checkInDate?.message} />
-            <Input label="Check-Out Date" type="date" min={today} {...register('checkOutDate')} error={errors.checkOutDate?.message} />
+            <Input label="Check-Out Date" type="date" min={watchedCheckInDate ? dayAfter(watchedCheckInDate) : today} {...register('checkOutDate')} error={errors.checkOutDate?.message} />
             <Input label="Adults" type="number" min={1} max={20} {...register('adults', { valueAsNumber: true })} error={errors.adults?.message} />
             <Input label="Children" type="number" min={0} max={20} {...register('children', { valueAsNumber: true })} error={errors.children?.message} />
           </div>
+          <CapacityWarning roomType={roomTypesQuery.data?.find((rt) => rt.id === watchedRoomTypeId)} adults={watchedAdults} childrenCount={watchedChildren} />
           <Textarea label="Special Requests" {...register('specialRequests')} error={errors.specialRequests?.message} />
           <RatePreview
             branchId={activeBranchId}

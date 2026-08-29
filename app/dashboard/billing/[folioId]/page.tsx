@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { BackButton } from '@/components/ui/BackButton';
+import { ForwardButton } from '@/components/ui/ForwardButton';
 import { ReceiptIcon } from '@/components/ui/Icons';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ApiError } from '@/lib/api';
@@ -79,7 +80,10 @@ export default function GuestFolioPage() {
 
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-8">
-      <BackButton fallbackHref="/dashboard/billing" />
+      <div className="flex items-center justify-between">
+        <BackButton fallbackHref="/dashboard/billing" />
+        <ForwardButton />
+      </div>
       <PageHeader
         icon={<ReceiptIcon className="size-8" />}
         title="Guest Folio"
