@@ -13,6 +13,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { HotelCheckInIcon } from '@/components/ui/Icons';
 import { useReservationsQuery } from '@/lib/reservations';
 import { useRegCardTemplateQuery, useSetRegCardTemplateMutation, useGenerateRegistrationCardMutation, type RegCardTemplate } from '@/lib/registration-cards';
+import { LANGUAGES } from '@/lib/languages';
 import { apiFetch, ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 
@@ -112,7 +113,7 @@ export default function RegistrationCardsHubPage() {
 function TemplateForm({ initial, branchId, auth }: { initial: RegCardTemplate; branchId: string; auth: AuthOpts }) {
   const [logoUrl, setLogoUrl] = useState(initial.logoUrl ?? '');
   const [houseRules, setHouseRules] = useState(initial.houseRules ?? '');
-  const [language, setLanguage] = useState(initial.language ?? '');
+  const [language, setLanguage] = useState<string | null>(initial.language ?? null);
   const [showRate, setShowRate] = useState<'yes' | 'no'>(initial.showRate === false ? 'no' : 'yes');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -126,7 +127,7 @@ function TemplateForm({ initial, branchId, auth }: { initial: RegCardTemplate; b
       await setTemplateMutation.mutateAsync({
         logoUrl: logoUrl.trim() || undefined,
         houseRules: houseRules.trim() || undefined,
-        language: language.trim() || undefined,
+        language: language ?? undefined,
         showRate: showRate === 'yes',
       });
       setSaved(true);
@@ -139,7 +140,7 @@ function TemplateForm({ initial, branchId, auth }: { initial: RegCardTemplate; b
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
         <Input name="logoUrl" label="Logo URL" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://…" />
-        <Input name="language" label="Language" value={language} onChange={(e) => setLanguage(e.target.value)} placeholder="en" />
+        <Select id="language" name="language" label="Language" options={LANGUAGES} value={language} onChange={setLanguage} placeholder="Select language" />
       </div>
       <Textarea name="houseRules" label="House Rules" value={houseRules} onChange={(e) => setHouseRules(e.target.value)} hint="Printed on every generated card" />
       <YesNoToggle label="Show Rate on Card" name="showRate" value={showRate} onChange={setShowRate} />
