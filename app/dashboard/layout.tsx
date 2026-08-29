@@ -13,6 +13,7 @@ import { Sidebar } from './_components/Sidebar';
 /** Route → breadcrumb title. Extend this whenever a new `/dashboard/*` page is added — it used to be a two-way ternary hardcoded to exactly `/dashboard` vs. Room Status Board, which would have silently mislabeled every route added since. */
 const ROUTE_TITLES: Record<string, string> = {
   '/dashboard/alerts': 'Alerts',
+  '/dashboard/manager': 'Manager Dashboard',
   '/dashboard/room-status-board': 'Room Status Board',
   '/dashboard/arrivals': 'Arrivals Dashboard',
   '/dashboard/departures': 'Departures Dashboard',
@@ -66,19 +67,22 @@ function pageTitleFor(pathname: string): string {
  *
  * "Management" groups pages that moved out of Reservations (Overbooking,
  * Rate Plan Management — the architecture map's own "Rate Resolver") plus
- * Reports and Analytics, matching `Sidebar.tsx`'s own `MANAGEMENT_SECTION`
- * exactly — same no-dedicated-hub fallback, `/dashboard/overbooking` as
- * the first real page. `/dashboard/reservations/rate-plans` MUST be listed
+ * Reports and Analytics, and now Manager Dashboard itself — matching
+ * `Sidebar.tsx`'s own `MANAGEMENT_SECTION`, whose `href` is
+ * `/dashboard/manager` now that a real hub page exists (the "no dedicated
+ * hub, fall back to the first real child" era ended the moment Manager
+ * Dashboard shipped). `/dashboard/reservations/rate-plans` MUST be listed
  * before the plain `/dashboard/reservations` prefix below — `Array.find`
  * takes the first match, and every `/reservations/*` route otherwise
  * matches that broader prefix first.
  */
 const SECTIONS: Array<{ prefix: string; label: string; href: string }> = [
   { prefix: '/dashboard/alerts', label: 'Alerts', href: '/dashboard/alerts' },
-  { prefix: '/dashboard/reservations/rate-plans', label: 'Management', href: '/dashboard/overbooking' },
+  { prefix: '/dashboard/manager', label: 'Management', href: '/dashboard/manager' },
+  { prefix: '/dashboard/reservations/rate-plans', label: 'Management', href: '/dashboard/manager' },
   { prefix: '/dashboard/reservations', label: 'Reservations', href: '/dashboard/reservations' },
-  { prefix: '/dashboard/overbooking', label: 'Management', href: '/dashboard/overbooking' },
-  { prefix: '/dashboard/reports', label: 'Management', href: '/dashboard/overbooking' },
+  { prefix: '/dashboard/overbooking', label: 'Management', href: '/dashboard/manager' },
+  { prefix: '/dashboard/reports', label: 'Management', href: '/dashboard/manager' },
   { prefix: '/dashboard/housekeeping', label: 'Housekeeping', href: '/dashboard/housekeeping' },
   { prefix: '/dashboard/billing', label: 'Billing and Payments', href: '/dashboard/billing' },
   { prefix: '/dashboard/split-billing', label: 'Billing and Payments', href: '/dashboard/billing' },

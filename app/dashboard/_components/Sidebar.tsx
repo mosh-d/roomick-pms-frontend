@@ -216,15 +216,13 @@ const REPORTS_GROUP: SidebarGroup = {
  * Every other entry here is a real, named gap — not invented scope, the
  * map's own page ids (`page-manager`, `page-guestprofile`, `page-rms`,
  * `page-events`, `page-maintenance`, `page-loyalty`) each have a full
- * endpoint/UI spec already written, just never built. No dedicated hub
- * page exists yet either, so `href` uses the same "first real child"
- * fallback `BILLING_SECTION` already established.
+ * endpoint/UI spec already written, just never built.
  */
 const MANAGEMENT_SECTION: TopLevelSection = {
   label: 'Management',
-  href: '/dashboard/overbooking',
+  href: '/dashboard/manager',
   items: [
-    leaf({ label: 'Manager Dashboard' }),
+    leaf({ label: 'Manager Dashboard', href: '/dashboard/manager' }),
     leaf({ label: 'Overbooking Mgmt', href: '/dashboard/overbooking' }),
     leaf({ label: 'Rate Resolver', href: '/dashboard/reservations/rate-plans' }),
     leaf({ label: 'Guest Profiles & CRM' }),

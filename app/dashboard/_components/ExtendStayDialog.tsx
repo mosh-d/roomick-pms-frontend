@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -35,23 +35,33 @@ export function ExtendStayDialog({
   auth: { accessToken: string | undefined; tenantId: string | undefined };
   onClose: () => void;
 }) {
-  const [checkOutDate, setCheckOutDate] = useState('');
+  if (!target) return null;
+  // Keyed on the target's own id so switching to a DIFFERENT reservation
+  // remounts this with fresh state — the lazy `useState` initializer below
+  // then only ever needs to run once per target, no effect required to
+  // re-sync it (the exact "adjusting state when a prop changes" case
+  // React's own docs point at instead of a setState-in-effect).
+  return <ExtendStayDialogInner key={target.id} target={target} branchId={branchId} auth={auth} onClose={onClose} />;
+}
+
+function ExtendStayDialogInner({
+  target,
+  branchId,
+  auth,
+  onClose,
+}: {
+  target: ExtendStayTarget;
+  branchId: string;
+  auth: { accessToken: string | undefined; tenantId: string | undefined };
+  onClose: () => void;
+}) {
+  const [checkOutDate, setCheckOutDate] = useState(() => dayAfter(toDateInput(target.checkOutDate)));
   const [error, setError] = useState<string | null>(null);
   const extendStayMutation = useExtendStayMutation(branchId, auth);
-
-  useEffect(() => {
-    if (target) {
-      setCheckOutDate(dayAfter(toDateInput(target.checkOutDate)));
-      setError(null);
-    }
-  }, [target]);
-
-  if (!target) return null;
 
   const minDate = dayAfter(toDateInput(target.checkOutDate));
 
   async function handleSubmit() {
-    if (!target) return;
     setError(null);
     try {
       await extendStayMutation.mutateAsync({ reservationId: target.id, checkOutDate });
@@ -68,6 +78,7 @@ export function ExtendStayDialog({
         whole stay is re-resolved, so the total updates to match the extra night(s).
       </p>
       <Input
+        id="extend-stay-checkout-date"
         label="New Check-Out Date"
         type="date"
         min={minDate}

@@ -214,6 +214,16 @@ export function useExtendStayMutation(branchId: string, { accessToken, tenantId 
   });
 }
 
+/** Manager-only (enforced server-side too) — pins an absolute nightly rate, independent of `confirmedRate`. */
+export function useSetRateOverrideMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ reservationId, overrideRate, reason }: { reservationId: string; overrideRate: number; reason: string }) =>
+      apiFetch<ReservationSummary>(`/reservations/${reservationId}/rate-override`, { method: 'PATCH', accessToken, tenantId, body: { overrideRate, reason } }),
+    onSuccess: () => invalidateAfterLifecycleChange(queryClient, branchId),
+  });
+}
+
 export function usePromoteFromWaitlistMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
   const queryClient = useQueryClient();
   return useMutation({
