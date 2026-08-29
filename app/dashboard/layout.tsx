@@ -12,6 +12,7 @@ import { Sidebar } from './_components/Sidebar';
 
 /** Route → breadcrumb title. Extend this whenever a new `/dashboard/*` page is added — it used to be a two-way ternary hardcoded to exactly `/dashboard` vs. Room Status Board, which would have silently mislabeled every route added since. */
 const ROUTE_TITLES: Record<string, string> = {
+  '/dashboard/alerts': 'Alerts',
   '/dashboard/room-status-board': 'Room Status Board',
   '/dashboard/arrivals': 'Arrivals Dashboard',
   '/dashboard/departures': 'Departures Dashboard',
@@ -64,6 +65,7 @@ function pageTitleFor(pathname: string): string {
  * other three sections.
  */
 const SECTIONS: Array<{ prefix: string; label: string; href: string }> = [
+  { prefix: '/dashboard/alerts', label: 'Alerts', href: '/dashboard/alerts' },
   { prefix: '/dashboard/reservations', label: 'Reservations', href: '/dashboard/reservations' },
   { prefix: '/dashboard/overbooking', label: 'Reservations', href: '/dashboard/reservations' },
   { prefix: '/dashboard/housekeeping', label: 'Housekeeping', href: '/dashboard/housekeeping' },

@@ -35,6 +35,7 @@ import {
   FiCalendar,
   FiEdit3,
   FiMenu,
+  FiBell,
 } from 'react-icons/fi';
 import {
   FaPlaneArrival,
@@ -76,6 +77,10 @@ export function XIcon({ className = 'size-4' }: IconProps) {
 /** Mobile sidebar toggle — the dashboard shell has no other hamburger-menu affordance. */
 export function MenuIcon({ className = 'size-4' }: IconProps) {
   return <FiMenu className={className} aria-hidden="true" />;
+}
+
+export function AlertsIcon({ className = 'size-4' }: IconProps) {
+  return <FiBell className={className} aria-hidden="true" />;
 }
 
 export function UploadCloudIcon({ className = 'size-4' }: IconProps) {

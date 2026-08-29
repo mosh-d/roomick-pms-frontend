@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAlertsQuery } from '@/lib/alerts';
+import { useAuthStore } from '@/lib/store/authStore';
 
 /**
  * The operations sidebar.
@@ -240,11 +242,51 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
         }`}
       >
         <TopLevelSectionRow section={FRONT_DESK_SECTION} pathname={pathname} />
+        <AlertsLink pathname={pathname} />
         {TOP_LEVEL_SECTIONS.map((section) => (
           <TopLevelSectionRow key={section.label} section={section} pathname={pathname} />
         ))}
       </aside>
     </>
+  );
+}
+
+/**
+ * "Alerts" (missed check-ins, overdue checkouts, overdue balances — see
+ * `AlertsService`, ported from the in-house PMS's own alerts design) has
+ * exactly one destination page, not a group of children, so it doesn't go
+ * through `TopLevelSectionRow`'s expand-to-a-box machinery at all — that
+ * machinery exists for sections with multiple child pages to reveal.
+ * Styled identically to a collapsed section row at rest, `bg-primary`-
+ * filled when it's the open page (matching `LeafPill`'s own "you're on
+ * this single page" treatment), plus a red count badge, live-polled every
+ * 60s via `useAlertsQuery` — the in-house reference pushes this over a
+ * websocket; Roomick has no such infrastructure yet, so polling is the
+ * honest equivalent, not a placeholder for it.
+ */
+function AlertsLink({ pathname }: { pathname: string }) {
+  const activeBranchId = useAuthStore((s) => s.activeBranchId);
+  const user = useAuthStore((s) => s.user);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const alertsQuery = useAlertsQuery(activeBranchId, { accessToken: accessToken ?? undefined, tenantId: user?.tenantId });
+  const total = alertsQuery.data?.total ?? 0;
+  const active = pathname.startsWith('/dashboard/alerts');
+
+  return (
+    <Link
+      href="/dashboard/alerts"
+      aria-current={active ? 'page' : undefined}
+      className={`shrink-0 flex items-center justify-between gap-2 rounded-control px-3 py-2 text-tiny font-semibold border transition-colors ${
+        active ? 'bg-primary border-primary text-white' : 'text-primary-dark border-primary/30 hover:bg-primary-light/40'
+      }`}
+    >
+      Alerts
+      {total > 0 ? (
+        <span className="inline-flex min-w-5 items-center justify-center rounded-pill bg-red-600 px-1.5 py-0.5 text-tiny font-bold leading-none text-white">
+          {total > 99 ? '99+' : total}
+        </span>
+      ) : null}
+    </Link>
   );
 }
 

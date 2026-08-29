@@ -1552,3 +1552,22 @@ Both backend (`localhost:3000`) and frontend (`localhost:3001`) dev servers were
 
 ### Carried forward
 - Nothing new. This closes both items the prior two phases had named as open.
+
+## Phase 44 — Alerts: missed check-ins, overdue checkouts, overdue balances (2026-08-29)
+
+Reported directly against the running app: a guest checked in the day before, viewed the next day, well past checkout — nothing anywhere said so. Backend built a real `AlertsService` (see roomick-pms-backend's own PHASE_NOTES entry for the full design, ported from the in-house PMS's own Alerts feature and adapted to Roomick's real per-branch timezone/clock-time model instead of that reference's hardcoded noon-Lagos assumption). This phase is the frontend surface for it.
+
+### `lib/alerts.ts` — one query, shared by every consumer
+`useAlertsQuery(branchId, auth)` polls `GET /branches/:branchId/alerts` every 60s (`refetchInterval` — the idiomatic TanStack Query equivalent of the reference's own websocket-plus-polling-fallback delivery, since this codebase has no real-time push infrastructure to build the fuller version on). One query key (`['alerts', branchId]`) used by both the sidebar badge and the dedicated page, so having "two consumers" never means two network requests — TanStack Query dedupes the identical key.
+
+### Sidebar — a standalone link, not a `TopLevelSection`
+Every existing top-level nav entry (Reservations, Housekeeping, Billing and Payments, Reports and Analytics) is a `TopLevelSection` that collapses to a row and expands into a box of child pages — built for sections with *multiple* pages to reveal. Alerts has exactly one destination, so forcing it through that same expand-to-a-box machinery would have rendered a box with one child pill in it, which reads as broken, not minimal. `AlertsLink` is a new, much simpler standalone component: a plain link styled identically to a collapsed section row at rest, `bg-primary`-filled when it's the open page (the same "you're on this single page" language `LeafPill` already uses elsewhere), plus a live red count badge. Placed right after Front Desk in the sidebar — alerts aggregate across both front-desk and billing concerns, so it doesn't obviously belong nested under either.
+
+### `/dashboard/alerts` — three tabs, each row links straight to where it resolves
+Missed Check-Ins → Check-In Flow for that reservation; Overdue Checkouts → Check-Out Flow (a flat guest-picker page, not a per-reservation route, so this links to the page rather than a specific id); Overdue Balances → that folio's own Guest Folio page. No dismiss button anywhere — matching the backend's own design, a row disappears only because the real underlying reservation/folio actually changed, never because someone clicked it away.
+
+### Verified live, reproducing the exact reported bug
+Dev servers were already running against real Postgres. A Playwright script self-provisioned a fresh tenant via the real API, created a reservation checked in two days ago with a checkout date of yesterday, and checked it in for real — the exact "checked in on the 28th, nothing flags it on the 29th" scenario reported. Then logged in through the real `/login` form: the sidebar's Alerts badge showed a live, correct count; the Alerts page's Overdue Checkouts tab showed the guest with the right room and scheduled checkout date and a working "Check Out" button; a second scenario (a confirmed reservation never checked in) correctly appeared under Missed Check-Ins. This same run is what caught the backend's `city_ledger` double-counting bug (see its own PHASE_NOTES entry) — the total came back as 3 before that fix, 2 after, confirmed live against the real running app, not just in a unit test. Zero console/page errors throughout.
+
+### Carried forward
+- No websocket push, so an alert can take up to 60s to appear after the underlying state actually changes — see the backend's own note on this tradeoff.
