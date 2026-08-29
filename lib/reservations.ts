@@ -216,8 +216,9 @@ export function usePromoteFromWaitlistMutation(branchId: string, { accessToken, 
 export function useCreateWalkInMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: GuestRef & { roomTypeId: string; roomId: string; checkOutDate: string; adults: number; children?: number; specialRequests?: string }) =>
-      apiFetch<ReservationSummary>(`/branches/${branchId}/reservations/walk-in`, { method: 'POST', accessToken, tenantId, body }),
+    mutationFn: (
+      body: GuestRef & { roomTypeId: string; roomId: string; checkOutDate: string; adults: number; children?: number; specialRequests?: string; idDocument?: IdDocumentInput },
+    ) => apiFetch<ReservationSummary>(`/branches/${branchId}/reservations/walk-in`, { method: 'POST', accessToken, tenantId, body }),
     onSuccess: () => invalidateAfterLifecycleChange(queryClient, branchId),
   });
 }

@@ -9,6 +9,7 @@ import { Section } from '@/components/ui/Section';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select, type SelectOption } from '@/components/ui/Select';
+import { CameraCapture } from '@/components/ui/CameraCapture';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { WalkInIcon } from '@/components/ui/Icons';
@@ -18,6 +19,8 @@ import { groupRoomsByFloor } from '@/lib/groupRoomsByFloor';
 import { useCreateReservationMutation, useCreateWalkInMutation } from '@/lib/reservations';
 import { dayAfter } from '@/lib/dates';
 import { ApiError, apiFetch } from '@/lib/api';
+import type { IdDocType, IdDocumentInput } from '@/lib/guests';
+import { COUNTRIES } from '@/lib/countries';
 import { useAuthStore } from '@/lib/store/authStore';
 import { RoomGrid } from '../_components/RoomGrid';
 import { RatePreview } from '../_components/RatePreview';
@@ -29,23 +32,35 @@ function todayString(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
+const ID_DOC_TYPE_OPTIONS: SelectOption[] = [
+  { value: 'passport', label: 'Passport' },
+  { value: 'national_id', label: 'National ID' },
+  { value: 'drivers_license', label: "Driver's License" },
+];
+
 /**
  * Walk-In Booking (Roomick-UI.pdf page 14), reduced to guest + dates + room
- * type (+ room, immediate mode only) — the reference's ID Capture and
- * Payment sections (additional costs, deposit) need ID-document encryption
- * and a payments-at-booking flow, neither built this pass. The rate itself
- * DOES go through the full Rate Resolver cascade now (`RatePreview`,
- * below) — no promo/corporate-account picker on this form yet, though the
- * backend already accepts both.
+ * type (+ room, immediate mode only) — the reference's Payment section
+ * (additional costs, deposit) needs a payments-at-booking flow this pass
+ * doesn't build. ID Capture IS real, matching Check-In Flow's own — a
+ * walk-in's immediate branch is literally an in-person check-in, and
+ * `WalkInReservationDto` has accepted `idDocument` since that same pass;
+ * this page just never grew the form for it until now. Book-ahead mode
+ * gets none of it — that branch creates a plain future `confirmed`
+ * reservation via `CreateReservationDto`, which has no `idDocument` field
+ * at all, because the guest isn't physically present yet to show one. The
+ * rate itself DOES go through the full Rate Resolver cascade
+ * (`RatePreview`, below) — no promo/corporate-account picker on this form
+ * yet, though the backend already accepts both.
  *
  * Dual-mode, not a separate route: this is the only place a `Reservation`
  * gets created, so if walk-in (create + immediate check-in) were the only
  * path, nothing would ever sit in `confirmed` waiting on Arrivals — the
  * whole rest of the feature would be unreachable through the UI. Mode is
  * derived from the picked check-in date, not a separate toggle: today =
- * immediate (room picker shown, submits to the walk-in endpoint), any
- * future date = book-ahead (room-type inventory only, submits to plain
- * reservation create).
+ * immediate (room picker + ID Capture shown, submits to the walk-in
+ * endpoint), any future date = book-ahead (room-type inventory only,
+ * submits to plain reservation create).
  */
 export default function WalkInBookingPage() {
   const router = useRouter();
@@ -57,6 +72,12 @@ export default function WalkInBookingPage() {
   const today = todayString();
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const [idDocType, setIdDocType] = useState<string | null>(null);
+  const [idDocNumber, setIdDocNumber] = useState('');
+  const [idDocExpiryDate, setIdDocExpiryDate] = useState('');
+  const [nationality, setNationality] = useState<string | null>(null);
+  const [idPhotoBase64, setIdPhotoBase64] = useState<string | null>(null);
 
   const {
     register,
@@ -125,6 +146,26 @@ export default function WalkInBookingPage() {
           setFormError('Pick a room to check the guest in now.');
           return;
         }
+
+        // Both-or-neither: matches Check-In Flow's own validation exactly —
+        // a type with no number (or vice versa) can't produce a valid
+        // RecordIdDocumentDto, but leaving every field blank is the normal
+        // "capture it later" path and must never block the walk-in.
+        let idDocument: IdDocumentInput | undefined;
+        if (idDocType || idDocNumber.trim()) {
+          if (!idDocType || !idDocNumber.trim()) {
+            setFormError('Select an ID type and enter the ID number, or leave both blank to capture it later.');
+            return;
+          }
+          idDocument = {
+            idDocType: idDocType as IdDocType,
+            idDocNumber: idDocNumber.trim(),
+            idDocExpiryDate: idDocExpiryDate || undefined,
+            nationality: nationality ?? undefined,
+            photoBase64: idPhotoBase64 ?? undefined,
+          };
+        }
+
         const reservation = await createWalkInMutation.mutateAsync({
           guest,
           roomTypeId: values.roomTypeId,
@@ -133,6 +174,7 @@ export default function WalkInBookingPage() {
           adults: values.adults,
           children: values.children,
           specialRequests: values.specialRequests || undefined,
+          idDocument,
         });
         // A walk-in IS a check-in — same auto-generated registration card,
         // same "send the agent to sign it" redirect as Check-In Flow's own.
@@ -223,6 +265,27 @@ export default function WalkInBookingPage() {
             ) : (
               <RoomGrid buildings={buildings} selectedRoomId={selectedRoomId} onSelectRoom={setSelectedRoomId} />
             )}
+          </Section>
+        ) : null}
+
+        {isImmediate ? (
+          <Section label="ID Capture">
+            <p className="text-small text-secondary-light">Optional — can be captured later from the guest&apos;s profile. Never blocks check-in.</p>
+            <div className="flex flex-wrap gap-4">
+              <div className="w-48">
+                <Select id="idDocType" name="idDocType" label="ID Type" options={ID_DOC_TYPE_OPTIONS} value={idDocType} onChange={setIdDocType} placeholder="Select type" />
+              </div>
+              <div className="w-56">
+                <Input name="idDocNumber" label="ID Number" value={idDocNumber} onChange={(e) => setIdDocNumber(e.target.value)} maxLength={50} />
+              </div>
+              <div className="w-44">
+                <Input name="idDocExpiryDate" label="Expiry Date" type="date" value={idDocExpiryDate} onChange={(e) => setIdDocExpiryDate(e.target.value)} />
+              </div>
+              <div className="w-56">
+                <Select id="nationality" name="nationality" label="Nationality" options={COUNTRIES} value={nationality} onChange={setNationality} placeholder="Select country" />
+              </div>
+            </div>
+            <CameraCapture label="ID Document Photo" photoBase64={idPhotoBase64} onCapture={setIdPhotoBase64} hint="Optional — a clear photo of the front of the document" />
           </Section>
         ) : null}
 
