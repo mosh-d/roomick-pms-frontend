@@ -15,6 +15,7 @@ import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+import { ExtendStayDialog, type ExtendStayTarget } from '../_components/ExtendStayDialog';
 
 /**
  * Check-out is NEVER blocked by an outstanding balance — the room has to
@@ -49,6 +50,7 @@ export default function DeparturesDashboardPage() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
   const [pendingCheckOut, setPendingCheckOut] = useState<{ id: string; guestName: string; balanceDue: string | null; currency: string | null } | null>(null);
+  const [extendStayTarget, setExtendStayTarget] = useState<ExtendStayTarget | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
@@ -120,19 +122,24 @@ export default function DeparturesDashboardPage() {
       label: 'Action',
       align: 'right',
       render: (r) => (
-        <Button
-          size="sm"
-          onClick={() =>
-            setPendingCheckOut({
-              id: r.id,
-              guestName: r.guest.name,
-              balanceDue: folioByReservation.get(r.id)?.balanceDue ?? null,
-              currency: folioByReservation.get(r.id)?.currency ?? null,
-            })
-          }
-        >
-          Check-Out
-        </Button>
+        <div className="flex items-center justify-end gap-2">
+          <Button size="sm" variant="outline" onClick={() => setExtendStayTarget({ id: r.id, guestName: r.guest.name, checkOutDate: r.checkOutDate })}>
+            Extend Stay
+          </Button>
+          <Button
+            size="sm"
+            onClick={() =>
+              setPendingCheckOut({
+                id: r.id,
+                guestName: r.guest.name,
+                balanceDue: folioByReservation.get(r.id)?.balanceDue ?? null,
+                currency: folioByReservation.get(r.id)?.currency ?? null,
+              })
+            }
+          >
+            Check-Out
+          </Button>
+        </div>
       ),
     },
   ];
@@ -168,6 +175,8 @@ export default function DeparturesDashboardPage() {
         onCancel={() => setPendingCheckOut(null)}
         onConfirm={confirmCheckOut}
       />
+
+      <ExtendStayDialog target={extendStayTarget} branchId={activeBranchId} auth={auth} onClose={() => setExtendStayTarget(null)} />
     </Container>
   );
 }

@@ -14,6 +14,7 @@ import { useFoliosQuery } from '@/lib/folios';
 import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
+import { ExtendStayDialog, type ExtendStayTarget } from '../_components/ExtendStayDialog';
 
 /**
  * In-House Guest List (Roomick-UI.pdf page 18) — every currently
@@ -31,6 +32,7 @@ export default function InHouseGuestListPage() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
   const [search, setSearch] = useState('');
+  const [extendStayTarget, setExtendStayTarget] = useState<ExtendStayTarget | null>(null);
   const auth = { accessToken: accessToken ?? undefined, tenantId: user?.tenantId };
 
   const inHouseQuery = useInHouseQuery(activeBranchId, auth);
@@ -93,11 +95,17 @@ export default function InHouseGuestListPage() {
       align: 'right',
       render: (r) => {
         const folio = folioByReservation.get(r.id);
-        if (!folio) return <span className="text-secondary-light">—</span>;
         return (
-          <Button size="sm" variant="outline" onClick={() => router.push(`/dashboard/billing/${folio.id}`)}>
-            View Folio
-          </Button>
+          <div className="flex items-center justify-end gap-2">
+            <Button size="sm" variant="outline" onClick={() => setExtendStayTarget({ id: r.id, guestName: r.guest.name, checkOutDate: r.checkOutDate })}>
+              Extend Stay
+            </Button>
+            {folio ? (
+              <Button size="sm" variant="outline" onClick={() => router.push(`/dashboard/billing/${folio.id}`)}>
+                View Folio
+              </Button>
+            ) : null}
+          </div>
         );
       },
     },
@@ -123,6 +131,8 @@ export default function InHouseGuestListPage() {
           />
         </Card>
       )}
+
+      <ExtendStayDialog target={extendStayTarget} branchId={activeBranchId} auth={auth} onClose={() => setExtendStayTarget(null)} />
     </Container>
   );
 }

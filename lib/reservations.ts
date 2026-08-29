@@ -204,6 +204,16 @@ export function useModifyReservationMutation(branchId: string, { accessToken, te
   });
 }
 
+/** Only valid on a checked_in stay — `modifyReservation`'s own date fields are pre-check-in only. */
+export function useExtendStayMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ reservationId, checkOutDate }: { reservationId: string; checkOutDate: string }) =>
+      apiFetch<ReservationSummary>(`/reservations/${reservationId}/extend-stay`, { method: 'PATCH', accessToken, tenantId, body: { checkOutDate } }),
+    onSuccess: () => invalidateAfterLifecycleChange(queryClient, branchId),
+  });
+}
+
 export function usePromoteFromWaitlistMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
   const queryClient = useQueryClient();
   return useMutation({
