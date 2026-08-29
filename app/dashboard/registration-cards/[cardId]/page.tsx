@@ -6,6 +6,7 @@ import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { BackButton } from '@/components/ui/BackButton';
 import { SignaturePad, type SignaturePadHandle } from '@/components/ui/SignaturePad';
 import { HotelCheckInIcon } from '@/components/ui/Icons';
 import { useRegistrationCardQuery, useSignRegistrationCardMutation } from '@/lib/registration-cards';
@@ -67,14 +68,21 @@ export default function RegistrationCardPage() {
 
   return (
     <Container className="max-w-3xl py-10 flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-4 print:hidden">
-        <PageHeader icon={<HotelCheckInIcon className="size-8" />} title="Guest Registration Card" subtitle="Check-in record" />
-        {card ? (
-          <Button type="button" variant="outline" loading={downloadPending} onClick={handleDownload}>
-            Download PDF
-          </Button>
-        ) : null}
+      <div className="print:hidden">
+        <BackButton fallbackHref="/dashboard/arrivals" />
       </div>
+      <PageHeader
+        icon={<HotelCheckInIcon className="size-8" />}
+        title="Guest Registration Card"
+        subtitle="Check-in record"
+        actions={
+          card ? (
+            <Button type="button" variant="outline" loading={downloadPending} onClick={handleDownload} className="print:hidden">
+              Download PDF
+            </Button>
+          ) : undefined
+        }
+      />
 
       {cardQuery.isLoading ? (
         <p className="text-body text-primary-dark/70">Loading…</p>

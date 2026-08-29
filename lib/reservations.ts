@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from './api';
 import { roomsQueryKey } from './rooms';
-import type { GuestSummary, GuestInput } from './guests';
+import type { GuestSummary, GuestInput, IdDocumentInput } from './guests';
 
 export type ReservationStatus = 'waitlisted' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show' | 'walked';
 export type ReservationChannel = 'direct' | 'walk_in' | 'booking_com' | 'expedia' | 'agoda' | 'airbnb';
@@ -225,8 +225,8 @@ export function useCreateWalkInMutation(branchId: string, { accessToken, tenantI
 export function useCheckInMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ reservationId, roomId }: { reservationId: string; roomId?: string }) =>
-      apiFetch<ReservationSummary>(`/reservations/${reservationId}/check-in`, { method: 'POST', accessToken, tenantId, body: { roomId } }),
+    mutationFn: ({ reservationId, roomId, idDocument }: { reservationId: string; roomId?: string; idDocument?: IdDocumentInput }) =>
+      apiFetch<ReservationSummary>(`/reservations/${reservationId}/check-in`, { method: 'POST', accessToken, tenantId, body: { roomId, idDocument } }),
     onSuccess: () => invalidateAfterLifecycleChange(queryClient, branchId),
   });
 }
