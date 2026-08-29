@@ -232,7 +232,16 @@ function ChecklistRow({ item }: { item: PreflightCheck }) {
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
         <p className={`text-small ${item.passed === null ? 'text-secondary-light' : 'text-secondary'}`}>{item.label}</p>
-        {item.detail ? <p className="text-tiny text-secondary-light">{item.detail}</p> : null}
+        {/* `text-secondary/60`, not the bare `secondary-light` token — that
+            pale lavender-gray read as too washed out for a detail line
+            people actually need to read (a real in-house count, a real
+            "module not built yet" caveat), not decorative filler. A partial
+            opacity of the dark `secondary` color gives a touch more visual
+            weight while staying clearly secondary/muted — same mechanism
+            `WizardShell.tsx`'s own `text-secondary/70` "active but muted"
+            state already uses, just a step lighter since this is a
+            passive caption, not something the user is actively on. */}
+        {item.detail ? <p className="text-tiny text-secondary/60">{item.detail}</p> : null}
       </div>
       <span className="shrink-0 pt-0.5">
         {item.passed === true ? (
