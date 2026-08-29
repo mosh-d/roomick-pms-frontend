@@ -63,11 +63,22 @@ function pageTitleFor(pathname: string): string {
  * `Sidebar.tsx`'s own `BILLING_SECTION.href`) both point at Guest Folio,
  * its first and most useful page, the same role a real hub plays for the
  * other three sections.
+ *
+ * "Management" groups pages that moved out of Reservations (Overbooking,
+ * Rate Plan Management — the architecture map's own "Rate Resolver") plus
+ * Reports and Analytics, matching `Sidebar.tsx`'s own `MANAGEMENT_SECTION`
+ * exactly — same no-dedicated-hub fallback, `/dashboard/overbooking` as
+ * the first real page. `/dashboard/reservations/rate-plans` MUST be listed
+ * before the plain `/dashboard/reservations` prefix below — `Array.find`
+ * takes the first match, and every `/reservations/*` route otherwise
+ * matches that broader prefix first.
  */
 const SECTIONS: Array<{ prefix: string; label: string; href: string }> = [
   { prefix: '/dashboard/alerts', label: 'Alerts', href: '/dashboard/alerts' },
+  { prefix: '/dashboard/reservations/rate-plans', label: 'Management', href: '/dashboard/overbooking' },
   { prefix: '/dashboard/reservations', label: 'Reservations', href: '/dashboard/reservations' },
-  { prefix: '/dashboard/overbooking', label: 'Reservations', href: '/dashboard/reservations' },
+  { prefix: '/dashboard/overbooking', label: 'Management', href: '/dashboard/overbooking' },
+  { prefix: '/dashboard/reports', label: 'Management', href: '/dashboard/overbooking' },
   { prefix: '/dashboard/housekeeping', label: 'Housekeeping', href: '/dashboard/housekeeping' },
   { prefix: '/dashboard/billing', label: 'Billing and Payments', href: '/dashboard/billing' },
   { prefix: '/dashboard/split-billing', label: 'Billing and Payments', href: '/dashboard/billing' },
@@ -76,7 +87,6 @@ const SECTIONS: Array<{ prefix: string; label: string; href: string }> = [
   { prefix: '/dashboard/registration-cards', label: 'Billing and Payments', href: '/dashboard/billing' },
   { prefix: '/dashboard/shifts', label: 'Billing and Payments', href: '/dashboard/billing' },
   { prefix: '/dashboard/comms-log', label: 'Billing and Payments', href: '/dashboard/billing' },
-  { prefix: '/dashboard/reports', label: 'Reports and Analytics', href: '/dashboard/reports' },
 ];
 
 function sectionFor(pathname: string): { label: string; href: string } {

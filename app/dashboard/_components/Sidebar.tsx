@@ -100,8 +100,16 @@ type SectionItem = { kind: 'leaf'; child: SidebarChild } | { kind: 'group'; grou
 
 interface TopLevelSection {
   label: string;
-  /** The section's own hub/first-page link — collapsed-row target AND the expanded box's own label link. Every section has a real one now (no more "no hub, fall back to first child" special case). */
-  href: string;
+  /**
+   * The section's own hub/first-page link — collapsed-row target AND the
+   * expanded box's own label link. Undefined only for a section with
+   * genuinely zero real pages under it yet (`ADMIN_SECTION` today) — it
+   * renders as a plain inert label instead of a dead link, and starts
+   * linking the moment its own first real child page exists, the same way
+   * `BILLING_SECTION`'s own "no dedicated hub, use the first real child"
+   * precedent already works.
+   */
+  href?: string;
   items: SectionItem[];
 }
 
@@ -113,6 +121,14 @@ const FRONT_DESK_SECTION: TopLevelSection = {
   items: FRONT_DESK_GROUPS.map((group) => ({ kind: 'group', group })),
 };
 
+/**
+ * Overbooking Management and Rate Plan Management ("Rate Resolver" in the
+ * architecture map's own naming) both moved out of here into
+ * `MANAGEMENT_SECTION` — the architecture map (`pms-frontend-structure-2
+ * .html`'s own Operations/Management/Admin sidebar) places both under
+ * Management, not Operations, and this section previously had them here
+ * only because no Management section existed yet to hold them.
+ */
 const RESERVATIONS_SECTION: TopLevelSection = {
   label: 'Reservations',
   href: '/dashboard/reservations',
@@ -122,13 +138,6 @@ const RESERVATIONS_SECTION: TopLevelSection = {
     leaf({ label: 'Modify Reservation', href: '/dashboard/reservations/modify' }),
     leaf({ label: 'Cancel Reservation', href: '/dashboard/reservations/cancel' }),
     leaf({ label: 'Waitlist Management', href: '/dashboard/reservations/waitlist' }),
-    leaf({ label: 'Rate Plan Management', href: '/dashboard/reservations/rate-plans' }),
-    // Ref has no sidebar entry for this at all (checked the full PDF — it's
-    // a spec-only Month 4 module with no visual design). Placed here
-    // rather than invented as a new top-level section: same "inventory/
-    // policy config a manager sets, not a daily front-desk action" shape
-    // Rate Plan Management already has.
-    leaf({ label: 'Overbooking Management', href: '/dashboard/overbooking' }),
   ],
 };
 
@@ -177,20 +186,77 @@ const BILLING_SECTION: TopLevelSection = {
 };
 
 /**
- * Ref p9's own sidebar lists "Reports & Analytics" as a top-level section
- * (peer to Front Desk/Reservations/Housekeeping/Billing), not nested under
- * Billing — matched here. Only Operational Reports is built: Financial
- * Reports (tax summary, cash-flow waterfall) and the Custom Report Builder
- * are the reference's own later-Phase scalability hooks (BI exports,
- * scheduled reports), explicitly beyond the Month 5 MVP deliverable line.
+ * Reports & Analytics is a nested GROUP inside `MANAGEMENT_SECTION` below,
+ * not its own top-level section — the architecture map places it under
+ * Management, peer to Revenue Management/Guest CRM/etc., not standing
+ * alone. Only Operational Reports is built: Financial Reports (tax
+ * summary, cash-flow waterfall) and the Custom Report Builder are the
+ * reference's own later-phase scalability hooks (BI exports, scheduled
+ * reports), explicitly beyond the Month 5 MVP deliverable line.
  */
-const REPORTS_SECTION: TopLevelSection = {
-  label: 'Reports and Analytics',
-  href: '/dashboard/reports',
-  items: [leaf({ label: 'Operational Reports', href: '/dashboard/reports' }), leaf({ label: 'Financial Reports' }), leaf({ label: 'Custom Report Builder' })],
+const REPORTS_GROUP: SidebarGroup = {
+  label: 'Reports & Analytics',
+  children: [
+    { label: 'Operational Reports', href: '/dashboard/reports' },
+    { label: 'Financial Reports' },
+    { label: 'Custom Report Builder' },
+  ],
 };
 
-const TOP_LEVEL_SECTIONS: TopLevelSection[] = [RESERVATIONS_SECTION, HOUSEKEEPING_SECTION, BILLING_SECTION, REPORTS_SECTION];
+/**
+ * `pms-frontend-structure-2.html`'s own architecture map — the
+ * Operations/Management/Admin sidebar it draws — is the ground truth for
+ * this section's membership and order, not a guess. Two real pages move
+ * in from Reservations (Overbooking Management, and Rate Plan Management
+ * renamed to the map's own "Rate Resolver" label — the underlying
+ * `RateResolverService`/cascade pricing engine is exactly what that map
+ * entry names, "the single source of truth for all rate calculations";
+ * Rate Plan Management is the one real screen that configures it, so it's
+ * the correct link, not a placeholder standing in for something separate).
+ * Every other entry here is a real, named gap — not invented scope, the
+ * map's own page ids (`page-manager`, `page-guestprofile`, `page-rms`,
+ * `page-events`, `page-maintenance`, `page-loyalty`) each have a full
+ * endpoint/UI spec already written, just never built. No dedicated hub
+ * page exists yet either, so `href` uses the same "first real child"
+ * fallback `BILLING_SECTION` already established.
+ */
+const MANAGEMENT_SECTION: TopLevelSection = {
+  label: 'Management',
+  href: '/dashboard/overbooking',
+  items: [
+    leaf({ label: 'Manager Dashboard' }),
+    leaf({ label: 'Overbooking Mgmt', href: '/dashboard/overbooking' }),
+    leaf({ label: 'Rate Resolver', href: '/dashboard/reservations/rate-plans' }),
+    leaf({ label: 'Guest Profiles & CRM' }),
+    leaf({ label: 'Revenue Management' }),
+    leaf({ label: 'Sales & Events' }),
+    leaf({ label: 'Maintenance' }),
+    leaf({ label: 'Loyalty & Marketing' }),
+    { kind: 'group', group: REPORTS_GROUP },
+  ],
+};
+
+/**
+ * Every item here is genuinely unbuilt — confirmed directly (no settings
+ * page, no integrations page, no staff/role-permissions UI beyond the
+ * `@Roles` guards themselves, no backup/system-health admin screen, no
+ * cross-branch HQ view) rather than assumed. `href: undefined` — nothing
+ * to link to yet, so this section shows as a single inert row until its
+ * own first real page lands, the same "no href = InertRow" rule every
+ * other placeholder entry in this file already follows.
+ */
+const ADMIN_SECTION: TopLevelSection = {
+  label: 'Admin',
+  items: [
+    leaf({ label: 'Property Config' }),
+    leaf({ label: 'Integrations & APIs' }),
+    leaf({ label: 'Security & Roles' }),
+    leaf({ label: 'System Admin' }),
+    leaf({ label: 'Enterprise / HQ' }),
+  ],
+};
+
+const OPERATIONS_SECTIONS: TopLevelSection[] = [RESERVATIONS_SECTION, HOUSEKEEPING_SECTION, BILLING_SECTION];
 
 function childIsActive(child: SidebarChild, pathname: string): boolean {
   if (!child.href) return false;
@@ -241,14 +307,33 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <TopLevelSectionRow section={FRONT_DESK_SECTION} pathname={pathname} />
+        <SidebarGroupLabel>Operations</SidebarGroupLabel>
         <AlertsLink pathname={pathname} />
-        {TOP_LEVEL_SECTIONS.map((section) => (
+        <TopLevelSectionRow section={FRONT_DESK_SECTION} pathname={pathname} />
+        {OPERATIONS_SECTIONS.map((section) => (
           <TopLevelSectionRow key={section.label} section={section} pathname={pathname} />
         ))}
+
+        <SidebarGroupLabel>Management</SidebarGroupLabel>
+        <TopLevelSectionRow section={MANAGEMENT_SECTION} pathname={pathname} />
+
+        <SidebarGroupLabel>Admin</SidebarGroupLabel>
+        <TopLevelSectionRow section={ADMIN_SECTION} pathname={pathname} />
       </aside>
     </>
   );
+}
+
+/**
+ * "OPERATIONS" / "MANAGEMENT" / "ADMIN" — the architecture map's own
+ * top-level grouping, matching `Section.tsx`'s own established small-caps
+ * label style exactly (`text-tiny font-bold uppercase tracking-wide
+ * text-primary-dark/50`) rather than inventing a second "section header"
+ * look for what's visually the same idea (a quiet label introducing a
+ * cluster of related content) in a different part of the page.
+ */
+function SidebarGroupLabel({ children }: { children: string }) {
+  return <h2 className="shrink-0 mt-2 first:mt-0 px-1 text-tiny font-bold uppercase tracking-wide text-primary-dark/50 whitespace-nowrap">{children}</h2>;
 }
 
 /**
@@ -304,6 +389,10 @@ function TopLevelSectionRow({ section, pathname }: { section: TopLevelSection; p
   const active = sectionIsActive(section, pathname);
 
   if (!active) {
+    // No real page under this section yet (`ADMIN_SECTION` today) — a
+    // plain inert row, same treatment `InertRow` already gives any single
+    // not-built-yet leaf, rather than a `<Link>` with nowhere real to go.
+    if (!section.href) return <InertRow label={section.label} />;
     return (
       <Link
         href={section.href}
@@ -316,9 +405,13 @@ function TopLevelSectionRow({ section, pathname }: { section: TopLevelSection; p
 
   return (
     <div className="shrink-0 rounded-card border border-primary/30 bg-primary/5 p-3 flex flex-col gap-2">
-      <Link href={section.href} className="shrink-0 text-small font-bold text-primary-dark hover:text-primary-text transition-colors">
-        {section.label}
-      </Link>
+      {section.href ? (
+        <Link href={section.href} className="shrink-0 text-small font-bold text-primary-dark hover:text-primary-text transition-colors">
+          {section.label}
+        </Link>
+      ) : (
+        <span className="shrink-0 text-small font-bold text-primary-dark">{section.label}</span>
+      )}
       <div className="flex flex-col gap-2 pl-3">
         {section.items.map((item) =>
           item.kind === 'leaf' ? (
