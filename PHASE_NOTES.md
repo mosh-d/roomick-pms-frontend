@@ -1707,3 +1707,25 @@ Second of the 11 Management/Admin gaps, built at `/dashboard/security`. Unlike M
 
 ### Carried forward
 "Custom role creator" and "preset role templates" (both named in the architecture map) are NOT built — no backend endpoint exists to create a new role, and none was added this pass. 9 of the 11 gaps remain; Property Config is next.
+
+## Phase 53 — Property Config: brand, branch, room types, no-show policy (2026-08-30)
+
+Third of the 11 Management/Admin gaps, built at `/dashboard/property-config`. Unlike Security & Roles, most of the backend already existed (brand/branch `PATCH`, no-show policy, reg-card-template, overbooking config) — the real work was consolidating scattered onboarding-only settings into one real page, plus two small backend additions (see the backend's own `PHASE_NOTES.md`: a single-branch `GET`, and room-type `PATCH`).
+
+### Reused existing pages instead of duplicating them
+Registration Card Template and Overbooking Config both already have full, working pages (`/dashboard/registration-cards`, `/dashboard/overbooking`) — rather than rebuilding either editor a second time, this page links out to both via `HubCard` (the same "linked card to a real page" component the Front Desk hub already established), matching the precedent Manager Dashboard's own Rate Resolver→Rate Plan Management link set. Buildings & Floors gets an honest note instead of a card: no GET/list/update endpoint exists for either, so the physical layout genuinely can't be edited post-onboarding today.
+
+### New `lib/propertyConfig.ts`, and `lib/rooms.ts` gained create/update
+`useBrandsQuery`/`useUpdateBrandMutation` (Owner-only — gated client-side via a new `isOwner()` helper in `lib/roles.ts`, the same "UX only, backend is the real authority" caveat `isSupervisorAtBranch` already carries), `useBranchDetailQuery`/`useUpdateBranchMutation`/`useSetNoShowPolicyMutation`. `lib/rooms.ts` gained `useCreateRoomTypeMutation`/`useUpdateRoomTypeMutation` — room type creation previously only happened inline in the onboarding wizard's own local draft state, with no reusable hook; both are colocated with the existing `useRoomTypesQuery` rather than started as a separate file.
+
+### A real bug the live pass caught: branch times aren't bare `HH:mm`
+The first version of `BranchDetailsSection` read `branch.checkInTime.slice(0, 5)` to seed a `type="time"` input, on the assumption the API returns `"14:00"` directly. It doesn't — `checkInTime`/`checkOutTime` are Postgres `TIME` columns, but Prisma/JSON always serializes them as a full `DateTime` on the 1970-01-01 epoch (`"1970-01-01T14:00:00.000Z"`), so `.slice(0, 5)` silently produced `"1970-"` — an invalid time value the backend's own `Matches(HH:mm)` validation correctly rejected, which meant the ENTIRE branch-details save silently failed (including fields the user actually changed, like the name) with no visible error. Caught live: a Playwright check for the "Saved." confirmation after a plain name edit failed, tracing back to this. Fixed with a small `timeOfDay(iso)` helper (`iso.slice(11, 16)`, the actual position of `HH:mm` in that ISO string) — not a one-off patch, since the reference PDF's own check-in/check-out time fields everywhere else in this app format the same way.
+
+### The same setState-in-effect pattern from Phase 51/52, applied twice more
+Both `BrandSection` (syncing form fields once the brand query resolves) and the room-type add/edit modal originally used a `useEffect` to seed local state from a prop/query result — the same anti-pattern already fixed once in `ExtendStayDialog`. Applied the identical fix both times: a keyed child component (`BrandForm` keyed on `brand.id`; `RoomTypeModalInner` keyed on `existing?.id ?? 'new'`) with a lazy `useState` initializer, no effect. Caught by lint before it ever reached a live check this time, now that the pattern is recognized on sight.
+
+### Verified live
+`npx tsc --noEmit`, `eslint` (0 errors after both fixes above), `npm run build` (`/dashboard/property-config` compiles, 39 routes total). Live against real Postgres: read a branch's real settings through the new `GET` endpoint, edited its name/currency/no-show policy via the API first to prove the backend, then drove the actual browser — navigated via the sidebar (Admin → Property Config), confirmed all four sections render with the API-set values already showing, edited the branch name through the form and confirmed both a "Saved." message and a follow-up API call agreeing on the new name, edited an existing room type's rate through its own modal and confirmed the table and the API agreed, then added a brand-new room type through the UI and confirmed a second row existed via the API. 22/22 checks passed, zero console/page errors. Re-ran Manager Dashboard's and Security & Roles' own live suites afterward (40 combined checks) to confirm the shared `lib/roles.ts`/`lib/rooms.ts` edits caused no regression.
+
+### Carried forward
+Buildings & Floors editing is not built — onboarding-only today, stated honestly on the page rather than hidden. 8 of the 11 gaps remain; Maintenance is next.

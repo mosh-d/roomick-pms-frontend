@@ -15,6 +15,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/dashboard/alerts': 'Alerts',
   '/dashboard/manager': 'Manager Dashboard',
   '/dashboard/security': 'Security & Roles',
+  '/dashboard/property-config': 'Property Config',
   '/dashboard/room-status-board': 'Room Status Board',
   '/dashboard/arrivals': 'Arrivals Dashboard',
   '/dashboard/departures': 'Departures Dashboard',
@@ -78,13 +79,16 @@ function pageTitleFor(pathname: string): string {
  * matches that broader prefix first.
  *
  * "Admin" follows the same fallback shape Management used before it had a
- * hub — `/dashboard/security` is Admin's own first (and so far only) real
- * page, matching `Sidebar.tsx`'s own `ADMIN_SECTION.href`.
+ * hub — `/dashboard/security` is Admin's own first real page and stays the
+ * breadcrumb target for `/dashboard/property-config` too, matching
+ * `Sidebar.tsx`'s own `ADMIN_SECTION.href` (neither page is more "central"
+ * than the other, so there's no reason to move it).
  */
 const SECTIONS: Array<{ prefix: string; label: string; href: string }> = [
   { prefix: '/dashboard/alerts', label: 'Alerts', href: '/dashboard/alerts' },
   { prefix: '/dashboard/manager', label: 'Management', href: '/dashboard/manager' },
   { prefix: '/dashboard/security', label: 'Admin', href: '/dashboard/security' },
+  { prefix: '/dashboard/property-config', label: 'Admin', href: '/dashboard/security' },
   { prefix: '/dashboard/reservations/rate-plans', label: 'Management', href: '/dashboard/manager' },
   { prefix: '/dashboard/reservations', label: 'Reservations', href: '/dashboard/reservations' },
   { prefix: '/dashboard/overbooking', label: 'Management', href: '/dashboard/manager' },

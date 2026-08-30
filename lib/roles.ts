@@ -19,3 +19,9 @@ export function isSupervisorAtBranch(user: AuthUser | null, branchId: string): b
     (r) => (r.role === 'owner' || r.role === 'manager') && (r.branchId === null || r.branchId === branchId),
   );
 }
+
+/** Brand-level settings (`PATCH /brands/:brandId`) are Owner-only, tenant-wide — no branch to scope against. Same UX-only caveat as `isSupervisorAtBranch`. */
+export function isOwner(user: AuthUser | null): boolean {
+  if (!user) return false;
+  return user.roles.some((r) => r.role === 'owner');
+}

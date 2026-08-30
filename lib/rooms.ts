@@ -41,6 +41,15 @@ export interface RoomTypeSummary {
   baseRate: string;
   /** The backend's own `listRoomTypes` already returns every column (no `select`) — this was just never typed on the frontend until the capacity cap needed it. */
   capacity: { adults: number; children: number };
+  bedType: string | null;
+  sizeM2: string | null;
+  amenities: string[];
+  photoUrls: string[];
+  sortOrder: number | null;
+}
+
+function roomTypesQueryKey(branchId: string) {
+  return ['room-types', branchId] as const;
 }
 
 /** `GET /branches/:branchId/room-types` — already built for onboarding, unused by any post-onboarding screen until Walk-In Booking needed a room-type picker outside the wizard's own local draft state. */
@@ -49,9 +58,39 @@ export function useRoomTypesQuery(
   { accessToken, tenantId }: { accessToken: string | undefined; tenantId: string | undefined },
 ) {
   return useQuery({
-    queryKey: ['room-types', branchId ?? ''] as const,
+    queryKey: roomTypesQueryKey(branchId ?? ''),
     queryFn: () => apiFetch<RoomTypeSummary[]>(`/branches/${branchId}/room-types`, { accessToken, tenantId }),
     enabled: branchId !== null,
+  });
+}
+
+interface RoomTypeInput {
+  name: string;
+  baseRate: number;
+  capacity: { adults: number; children: number };
+  bedType?: string;
+  sizeM2?: number;
+  amenities?: string[];
+  photoUrls?: string[];
+  sortOrder?: number;
+}
+
+/** Property Config's own "add a room type after onboarding" — the same `POST` onboarding already uses, just callable from a real page instead of only the signup wizard's local draft state. */
+export function useCreateRoomTypeMutation(branchId: string, { accessToken, tenantId }: { accessToken: string | undefined; tenantId: string | undefined }) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: RoomTypeInput) => apiFetch<RoomTypeSummary>(`/branches/${branchId}/room-types`, { method: 'POST', accessToken, tenantId, body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: roomTypesQueryKey(branchId) }),
+  });
+}
+
+/** Never retroactively reprices an existing reservation — see `RoomsService.updateRoomType`'s own comment (roomick-pms-backend). */
+export function useUpdateRoomTypeMutation(branchId: string, { accessToken, tenantId }: { accessToken: string | undefined; tenantId: string | undefined }) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ roomTypeId, ...body }: Partial<RoomTypeInput> & { roomTypeId: string }) =>
+      apiFetch<RoomTypeSummary>(`/room-types/${roomTypeId}`, { method: 'PATCH', accessToken, tenantId, body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: roomTypesQueryKey(branchId) }),
   });
 }
 

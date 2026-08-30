@@ -38,6 +38,7 @@ import {
   FiBell,
   FiCamera,
   FiRefreshCw,
+  FiSettings,
 } from 'react-icons/fi';
 import {
   FaPlaneArrival,
@@ -175,6 +176,11 @@ export function ReportsIcon({ className = 'size-4' }: IconProps) {
 /** Security & Roles (architecture map's `page-security`). */
 export function SecurityIcon({ className = 'size-4' }: IconProps) {
   return <FaShieldAlt className={className} aria-hidden="true" />;
+}
+
+/** Property Config (architecture map's `page-propertyconfig`). */
+export function PropertyConfigIcon({ className = 'size-4' }: IconProps) {
+  return <FiSettings className={className} aria-hidden="true" />;
 }
 
 /** Channel icon in the communications timeline (ref: "Channel icon (email / SMS / push)"). Push/in-app-chat share the generic chat bubble — neither has a manual-send UI yet, so no channel-specific glyph was worth adding for them alone. */

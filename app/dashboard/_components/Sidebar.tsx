@@ -235,18 +235,18 @@ const MANAGEMENT_SECTION: TopLevelSection = {
 };
 
 /**
- * Security & Roles is now real (permission matrix, audit log viewer, GDPR
- * compliance tracker) — the rest are still genuinely unbuilt, confirmed
- * directly (no settings page, no integrations page, no backup/system-health
- * admin screen, no cross-branch HQ view) rather than assumed. `href` falls
- * back to the one real child, the same pattern `MANAGEMENT_SECTION` used
- * before Manager Dashboard existed.
+ * Security & Roles and Property Config are now real — the rest are still
+ * genuinely unbuilt, confirmed directly (no integrations page, no backup/
+ * system-health admin screen, no cross-branch HQ view) rather than
+ * assumed. `href` still points at Security & Roles, the first of the two
+ * to land — no page here is more "central" than the other the way Manager
+ * Dashboard was for Management, so there's no strong reason to move it.
  */
 const ADMIN_SECTION: TopLevelSection = {
   label: 'Admin',
   href: '/dashboard/security',
   items: [
-    leaf({ label: 'Property Config' }),
+    leaf({ label: 'Property Config', href: '/dashboard/property-config' }),
     leaf({ label: 'Integrations & APIs' }),
     leaf({ label: 'Security & Roles', href: '/dashboard/security' }),
     leaf({ label: 'System Admin' }),
