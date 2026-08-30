@@ -1836,3 +1836,22 @@ Rather than replacing the page entirely, the existing "Loyalty Program Config"/"
 
 ### Carried forward
 4 of the 11 gaps remain, all previously deferred as needing real new domain design: Revenue Management, Sales & Events, Integrations & APIs, Enterprise/HQ.
+
+## Phase 60 — Enterprise / HQ: Portfolio Overview, Cross-Property Reports, Brand Management, Add New Branch (2026-08-30)
+
+Picked as the best fit among the 4 remaining architecture-map gaps — see the backend's own `PHASE_NOTES.md` for why. One page, four `Section`s at `/dashboard/hq`, matching every other Management/Admin item's own established shape, gated once at the page level (`isOwner(user)`) since every `/hq/*` route and brand/branch-creation route is Owner-only — unlike Property Config, there's no partial view here for a non-Owner to see.
+
+### Brand Management and Add New Branch reuse `lib/propertyConfig.ts` directly, extended rather than duplicated
+`Brand`/`BranchDetail` types and `useBrandsQuery`/`useUpdateBrandMutation` already existed there from the Property Config pass — this page imports them as-is and adds two new mutations to the SAME file (`useCreateBrandMutation`, `useCreateBranchMutation`), rather than redeclaring brand/branch types in a new `lib/hq.ts`. `lib/hq.ts` itself holds only the two genuinely HQ-specific reads: `usePortfolioQuery`, `useCrossPropertyReportQuery`.
+
+### Add New Branch mirrors Property Config's own `BranchDetailsSection` field-for-field
+Same `COUNTRIES`/`timezoneOptionsFor` sources, same auto-fill-timezone-from-country behavior — deliberately trimmed to the required fields only (no check-in/out times, no category), since this is a quick-add flow and every one of those can be fine-tuned afterward from Property Config once the branch exists.
+
+### A cross-tenant currency-mixing pitfall caught before it shipped, not after
+The first draft of `CrossPropertyReportsSection` was going to show a blended total row unconditionally. Reviewing the backend's own `mixedCurrencies`/`blendedTotal: null` design (see its `PHASE_NOTES.md`) before wiring the UI up meant the page never had a version that silently summed NGN and USD figures together — the mixed-currency case renders an explicit note instead of a fabricated "All Branches" row for ADR/RevPAR/Revenue (Occupancy still always blends, since it's currency-free).
+
+### Verified live
+`npx tsc --noEmit`, `eslint` (0 new errors/warnings — the same 6 pre-existing, unrelated warnings), `npm run build` (`/dashboard/hq` compiles, all 54 routes). Live against real Postgres with a genuinely multi-brand tenant (2 brands, 2 branches, one guest checked in): confirmed via the API first that the portfolio and cross-property endpoints compute correctly (documented on the backend's own side). Then drove the real browser — including handling the "Choose a property" branch picker this tenant's multiple branches triggered, a first for this verification suite since every other phase's test tenant had exactly one branch — confirmed all four sections render with the real API-driven data, renamed a brand through the UI and confirmed both the field's own value and a follow-up API call agreed, and added a third branch through the UI (brand picker, country, auto-filled timezone) and confirmed both the "Branch created." message and the API agreeing on 3 total branches. 20/20 checks passed, zero console/page errors.
+
+### Carried forward
+3 of the original 11 architecture-map gaps remain: Revenue Management, Sales & Events, Integrations & APIs — all still needing real new domain design.

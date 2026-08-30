@@ -46,6 +46,36 @@ export function useUpdateBrandMutation({ accessToken, tenantId }: AuthOpts) {
   });
 }
 
+/** Added for Enterprise / HQ's own "Brand Management" card — single-mode tenants get a 409 from the backend past their one allowed brand; the caller surfaces that as a normal form error, not a special case here. */
+export function useCreateBrandMutation({ accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { name: string; logoUrl?: string; primaryColor?: string }) => apiFetch<Brand>('/brands', { method: 'POST', accessToken, tenantId, body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['brands'] }),
+  });
+}
+
+export interface AddressInput {
+  street: string;
+  city: string;
+  state?: string;
+  country: string;
+  zip?: string;
+}
+
+/** Added for Enterprise / HQ's own "Add New Branch" card — the same `POST /brands/:brandId/branches` every onboarding flow and live-verification script already provisions branches through. */
+export function useCreateBranchMutation({ accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ brandId, ...body }: { brandId: string; name: string; address: AddressInput; timezone: string; currency: string }) =>
+      apiFetch<BranchDetail>(`/brands/${brandId}/branches`, { method: 'POST', accessToken, tenantId, body }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['branches'] });
+      queryClient.invalidateQueries({ queryKey: ['hq-portfolio'] });
+    },
+  });
+}
+
 function branchDetailQueryKey(branchId: string) {
   return ['branch-detail', branchId] as const;
 }
