@@ -308,7 +308,12 @@ export default function ManagerDashboardPage() {
 
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-8">
-      <PageHeader icon={<ReportsIcon className="size-8" />} title="Manager Dashboard" subtitle="Operational oversight, staff management, and rate overrides" />
+      <PageHeader
+        icon={<ReportsIcon className="size-8" />}
+        title="Manager Dashboard"
+        subtitle="Operational oversight, approvals, staff management, override controls."
+        roles="Manager"
+      />
 
       <Section label="Operations Overview">
         <div className="flex flex-col gap-4">

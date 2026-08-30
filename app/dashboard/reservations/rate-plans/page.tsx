@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
+import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select, type SelectOption } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
@@ -151,7 +152,21 @@ export default function RatePlansPage() {
 
   return (
     <Container className="max-w-5xl py-10 flex flex-col gap-8">
-      <PageHeader icon={<RatePlanIcon className="size-8" />} title="Rate Plan Management" subtitle="Base, seasonal, weekend, corporate, negotiated, promotional" />
+      <PageHeader
+        icon={<RatePlanIcon className="size-8" />}
+        title="Rate Resolver"
+        subtitle="The single source of truth for all rate calculations. The frontend never calculates rates — every price shown in the UI is fetched from this engine."
+        roles="System — Backend Service"
+      />
+
+      <Card tone="accent" className="flex flex-col gap-1">
+        <p className="text-tiny font-bold uppercase tracking-wide text-primary-dark/60">Architecture Rule</p>
+        <p className="text-body text-primary-dark">
+          Lives exclusively in the backend as <code>RateResolverService</code>, never replicated on the client. Rate Plan Management below is the one real
+          screen that configures the cascade tiers (base, seasonal, weekend, corporate) and negotiated/promotional overrides it applies on every booking
+          screen.
+        </p>
+      </Card>
 
       {formError ? <p className="text-small text-red-600">{formError}</p> : null}
 

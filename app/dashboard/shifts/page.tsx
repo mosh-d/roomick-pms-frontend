@@ -123,7 +123,12 @@ export default function ShiftManagementPage() {
 
   return (
     <Container className="max-w-5xl py-10 flex flex-col gap-8">
-      <PageHeader icon={<ShiftIcon className="size-8" />} title="Shift Management" subtitle="Cash drawer, handover, unresolved issues" />
+      <PageHeader
+        icon={<ShiftIcon className="size-8" />}
+        title="Shift Management"
+        subtitle="Shift open/close, cash drawer float reconciliation, handover notes, and unresolved issue tracking between agents."
+        roles="Front Desk · Manager"
+      />
 
       {currentShiftQuery.isLoading ? (
         <p className="text-body text-primary-dark/70">Loading…</p>

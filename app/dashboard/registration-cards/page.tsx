@@ -72,7 +72,12 @@ export default function RegistrationCardsHubPage() {
 
   return (
     <Container className="max-w-3xl py-10 flex flex-col gap-8">
-      <PageHeader icon={<HotelCheckInIcon className="size-8" />} title="Guest Registration Card" subtitle="Template settings and card lookup" />
+      <PageHeader
+        icon={<HotelCheckInIcon className="size-8" />}
+        title="Guest Registration Card"
+        subtitle="The legal check-in document. Generated per reservation at check-in — contains confirmed rate, room, dates, house rules acknowledgment, and guest signature."
+        roles="Front Desk · Admin"
+      />
 
       <Section label="Card Template">
         {templateQuery.isLoading ? (

@@ -41,7 +41,7 @@ export default function ReservationsHubPage() {
 
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-8">
-      <PageHeader title="Reservations" subtitle="Full booking lifecycle management." />
+      <PageHeader title="Reservations" subtitle="Full booking lifecycle management." roles="Front Desk · Manager" />
 
       <Section label="Reservations">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

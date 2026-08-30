@@ -110,7 +110,12 @@ export default function NoShowHandlingPage() {
 
   return (
     <Container className="max-w-4xl py-10 flex flex-col gap-8">
-      <PageHeader icon={<NoShowIcon className="size-8" />} title="No-Show Handling" subtitle="Confirmed arrivals that never checked in" />
+      <PageHeader
+        icon={<NoShowIcon className="size-8" />}
+        title="No-Show Handling"
+        subtitle="Deliberate operational flow for guests who never arrive. Applies policy penalties, releases inventory, and closes or voids the folio correctly."
+        roles="Front Desk · Manager"
+      />
 
       {formError ? <p className="text-small text-red-600">{formError}</p> : null}
 

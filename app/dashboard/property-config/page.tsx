@@ -357,7 +357,12 @@ export default function PropertyConfigPage() {
 
   return (
     <Container className="max-w-5xl py-10 flex flex-col gap-8">
-      <PageHeader icon={<PropertyConfigIcon className="size-8" />} title="Property Config" subtitle="Brand, branch, room types, and policies" />
+      <PageHeader
+        icon={<PropertyConfigIcon className="size-8" />}
+        title="Property Config"
+        subtitle="Room types, policies, tax rules, payment methods, channel manager, facilities."
+        roles="Admin · Manager"
+      />
 
       {isOwner(user) ? <BrandSection auth={auth} /> : null}
 

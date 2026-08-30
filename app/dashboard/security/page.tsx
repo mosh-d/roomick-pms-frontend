@@ -357,7 +357,12 @@ export default function SecurityRolesPage() {
 
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-8">
-      <PageHeader icon={<SecurityIcon className="size-8" />} title="Security & Roles" subtitle="Permissions, audit trail, and GDPR compliance" />
+      <PageHeader
+        icon={<SecurityIcon className="size-8" />}
+        title="Security & Roles"
+        subtitle="RBAC, permissions matrix, audit logs, MFA, GDPR, PCI compliance."
+        roles="Admin"
+      />
 
       <PermissionMatrixSection auth={auth} />
       <AuditLogSection auth={auth} />

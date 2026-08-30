@@ -10,8 +10,9 @@ import {
   ClipboardListIcon,
   HotelCheckInIcon,
   HotelCheckOutIcon,
+  ManualRoomOverrideIcon,
   PlaneLandingIcon,
-  RoomChangeIcon,
+  RoomUpgradeIcon,
   WalkInIcon,
 } from '@/components/ui/Icons';
 import { deriveRoomStatus } from '@/lib/deriveRoomStatus';
@@ -73,6 +74,7 @@ export default function FrontDeskHubPage() {
       <PageHeader
         title="Front Desk"
         subtitle="Primary operational hub for receptionists. Arrivals, departures, in-house management, and walk-ins."
+        roles="Front Desk Agent"
       />
 
       <Section label="Check-In">
@@ -90,6 +92,7 @@ export default function FrontDeskHubPage() {
             description="Room assignment for an arriving guest"
             href="/dashboard/check-in"
           />
+          <HubCard icon={<ManualRoomOverrideIcon className="size-5" />} title="Manual Room Override" description="Receptionist selects room manually" />
           <HubCard
             icon={<WalkInIcon className="size-5" />}
             title="Walk-In Booking"
@@ -114,7 +117,7 @@ export default function FrontDeskHubPage() {
             description="Release a departing guest's room"
             href="/dashboard/check-out"
           />
-          <HubCard icon={<RoomChangeIcon className="size-5" />} title="Room Change" description="Switch guest to a different room" />
+          <HubCard icon={<RoomUpgradeIcon className="size-5" />} title="Room Upgrade" description="Switch guest to a higher room category" />
         </div>
       </Section>
 

@@ -107,7 +107,12 @@ export default function OverbookingManagementPage() {
 
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-8">
-      <PageHeader icon={<OverbookingIcon className="size-8" />} title="Overbooking Management" subtitle="Thresholds, walk flow, exposure" />
+      <PageHeader
+        icon={<OverbookingIcon className="size-8" />}
+        title="Overbooking Management"
+        subtitle="Intentional overbooking strategy tooling, threshold configuration per room type, and walk management when a guest arrives to a full house."
+        roles="Revenue Manager · Manager"
+      />
 
       <Section label="Configuration">
         <ConfigForm branchId={activeBranchId} roomTypeOptions={(roomTypesQuery.data ?? []).map((rt) => ({ value: rt.id, label: rt.name }))} auth={auth} />

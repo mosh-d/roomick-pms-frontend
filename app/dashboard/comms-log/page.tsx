@@ -65,7 +65,12 @@ export default function CommsLogPage() {
 
   return (
     <Container className="max-w-4xl py-10 flex flex-col gap-8">
-      <PageHeader icon={<CommsLogIcon className="size-8" />} title="Guest Communications Log" subtitle="Every message sent to a guest, per reservation" />
+      <PageHeader
+        icon={<CommsLogIcon className="size-8" />}
+        title="Guest Communications Log"
+        subtitle="Complete history of every automated and manual communication sent to a guest, attached to both the reservation and guest profile."
+        roles="Front Desk · Manager"
+      />
 
       <Section label="Find a Reservation">
         <SearchInput value={search} onChange={setSearch} placeholder="Confirmation number or guest name" label="Search reservations" />

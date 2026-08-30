@@ -357,7 +357,12 @@ export default function MaintenancePage() {
 
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-8">
-      <PageHeader icon={<MaintenanceIcon className="size-8" />} title="Maintenance" subtitle="Work orders, asset tracking, and out-of-service rooms" />
+      <PageHeader
+        icon={<MaintenanceIcon className="size-8" />}
+        title="Maintenance"
+        subtitle="Work orders, preventive maintenance, asset tracking, OOO logic."
+        roles="Maintenance Staff · Manager"
+      />
 
       <WorkOrderSubmissionSection branchId={activeBranchId} auth={auth} />
       <WorkOrderBoard branchId={activeBranchId} auth={auth} />

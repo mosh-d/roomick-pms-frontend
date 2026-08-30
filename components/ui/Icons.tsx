@@ -67,6 +67,39 @@ import {
   FaChartLine,
   FaShieldAlt,
   FaTools,
+  FaAddressCard,
+  FaColumns,
+  FaMoon,
+  FaShareSquare,
+  FaShoppingCart,
+  FaUndoAlt,
+  FaTachometerAlt,
+  FaChartBar,
+  FaGlassCheers,
+  FaGift,
+  FaPlug,
+  FaServer,
+  FaBuilding,
+  FaKey,
+  FaLevelUpAlt,
+  FaHistory,
+  FaUtensils,
+  FaCalculator,
+  FaHandshake,
+  FaFlag,
+  FaDatabase,
+  FaHeartbeat,
+  FaChartPie,
+  FaTag,
+  FaPlusSquare,
+  FaLightbulb,
+  FaBalanceScaleLeft,
+  FaCalendarAlt,
+  FaFileInvoiceDollar,
+  FaSlidersH,
+  FaCreditCard,
+  FaCodeBranch,
+  FaSignature,
 } from 'react-icons/fa';
 
 type IconProps = { className?: string };
@@ -187,6 +220,192 @@ export function PropertyConfigIcon({ className = 'size-4' }: IconProps) {
 /** Maintenance (architecture map's `page-maintenance`) — a wrench, distinct from Housekeeping's `RoomBlockingIcon` "no entry" glyph even though both touch out-of-service rooms. */
 export function MaintenanceIcon({ className = 'size-4' }: IconProps) {
   return <FaTools className={className} aria-hidden="true" />;
+}
+
+/** Guest Profiles & CRM (architecture map's `page-guestprofile`). */
+export function GuestProfileIcon({ className = 'size-4' }: IconProps) {
+  return <FaAddressCard className={className} aria-hidden="true" />;
+}
+
+/** Split Billing — dividing one folio's charges across accounts. */
+export function SplitBillingIcon({ className = 'size-4' }: IconProps) {
+  return <FaColumns className={className} aria-hidden="true" />;
+}
+
+/** Night Audit. */
+export function NightAuditIcon({ className = 'size-4' }: IconProps) {
+  return <FaMoon className={className} aria-hidden="true" />;
+}
+
+/** Folio Transfer — distinct from `RoomChangeIcon`'s own `FaExchangeAlt`, which already means "move a guest between rooms." */
+export function FolioTransferIcon({ className = 'size-4' }: IconProps) {
+  return <FaShareSquare className={className} aria-hidden="true" />;
+}
+
+/** Point of Sale. */
+export function PointOfSaleIcon({ className = 'size-4' }: IconProps) {
+  return <FaShoppingCart className={className} aria-hidden="true" />;
+}
+
+/** Refunds and Corrections. */
+export function RefundsIcon({ className = 'size-4' }: IconProps) {
+  return <FaUndoAlt className={className} aria-hidden="true" />;
+}
+
+/** Manager Dashboard — a gauge, distinct from `ReportsIcon`'s own chart-line glyph. */
+export function ManagerDashboardIcon({ className = 'size-4' }: IconProps) {
+  return <FaTachometerAlt className={className} aria-hidden="true" />;
+}
+
+/** Revenue Management. */
+export function RevenueManagementIcon({ className = 'size-4' }: IconProps) {
+  return <FaChartBar className={className} aria-hidden="true" />;
+}
+
+/** Sales & Events. */
+export function SalesEventsIcon({ className = 'size-4' }: IconProps) {
+  return <FaGlassCheers className={className} aria-hidden="true" />;
+}
+
+/** Loyalty & Marketing. */
+export function LoyaltyIcon({ className = 'size-4' }: IconProps) {
+  return <FaGift className={className} aria-hidden="true" />;
+}
+
+/** Integrations & APIs. */
+export function IntegrationsIcon({ className = 'size-4' }: IconProps) {
+  return <FaPlug className={className} aria-hidden="true" />;
+}
+
+/** System Admin. */
+export function SystemAdminIcon({ className = 'size-4' }: IconProps) {
+  return <FaServer className={className} aria-hidden="true" />;
+}
+
+/** Enterprise / HQ. */
+export function EnterpriseIcon({ className = 'size-4' }: IconProps) {
+  return <FaBuilding className={className} aria-hidden="true" />;
+}
+
+/** Front Desk's own "Manual Room Override" card. */
+export function ManualRoomOverrideIcon({ className = 'size-4' }: IconProps) {
+  return <FaKey className={className} aria-hidden="true" />;
+}
+
+/** Front Desk's own "Room Upgrade" card — distinct from `RoomChangeIcon`'s lateral swap. */
+export function RoomUpgradeIcon({ className = 'size-4' }: IconProps) {
+  return <FaLevelUpAlt className={className} aria-hidden="true" />;
+}
+
+/** Folio Transfer's own sub-cards. */
+export function TransferChargesIcon({ className = 'size-4' }: IconProps) {
+  return <FaExchangeAlt className={className} aria-hidden="true" />;
+}
+export function CreateSecondaryFolioIcon({ className = 'size-4' }: IconProps) {
+  return <FaLayerGroup className={className} aria-hidden="true" />;
+}
+export function TransferHistoryIcon({ className = 'size-4' }: IconProps) {
+  return <FaHistory className={className} aria-hidden="true" />;
+}
+
+/** Point of Sale's own sub-cards. */
+export function PosTerminalIcon({ className = 'size-4' }: IconProps) {
+  return <FaCashRegister className={className} aria-hidden="true" />;
+}
+export function MenuManagementIcon({ className = 'size-4' }: IconProps) {
+  return <FaUtensils className={className} aria-hidden="true" />;
+}
+
+/** Rate Resolver's own sub-cards. */
+export function CalculateRateIcon({ className = 'size-4' }: IconProps) {
+  return <FaCalculator className={className} aria-hidden="true" />;
+}
+export function RateAuditLogIcon({ className = 'size-4' }: IconProps) {
+  return <FaHistory className={className} aria-hidden="true" />;
+}
+export function RatePreviewIcon({ className = 'size-4' }: IconProps) {
+  return <FaColumns className={className} aria-hidden="true" />;
+}
+
+/** Guest Profiles & CRM's own "Corporate Accounts" card. */
+export function CorporateAccountsIcon({ className = 'size-4' }: IconProps) {
+  return <FaHandshake className={className} aria-hidden="true" />;
+}
+
+/** Revenue Management's own sub-cards. */
+export function DemandForecastIcon({ className = 'size-4' }: IconProps) {
+  return <FaChartLine className={className} aria-hidden="true" />;
+}
+export function RateRecommendationsIcon({ className = 'size-4' }: IconProps) {
+  return <FaLightbulb className={className} aria-hidden="true" />;
+}
+export function RestrictionsManagementIcon({ className = 'size-4' }: IconProps) {
+  return <FaBan className={className} aria-hidden="true" />;
+}
+export function CompSetAnalysisIcon({ className = 'size-4' }: IconProps) {
+  return <FaBalanceScaleLeft className={className} aria-hidden="true" />;
+}
+
+/** Sales & Events' own sub-cards. */
+export function GroupBlockIcon({ className = 'size-4' }: IconProps) {
+  return <FaUsers className={className} aria-hidden="true" />;
+}
+export function EventSpaceIcon({ className = 'size-4' }: IconProps) {
+  return <FaCalendarAlt className={className} aria-hidden="true" />;
+}
+
+/** Loyalty & Marketing's own sub-cards. */
+export function LoyaltyProgramConfigIcon({ className = 'size-4' }: IconProps) {
+  return <FaGift className={className} aria-hidden="true" />;
+}
+export function EmailCampaignIcon({ className = 'size-4' }: IconProps) {
+  return <FaEnvelope className={className} aria-hidden="true" />;
+}
+
+/** Reports & Analytics' own sub-cards. */
+export function FinancialReportsIcon({ className = 'size-4' }: IconProps) {
+  return <FaFileInvoiceDollar className={className} aria-hidden="true" />;
+}
+export function CustomReportBuilderIcon({ className = 'size-4' }: IconProps) {
+  return <FaSlidersH className={className} aria-hidden="true" />;
+}
+
+/** Integrations & APIs' own sub-cards. */
+export function PaymentGatewayIcon({ className = 'size-4' }: IconProps) {
+  return <FaCreditCard className={className} aria-hidden="true" />;
+}
+export function WebhooksIcon({ className = 'size-4' }: IconProps) {
+  return <FaCodeBranch className={className} aria-hidden="true" />;
+}
+export function ApiKeysIcon({ className = 'size-4' }: IconProps) {
+  return <FaKey className={className} aria-hidden="true" />;
+}
+
+/** System Admin's own sub-cards. */
+export function FeatureFlagsIcon({ className = 'size-4' }: IconProps) {
+  return <FaFlag className={className} aria-hidden="true" />;
+}
+export function BackupManagementIcon({ className = 'size-4' }: IconProps) {
+  return <FaDatabase className={className} aria-hidden="true" />;
+}
+export function SystemHealthIcon({ className = 'size-4' }: IconProps) {
+  return <FaHeartbeat className={className} aria-hidden="true" />;
+}
+
+/** Enterprise / HQ's own sub-cards. */
+export function PortfolioOverviewIcon({ className = 'size-4' }: IconProps) {
+  return <FaChartPie className={className} aria-hidden="true" />;
+}
+export function BrandManagementIcon({ className = 'size-4' }: IconProps) {
+  return <FaTag className={className} aria-hidden="true" />;
+}
+export function AddBranchIcon({ className = 'size-4' }: IconProps) {
+  return <FaPlusSquare className={className} aria-hidden="true" />;
+}
+
+/** Guest Registration Card's own "Capture & Store Signature" card. */
+export function SignatureIcon({ className = 'size-4' }: IconProps) {
+  return <FaSignature className={className} aria-hidden="true" />;
 }
 
 /** Channel icon in the communications timeline (ref: "Channel icon (email / SMS / push)"). Push/in-app-chat share the generic chat bubble — neither has a manual-send UI yet, so no channel-specific glyph was worth adding for them alone. */

@@ -28,15 +28,23 @@ export function PageHeader({
   title,
   subtitle,
   actions,
+  roles,
 }: {
   icon?: ReactNode;
   title: string;
   subtitle?: string;
   /** Optional right-aligned controls sitting on the title row (e.g. a primary action). */
   actions?: ReactNode;
+  /** The architecture map's own persona pill (e.g. "Front Desk · Manager") — who this page is for, not an access-control mechanism (the page's own `@Roles` guard is what's actually enforced; see `roomick_rbac_gating_sufficiency` — this is informational only). */
+  roles?: string;
 }) {
   return (
     <div className="flex flex-col gap-4">
+      {roles ? (
+        <span className="self-start inline-flex items-center rounded-pill border border-primary/30 bg-primary-light/30 px-3 py-1 text-tiny font-semibold text-primary-dark">
+          {roles}
+        </span>
+      ) : null}
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1 min-w-0">
           <div className="flex items-center gap-3 min-w-0">

@@ -81,7 +81,7 @@ export default function GuestFolioPage() {
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-8">
       <div className="flex items-center justify-between">
-        <BackButton fallbackHref="/dashboard/billing" />
+        <BackButton fallbackHref="/dashboard/billing/folios" />
         <ForwardButton />
       </div>
       <PageHeader

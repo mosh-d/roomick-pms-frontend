@@ -36,7 +36,7 @@ export default function HousekeepingHubPage() {
 
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-8">
-      <PageHeader title="Housekeeping" subtitle="Room cleaning workflow, staff assignments, and facility status." />
+      <PageHeader title="Housekeeping" subtitle="Room cleaning workflow, staff assignments, and facility status." roles="Housekeeper · Supervisor" />
 
       <Section label="Housekeeping">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

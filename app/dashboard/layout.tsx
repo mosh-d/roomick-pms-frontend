@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { useMyBranches } from '@/lib/dashboardBranches';
@@ -12,11 +11,21 @@ import { Sidebar } from './_components/Sidebar';
 
 /** Route → breadcrumb title. Extend this whenever a new `/dashboard/*` page is added — it used to be a two-way ternary hardcoded to exactly `/dashboard` vs. Room Status Board, which would have silently mislabeled every route added since. */
 const ROUTE_TITLES: Record<string, string> = {
+  '/dashboard': 'Front Desk',
   '/dashboard/alerts': 'Alerts',
   '/dashboard/manager': 'Manager Dashboard',
   '/dashboard/security': 'Security & Roles',
   '/dashboard/property-config': 'Property Config',
   '/dashboard/maintenance': 'Maintenance',
+  '/dashboard/guests': 'Guest Profiles & CRM',
+  '/dashboard/revenue': 'Revenue Management',
+  '/dashboard/sales-events': 'Sales & Events',
+  '/dashboard/loyalty': 'Loyalty & Marketing',
+  '/dashboard/integrations': 'Integrations & APIs',
+  '/dashboard/system-admin': 'System Admin',
+  '/dashboard/hq': 'Enterprise / HQ',
+  '/dashboard/folio-transfer': 'Folio Transfer',
+  '/dashboard/pos': 'Point of Sale',
   '/dashboard/room-status-board': 'Room Status Board',
   '/dashboard/arrivals': 'Arrivals Dashboard',
   '/dashboard/departures': 'Departures Dashboard',
@@ -24,21 +33,22 @@ const ROUTE_TITLES: Record<string, string> = {
   '/dashboard/walk-in-booking': 'Walk-In Booking',
   '/dashboard/check-in': 'Check-In Flow',
   '/dashboard/check-out': 'Check-Out Flow',
-  '/dashboard/billing': 'Guest Folio',
+  '/dashboard/billing': 'Billing and Payments',
   '/dashboard/night-audit': 'Night Audit',
   '/dashboard/split-billing': 'Split Billing',
   '/dashboard/no-shows': 'No-Show Handling',
   '/dashboard/registration-cards': 'Guest Registration Card',
   '/dashboard/shifts': 'Shift Management',
   '/dashboard/comms-log': 'Guest Communications Log',
-  '/dashboard/reports': 'Operational Reports',
+  '/dashboard/reports': 'Reports & Analytics',
+  '/dashboard/reports/operational': 'Operational Reports',
   '/dashboard/reservations': 'Reservations',
   '/dashboard/reservations/availability-calendar': 'Availability Calendar',
   '/dashboard/reservations/create': 'Create Reservation',
   '/dashboard/reservations/modify': 'Modify Reservation',
   '/dashboard/reservations/cancel': 'Cancel Reservation',
   '/dashboard/reservations/waitlist': 'Waitlist Management',
-  '/dashboard/reservations/rate-plans': 'Rate Plan Management',
+  '/dashboard/reservations/rate-plans': 'Rate Resolver',
   '/dashboard/overbooking': 'Overbooking Management',
   '/dashboard/housekeeping': 'Housekeeping',
   '/dashboard/housekeeping/task-board': 'Task Board',
@@ -51,62 +61,64 @@ function pageTitleFor(pathname: string): string {
   if (pathname.startsWith('/dashboard/check-in/')) return 'Check-In Flow';
   if (pathname.startsWith('/dashboard/billing/')) return 'Guest Folio';
   if (pathname.startsWith('/dashboard/registration-cards/')) return 'Guest Registration Card';
+  if (pathname.startsWith('/dashboard/guests/')) return 'Guest Profile';
   return ROUTE_TITLES[pathname] ?? '';
 }
 
 /**
- * The breadcrumb's middle segment — which top-level section a route
- * belongs to. Front Desk was the only section for most of this app's life,
- * so the breadcrumb hardcoded "Front Desk" unconditionally; once
- * Reservations and Housekeeping became real top-level sections (own
- * sidebar groups, own hub pages) that started rendering literally wrong
- * breadcrumbs like "Front Desk / Housekeeping" — found live, not by
- * inspection, the moment a second section existed to make it visible.
+ * The breadcrumb's leading segment — which of the three architecture-map
+ * groups (Operations / Management / Admin) a route belongs to. Always
+ * plain text, never a link — pixel-checked against the reference: every
+ * one of its screenshots shows "Operations", "Management", or "Admin" as
+ * dim, non-interactive text, exactly like `Sidebar.tsx`'s own
+ * `SidebarGroupLabel` for the same three names. There is no "Management"
+ * or "Admin" hub page to link to any more — the reference never has one;
+ * MANAGEMENT and ADMIN are pure section labels over a flat list of peer
+ * pages, same as OPERATIONS always was.
  *
- * Billing and Payments has no hub page of its own — its `href` here (and
- * `Sidebar.tsx`'s own `BILLING_SECTION.href`) both point at Guest Folio,
- * its first and most useful page, the same role a real hub plays for the
- * other three sections.
+ * The breadcrumb's own SECOND segment is always the current page's own
+ * title (`pageTitleFor`) — including on a section's own hub page itself
+ * (e.g. Front Desk's hub reads "Operations / Front Desk", never collapsed
+ * to "Operations" alone). An earlier version collapsed to one segment
+ * when `pathname === section.href`; the reference never does this.
  *
- * "Management" groups pages that moved out of Reservations (Overbooking,
- * Rate Plan Management — the architecture map's own "Rate Resolver") plus
- * Reports and Analytics, and now Manager Dashboard itself — matching
- * `Sidebar.tsx`'s own `MANAGEMENT_SECTION`, whose `href` is
- * `/dashboard/manager` now that a real hub page exists (the "no dedicated
- * hub, fall back to the first real child" era ended the moment Manager
- * Dashboard shipped). `/dashboard/reservations/rate-plans` MUST be listed
- * before the plain `/dashboard/reservations` prefix below — `Array.find`
- * takes the first match, and every `/reservations/*` route otherwise
- * matches that broader prefix first.
- *
- * "Admin" follows the same fallback shape Management used before it had a
- * hub — `/dashboard/security` is Admin's own first real page and stays the
- * breadcrumb target for `/dashboard/property-config` too, matching
- * `Sidebar.tsx`'s own `ADMIN_SECTION.href` (neither page is more "central"
- * than the other, so there's no reason to move it).
+ * `/dashboard/reservations/rate-plans` MUST be listed before the plain
+ * `/dashboard/reservations` prefix below — `Array.find` takes the first
+ * match, and every `/reservations/*` route otherwise matches that broader
+ * prefix first.
  */
-const SECTIONS: Array<{ prefix: string; label: string; href: string }> = [
-  { prefix: '/dashboard/alerts', label: 'Alerts', href: '/dashboard/alerts' },
-  { prefix: '/dashboard/manager', label: 'Management', href: '/dashboard/manager' },
-  { prefix: '/dashboard/security', label: 'Admin', href: '/dashboard/security' },
-  { prefix: '/dashboard/property-config', label: 'Admin', href: '/dashboard/security' },
-  { prefix: '/dashboard/reservations/rate-plans', label: 'Management', href: '/dashboard/manager' },
-  { prefix: '/dashboard/reservations', label: 'Reservations', href: '/dashboard/reservations' },
-  { prefix: '/dashboard/overbooking', label: 'Management', href: '/dashboard/manager' },
-  { prefix: '/dashboard/reports', label: 'Management', href: '/dashboard/manager' },
-  { prefix: '/dashboard/maintenance', label: 'Management', href: '/dashboard/manager' },
-  { prefix: '/dashboard/housekeeping', label: 'Housekeeping', href: '/dashboard/housekeeping' },
-  { prefix: '/dashboard/billing', label: 'Billing and Payments', href: '/dashboard/billing' },
-  { prefix: '/dashboard/split-billing', label: 'Billing and Payments', href: '/dashboard/billing' },
-  { prefix: '/dashboard/night-audit', label: 'Billing and Payments', href: '/dashboard/billing' },
-  { prefix: '/dashboard/no-shows', label: 'Billing and Payments', href: '/dashboard/billing' },
-  { prefix: '/dashboard/registration-cards', label: 'Billing and Payments', href: '/dashboard/billing' },
-  { prefix: '/dashboard/shifts', label: 'Billing and Payments', href: '/dashboard/billing' },
-  { prefix: '/dashboard/comms-log', label: 'Billing and Payments', href: '/dashboard/billing' },
+type Group = 'Operations' | 'Management' | 'Admin';
+const GROUP_PREFIXES: Array<{ prefix: string; group: Group }> = [
+  { prefix: '/dashboard/alerts', group: 'Operations' },
+  { prefix: '/dashboard/reservations/rate-plans', group: 'Management' },
+  { prefix: '/dashboard/reservations', group: 'Operations' },
+  { prefix: '/dashboard/housekeeping', group: 'Operations' },
+  { prefix: '/dashboard/billing', group: 'Operations' },
+  { prefix: '/dashboard/split-billing', group: 'Operations' },
+  { prefix: '/dashboard/night-audit', group: 'Operations' },
+  { prefix: '/dashboard/folio-transfer', group: 'Operations' },
+  { prefix: '/dashboard/pos', group: 'Operations' },
+  { prefix: '/dashboard/shifts', group: 'Operations' },
+  { prefix: '/dashboard/no-shows', group: 'Operations' },
+  { prefix: '/dashboard/registration-cards', group: 'Operations' },
+  { prefix: '/dashboard/comms-log', group: 'Operations' },
+  { prefix: '/dashboard/manager', group: 'Management' },
+  { prefix: '/dashboard/overbooking', group: 'Management' },
+  { prefix: '/dashboard/guests', group: 'Management' },
+  { prefix: '/dashboard/revenue', group: 'Management' },
+  { prefix: '/dashboard/sales-events', group: 'Management' },
+  { prefix: '/dashboard/maintenance', group: 'Management' },
+  { prefix: '/dashboard/loyalty', group: 'Management' },
+  { prefix: '/dashboard/reports', group: 'Management' },
+  { prefix: '/dashboard/property-config', group: 'Admin' },
+  { prefix: '/dashboard/integrations', group: 'Admin' },
+  { prefix: '/dashboard/security', group: 'Admin' },
+  { prefix: '/dashboard/system-admin', group: 'Admin' },
+  { prefix: '/dashboard/hq', group: 'Admin' },
 ];
 
-function sectionFor(pathname: string): { label: string; href: string } {
-  return SECTIONS.find((s) => pathname.startsWith(s.prefix)) ?? { label: 'Front Desk', href: '/dashboard' };
+function groupFor(pathname: string): Group {
+  return GROUP_PREFIXES.find((s) => pathname.startsWith(s.prefix))?.group ?? 'Operations';
 }
 
 /**
@@ -194,7 +206,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   if (!activeBranchId) return null;
 
   const activeBranchName = branches?.find((b) => b.id === activeBranchId)?.name;
-  const section = sectionFor(pathname);
+  const group = groupFor(pathname);
 
   // `h-screen` + `overflow-hidden` (not `min-h-screen`) — same reasoning as
   // `WizardShell.tsx`'s identical shell: the browser window itself never
@@ -222,17 +234,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </>
             ) : null}
             <span className="hidden sm:inline text-accent shrink-0">/</span>
-            {pathname === section.href ? (
-              <span className="font-semibold text-primary-dark truncate">{section.label}</span>
-            ) : (
-              <>
-                <Link href={section.href} className="hidden sm:inline text-primary-text shrink-0 hover:underline">
-                  {section.label}
-                </Link>
-                <span className="hidden sm:inline text-accent shrink-0">/</span>
-                <span className="font-semibold text-primary-dark truncate">{pageTitleFor(pathname)}</span>
-              </>
-            )}
+            <span className="hidden sm:inline text-primary-text shrink-0">{group}</span>
+            <span className="hidden sm:inline text-accent shrink-0">/</span>
+            <span className="font-semibold text-primary-dark truncate">{pageTitleFor(pathname)}</span>
           </div>
         </div>
         <div className="flex items-center gap-4 shrink-0 text-small">
