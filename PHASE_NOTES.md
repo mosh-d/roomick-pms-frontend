@@ -1801,3 +1801,25 @@ Front Desk's own hub was missing "Manual Room Override" entirely (one of four Ch
 
 ### Carried forward
 Resuming the original Management/Admin sequence at System Admin — 6 of the 11 originally-scoped gaps remain (System Admin itself now has a real stub page from this pass, per the architecture-map audit above, but its three cards are still inert; "closing a gap" in the original sequence's sense means building real functionality behind them, which hasn't happened yet).
+
+## Phase 58 — System Admin: Feature Flags, Backup Management, System Health Monitor (2026-08-30)
+
+Sixth of the 11 Management/Admin gaps, replacing the three inert stub cards at `/dashboard/system-admin` from Phase 57 with a real page. See the backend's own `PHASE_NOTES.md` for the tenant-scoped-only architectural decision this pass surfaced and resolved directly, rather than guessing at a cross-tenant admin model that doesn't exist anywhere in this app.
+
+### One page, three `Section`s — matching Manager Dashboard/Security & Roles/Property Config's own established shape
+No sub-navigation, no further hub-of-cards — the same "one real page per Management/Admin item" pattern every prior item in this sequence already used, not a new pattern invented for this one.
+
+### Feature Flags — a toggle button that's honest about doing nothing yet
+`FeatureFlagsSection` renders each flag as a `Card` with an "On for us — Disable" / "Off for us — Enable" button — the exact same `Active — Deactivate` / `Inactive — Reactivate` toggle-button shape Manager Dashboard's own Staff Management already established, reused rather than invented fresh. The section's own copy states plainly that no flag currently gates any real behavior — matching the backend's own stored-but-unenforced honesty for the Permission Matrix.
+
+### Backup Management — Verify and Restore Drill inline per row, no modal
+Each backup row gets its own `BackupRow` component holding its own verify/restore-drill result state — clicking either button shows a real green/red result line right there (`"Verified — 38 tables intact."` / `"Restore drill OK — every row count matched."`) rather than a separate dialog, since the result is a one-line pass/fail plus a count, not enough content to warrant a `Modal`.
+
+### System Health — a 30-second `refetchInterval`, the first page in this app to use one
+Every other query hook in this codebase reads once (or on mutation-triggered invalidation); this is a monitoring page, so `useDetailedHealthQuery` polls every 30 seconds — the honest amount of "live" a dashboard-style page needs without hammering the server the way a form or list page never would.
+
+### Verified live
+`npx tsc --noEmit`, `eslint` (0 new errors/warnings — the same 6 pre-existing, unrelated React-Compiler/`react-hook-form` warnings this whole session has consistently seen), `npm run build` (`/dashboard/system-admin` compiles, all 52 routes). Live against real Postgres, with TWO real tenants specifically to prove isolation (matching the backend's own live pass): confirmed via the API first that toggling the flag for tenant A left tenant B's own resolved status untouched, and that tenant B could not verify or restore-drill tenant A's real backup (404, not a silent success). Then drove the real browser for tenant A: navigated via the sidebar, confirmed all three sections render with the API-set data (the seeded `loyalty_module` flag, the API-triggered backup, real health numbers), toggled the flag on through the UI and confirmed both the UI state and a follow-up API call agreed, triggered a second backup through the UI and confirmed both the "Backup completed." message and the API agreed on 2 total backups now existing, then verified the newest one through the UI and saw the real success message. 30/30 checks passed, zero console/page errors.
+
+### Carried forward
+Real cross-tenant platform admin (the reference's own literal "SysAdmin" vision) remains an explicit, deferred architectural decision — see the backend's own note. 5 of the 11 gaps remain: Loyalty & Marketing (display-only slice), Revenue Management, Sales & Events, Integrations & APIs, Enterprise/HQ.
