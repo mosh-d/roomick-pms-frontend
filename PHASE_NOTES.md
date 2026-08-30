@@ -1823,3 +1823,16 @@ Every other query hook in this codebase reads once (or on mutation-triggered inv
 
 ### Carried forward
 Real cross-tenant platform admin (the reference's own literal "SysAdmin" vision) remains an explicit, deferred architectural decision — see the backend's own note. 5 of the 11 gaps remain: Loyalty & Marketing (display-only slice), Revenue Management, Sales & Events, Integrations & APIs, Enterprise/HQ.
+
+## Phase 59 — Loyalty & Marketing: the display-only slice (2026-08-30)
+
+Seventh of the 11 Management/Admin gaps, at `/dashboard/loyalty` — replacing two of its own inert cards' worth of missing data with a real "Loyalty Members" section, while the cards themselves (Loyalty Program Config, Email Campaign Builder) stay honestly inert. See the backend's own `PHASE_NOTES.md` for the new `LoyaltyModule`.
+
+### Kept the two inert `HubCard`s, added a real `Section` below them
+Rather than replacing the page entirely, the existing "Loyalty Program Config"/"Email Campaign Builder" cards stay exactly as Phase 57 built them (`opacity-70`, "Not built yet") — this pass adds real content, it doesn't pretend the other two cards are done. `LoyaltyMembersSection`'s tier-distribution cards (`Card tone="accent"`) reuse the same small-stat-card shape Manager Dashboard's KPIs and Operational Reports' own `KpiCard` already established, and the members table reuses `Table`/`TableColumn` with a "View Profile" action pointing at the real Guest Profile page from item 5 — the same `router.push` pattern the Guest Profile list itself already uses.
+
+### Verified live
+`npx tsc --noEmit`, `eslint` (0 new errors/warnings — the same 6 pre-existing, unrelated warnings), `npm run build` (`/dashboard/loyalty` compiles, all 53 routes). Live against real Postgres: created four guests via the API, set a tier and points on three of them and deliberately left the fourth untouched, confirmed via the API first that the summary correctly excludes the untouched guest and aggregates the right per-tier totals. Then drove the real browser: navigated via the sidebar, confirmed the tier-summary cards and all three real members render with the correct numbers, confirmed the untouched fourth guest appears nowhere on the page, and clicked "View Profile" on one member to confirm it lands on that guest's own real profile page. 15/15 checks passed, zero console/page errors.
+
+### Carried forward
+4 of the 11 gaps remain, all previously deferred as needing real new domain design: Revenue Management, Sales & Events, Integrations & APIs, Enterprise/HQ.
