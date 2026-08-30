@@ -62,7 +62,7 @@ function PermissionMatrixSection({ auth }: { auth: AuthOpts }) {
           access ahead of enforcement landing.
         </p>
         <div className="max-w-xs">
-          <Select label="Role" options={roleOptions} value={selectedRoleId} onChange={(v) => { setSelectedRoleId(v); setSaved(false); }} placeholder="Select a role to edit" />
+          <Select id="permission-matrix-role" label="Role" options={roleOptions} value={selectedRoleId} onChange={(v) => { setSelectedRoleId(v); setSaved(false); }} placeholder="Select a role to edit" />
         </div>
         {selectedRole ? (
           <Card tone="secondary" className="overflow-x-auto">
@@ -311,7 +311,7 @@ function GdprSection({ auth }: { auth: AuthOpts }) {
                   Change guest
                 </Button>
               </div>
-              <Select label="Request type" options={typeOptions} value={type} onChange={(v) => setType(v as GdprType)} />
+              <Select id="gdpr-request-type" label="Request type" options={typeOptions} value={type} onChange={(v) => setType(v as GdprType)} />
               <Input id="gdpr-requested-by" label="Requested by" placeholder="email address" value={requestedBy} onChange={(e) => setRequestedBy(e.target.value)} error={error ?? undefined} />
               <Input id="gdpr-verification" label="Verification method (optional)" value={verificationMethod} onChange={(e) => setVerificationMethod(e.target.value)} />
               <div>

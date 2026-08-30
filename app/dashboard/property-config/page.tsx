@@ -142,11 +142,11 @@ function BranchDetailsSection({ branch, auth }: { branch: BranchDetail; auth: Au
           <Input id="branch-street" label="Street" value={form.street} onChange={(e) => set('street', e.target.value)} />
           <Input id="branch-city" label="City" value={form.city} onChange={(e) => set('city', e.target.value)} />
           <Input id="branch-state" label="State (optional)" value={form.state} onChange={(e) => set('state', e.target.value)} />
-          <Select label="Country" options={COUNTRIES} value={form.country} onChange={(v) => set('country', v)} />
+          <Select id="branch-country" label="Country" options={COUNTRIES} value={form.country} onChange={(v) => set('country', v)} />
           <Input id="branch-zip" label="ZIP (optional)" value={form.zip} onChange={(e) => set('zip', e.target.value)} />
-          <Select label="Timezone" options={timezoneOptionsFor(form.country)} value={form.timezone} onChange={(v) => set('timezone', v)} />
+          <Select id="branch-timezone" label="Timezone" options={timezoneOptionsFor(form.country)} value={form.timezone} onChange={(v) => set('timezone', v)} />
           <Input id="branch-currency" label="Currency (ISO 4217)" value={form.currency} onChange={(e) => set('currency', e.target.value.toUpperCase())} />
-          <Select label="Category" options={CATEGORY_OPTIONS} value={form.category || null} onChange={(v) => set('category', v)} placeholder="Select a category" />
+          <Select id="branch-category" label="Category" options={CATEGORY_OPTIONS} value={form.category || null} onChange={(v) => set('category', v)} placeholder="Select a category" />
           <Input id="branch-checkin" label="Check-In Time" type="time" value={form.checkInTime} onChange={(e) => set('checkInTime', e.target.value)} />
           <Input id="branch-checkout" label="Check-Out Time" type="time" value={form.checkOutTime} onChange={(e) => set('checkOutTime', e.target.value)} />
         </div>
@@ -181,7 +181,7 @@ function NoShowPolicySection({ branch, auth }: { branch: BranchDetail; auth: Aut
           value={cutoffTime}
           onChange={(e) => { setCutoffTime(e.target.value); setSaved(false); }}
         />
-        <Select label="Default Penalty" options={PENALTY_OPTIONS} value={defaultPenalty} onChange={(v) => { setDefaultPenalty(v); setSaved(false); }} />
+        <Select id="noshow-default-penalty" label="Default Penalty" options={PENALTY_OPTIONS} value={defaultPenalty} onChange={(v) => { setDefaultPenalty(v); setSaved(false); }} />
         <YesNoToggle label="Auto-mark no-shows during night audit" name="autoMark" value={autoMark ? 'yes' : 'no'} onChange={(v) => { setAutoMark(v === 'yes'); setSaved(false); }} />
         <Input
           id="noshow-notify-minutes"

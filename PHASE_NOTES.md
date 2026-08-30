@@ -1729,3 +1729,22 @@ Both `BrandSection` (syncing form fields once the brand query resolves) and the 
 
 ### Carried forward
 Buildings & Floors editing is not built — onboarding-only today, stated honestly on the page rather than hidden. 8 of the 11 gaps remain; Maintenance is next.
+
+## Phase 54 — Maintenance: work orders, a status board, an asset registry (2026-08-30)
+
+Fourth of the 11 Management/Admin gaps, built at `/dashboard/maintenance`. First page needing a fully new backend module — see the backend's own `PHASE_NOTES.md` for the migration and service design.
+
+### No drag-and-drop, on purpose
+The architecture map's own spec calls for "drag cards between columns." This app has never taken on a UI library for anything similar — no charting library (Reports' own `TrendBars` is plain CSS bars), no rich-text editor, nothing drag-based anywhere. A `WorkOrderDetailModal` (Select for status, Select for assignee, a completion-notes textarea, a parts-used field) opened by clicking a card does the same job without a new dependency — consistent with this project's own established restraint, not a shortcut taken under time pressure.
+
+### A systemic bug found in THIS page, then found to already be live on two SHIPPED pages
+Building the work-order detail modal's two side-by-side `Select`s (Status, Assign To) surfaced that `Select.tsx`'s own `fieldId = id ?? name ?? 'select'` fallback means any Select left without an explicit `id`/`name` silently gets `id="select"` — harmless with exactly one such Select on a page, a real bug the moment a second one renders alongside it (duplicate DOM ids, breaking `label[for]` association for both). Grepped every page built this session for the same omission before treating this as page-local: **Property Config** had it too (Country/Timezone/Category in `BranchDetailsSection` plus Default Penalty in `NoShowPolicySection` — 4 Selects, all defaulting to the same id, all visible on the same page at once), and so did **Security & Roles** (Permission Matrix's "Role" and GDPR's "Request type," both mounted simultaneously). Fixed all three pages' Select instances with explicit, unique ids in the same pass — this wasn't a "fix it here, note it elsewhere" situation, since the bug was already live in two committed, shipped pages, not just newly-written code.
+
+### `lib/maintenance.ts` — new hooks, reusing `useRoomsQuery`/`useStaffQuery` rather than duplicating either
+Work orders and assets both need a room picker (`useRoomsQuery`, already built for the Room Status Board) and the detail modal's "Assign to" dropdown reuses `useStaffQuery` (built for Manager Dashboard's own Staff Management) filtered to active staff — no new room- or staff-fetching code anywhere in this module.
+
+### Verified live
+`npx tsc --noEmit`, `eslint` (0 errors after the three-page Select-id fix), `npm run build` (`/dashboard/maintenance` compiles, 40 routes total). Live against real Postgres: submitted a common-area work order and a room-blocking one via the API first, confirmed the room actually went out of service, resolved the blocking order and confirmed the room was released; registered an asset with a service interval and confirmed a real computed next-service date. Then drove the real browser: navigated via the sidebar, confirmed both existing orders render in their correct board columns and the asset appears in the registry; submitted a new work order through the form and watched it land in the Open column; opened its detail modal, moved it to In Progress, and confirmed both the board and a follow-up API call agreed; added a new asset through its own modal and confirmed it appeared. 23/23 checks passed. Re-ran Security & Roles', Property Config's, and Manager Dashboard's own live suites afterward (70 more checks) to confirm the cross-page Select-id fix caused no regression anywhere.
+
+### Carried forward
+7 of the 11 gaps remain; Guest Profiles & CRM is next.

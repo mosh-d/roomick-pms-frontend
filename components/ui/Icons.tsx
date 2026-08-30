@@ -66,6 +66,7 @@ import {
   FaSms,
   FaChartLine,
   FaShieldAlt,
+  FaTools,
 } from 'react-icons/fa';
 
 type IconProps = { className?: string };
@@ -181,6 +182,11 @@ export function SecurityIcon({ className = 'size-4' }: IconProps) {
 /** Property Config (architecture map's `page-propertyconfig`). */
 export function PropertyConfigIcon({ className = 'size-4' }: IconProps) {
   return <FiSettings className={className} aria-hidden="true" />;
+}
+
+/** Maintenance (architecture map's `page-maintenance`) — a wrench, distinct from Housekeeping's `RoomBlockingIcon` "no entry" glyph even though both touch out-of-service rooms. */
+export function MaintenanceIcon({ className = 'size-4' }: IconProps) {
+  return <FaTools className={className} aria-hidden="true" />;
 }
 
 /** Channel icon in the communications timeline (ref: "Channel icon (email / SMS / push)"). Push/in-app-chat share the generic chat bubble — neither has a manual-send UI yet, so no channel-specific glyph was worth adding for them alone. */

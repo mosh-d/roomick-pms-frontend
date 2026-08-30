@@ -228,7 +228,7 @@ const MANAGEMENT_SECTION: TopLevelSection = {
     leaf({ label: 'Guest Profiles & CRM' }),
     leaf({ label: 'Revenue Management' }),
     leaf({ label: 'Sales & Events' }),
-    leaf({ label: 'Maintenance' }),
+    leaf({ label: 'Maintenance', href: '/dashboard/maintenance' }),
     leaf({ label: 'Loyalty & Marketing' }),
     { kind: 'group', group: REPORTS_GROUP },
   ],
