@@ -38,6 +38,16 @@ export function useRolesQuery({ accessToken, tenantId }: AuthOpts) {
   });
 }
 
+/** `permissions` is stored/audited but NOT yet enforced — `RolesGuard` still gates purely on role NAME (roomick-pms-backend P1 decision). This matrix is real data, real persistence, honest about not being load-bearing yet. */
+export function useUpdateRolePermissionsMutation({ accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ roleId, permissions }: { roleId: string; permissions: Record<string, string[]> }) =>
+      apiFetch<Role>(`/auth/roles/${roleId}/permissions`, { method: 'PUT', accessToken, tenantId, body: { permissions } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['roles', tenantId ?? ''] }),
+  });
+}
+
 export function useStaffQuery(branchId: string | null, { accessToken, tenantId }: AuthOpts) {
   return useQuery({
     queryKey: ['staff', branchId ?? ''] as const,

@@ -235,20 +235,20 @@ const MANAGEMENT_SECTION: TopLevelSection = {
 };
 
 /**
- * Every item here is genuinely unbuilt — confirmed directly (no settings
- * page, no integrations page, no staff/role-permissions UI beyond the
- * `@Roles` guards themselves, no backup/system-health admin screen, no
- * cross-branch HQ view) rather than assumed. `href: undefined` — nothing
- * to link to yet, so this section shows as a single inert row until its
- * own first real page lands, the same "no href = InertRow" rule every
- * other placeholder entry in this file already follows.
+ * Security & Roles is now real (permission matrix, audit log viewer, GDPR
+ * compliance tracker) — the rest are still genuinely unbuilt, confirmed
+ * directly (no settings page, no integrations page, no backup/system-health
+ * admin screen, no cross-branch HQ view) rather than assumed. `href` falls
+ * back to the one real child, the same pattern `MANAGEMENT_SECTION` used
+ * before Manager Dashboard existed.
  */
 const ADMIN_SECTION: TopLevelSection = {
   label: 'Admin',
+  href: '/dashboard/security',
   items: [
     leaf({ label: 'Property Config' }),
     leaf({ label: 'Integrations & APIs' }),
-    leaf({ label: 'Security & Roles' }),
+    leaf({ label: 'Security & Roles', href: '/dashboard/security' }),
     leaf({ label: 'System Admin' }),
     leaf({ label: 'Enterprise / HQ' }),
   ],

@@ -14,6 +14,7 @@ import { Sidebar } from './_components/Sidebar';
 const ROUTE_TITLES: Record<string, string> = {
   '/dashboard/alerts': 'Alerts',
   '/dashboard/manager': 'Manager Dashboard',
+  '/dashboard/security': 'Security & Roles',
   '/dashboard/room-status-board': 'Room Status Board',
   '/dashboard/arrivals': 'Arrivals Dashboard',
   '/dashboard/departures': 'Departures Dashboard',
@@ -75,10 +76,15 @@ function pageTitleFor(pathname: string): string {
  * before the plain `/dashboard/reservations` prefix below — `Array.find`
  * takes the first match, and every `/reservations/*` route otherwise
  * matches that broader prefix first.
+ *
+ * "Admin" follows the same fallback shape Management used before it had a
+ * hub — `/dashboard/security` is Admin's own first (and so far only) real
+ * page, matching `Sidebar.tsx`'s own `ADMIN_SECTION.href`.
  */
 const SECTIONS: Array<{ prefix: string; label: string; href: string }> = [
   { prefix: '/dashboard/alerts', label: 'Alerts', href: '/dashboard/alerts' },
   { prefix: '/dashboard/manager', label: 'Management', href: '/dashboard/manager' },
+  { prefix: '/dashboard/security', label: 'Admin', href: '/dashboard/security' },
   { prefix: '/dashboard/reservations/rate-plans', label: 'Management', href: '/dashboard/manager' },
   { prefix: '/dashboard/reservations', label: 'Reservations', href: '/dashboard/reservations' },
   { prefix: '/dashboard/overbooking', label: 'Management', href: '/dashboard/manager' },
