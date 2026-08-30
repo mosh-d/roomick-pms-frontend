@@ -1855,3 +1855,19 @@ The first draft of `CrossPropertyReportsSection` was going to show a blended tot
 
 ### Carried forward
 3 of the original 11 architecture-map gaps remain: Revenue Management, Sales & Events, Integrations & APIs — all still needing real new domain design.
+
+## Phase 61 — Integrations & APIs: API Keys, Webhooks (2026-08-30)
+
+Second best-fit pick after Enterprise/HQ — see the backend's own `PHASE_NOTES.md` for why Revenue Management/Sales & Events stayed deferred instead. Payment Gateway (the reference's third card) stays a plain inert `HubCard`, unchanged from Phase 57 — the other two get real sections below it.
+
+### The "reveal once, never again" pattern, built identically for both a raw API key and a webhook secret
+Neither `ApiKeySummary` nor `WebhookSummary` (the list shapes) ever carry the sensitive value — only the CREATE response does, for exactly one render. Both sections hold that value in local component state (`justCreated`) rather than anywhere in the query cache, with an explicit `Card tone="accent" className="border-2"` callout ("copy this now — it won't be shown again") and a `CopyButton` (this app's first `navigator.clipboard.writeText` usage — small enough, and used in exactly two places on one page, that it stayed a local helper rather than a new `components/ui/` component). Dismissing the callout (`Done`) discards the value from state entirely — refreshing or leaving the page is the only way to lose it either way, matching how a real platform would behave.
+
+### A `MultiSelectTagInput` id gotcha, this time caught in a NEW spot, not an already-shipped one
+The component's own header comment already documents that `allowCustom` mode splits the id between the free-text input (the bare `id` prop) and the predefined-options picker trigger (`${id}-picker`) — read directly before wiring up the Event Types field, so `#new-webhook-events` (the text input) and `#new-webhook-events-picker` (the dropdown trigger) were both used correctly for their own respective purposes from the first draft, rather than being found and fixed after the fact the way Property Config's and Security & Roles' Select collisions were.
+
+### Verified live
+`npx tsc --noEmit`, `eslint` (0 new errors/warnings — the same 6 pre-existing, unrelated warnings), `npm run build` (`/dashboard/integrations` compiles, all 55 routes). Live against real Postgres: generated and revoked a real API key via the API first, generated and deactivated a real webhook, and hit the same malformed-URL rejection bug the backend's own notes describe (this live suite is what actually caught it, not a code review) — confirmed the fix accepts a local dev URL while still rejecting garbage. Then drove the real browser: navigated via the sidebar, confirmed the API-created (now revoked/deactivated) key and webhook both render their correct terminal status, generated a new key through the UI and confirmed the one-time reveal shows the right `rk_`-prefixed value, dismissed it and confirmed no trace of the raw key remained on screen, added a new webhook through the UI (URL + a picked event type) and confirmed its own one-time secret reveal, then confirmed via the API that both new records existed with the right data. 26/26 checks passed, zero console/page errors.
+
+### Carried forward
+Payment Gateway is not represented — no real payment-processor integration exists anywhere in this app to configure. 2 of the original 11 architecture-map gaps remain: Revenue Management, Sales & Events — both still needing real new domain design.
