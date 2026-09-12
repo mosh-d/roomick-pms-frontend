@@ -126,12 +126,23 @@ export default function CheckInFlowPage() {
         <p className="text-body text-red-600">This reservation is already {reservation.status.replace('_', ' ')} — nothing to check in.</p>
       ) : (
         <>
+          {/* Tells the agent the contact details below were confirmed by the
+              guest themselves, so there's nothing to re-key — the operational
+              payoff of online check-in, which is invisible without this. */}
+          {reservation.preArrivalCompletedAt ? (
+            <p className="text-small text-green-700 font-semibold">
+              Guest checked in online on {new Date(reservation.preArrivalCompletedAt).toLocaleDateString()} — details below are confirmed by them
+              {reservation.estimatedArrivalTime ? `, arriving around ${reservation.estimatedArrivalTime}` : ''}. Photo ID still needs checking.
+            </p>
+          ) : null}
+
           <Section label="Guest Details" tone="accent">
             <Row label="Name" value={reservation.guest.name} />
             <Row label="Email" value={reservation.guest.email ?? 'NIL'} />
             <Row label="Phone" value={reservation.guest.phone ?? 'NIL'} />
             <Row label="Room Type" value={reservation.roomType.name} />
             <Row label="Confirmation #" value={reservation.confirmationNumber} />
+            {reservation.estimatedArrivalTime ? <Row label="Expected Arrival" value={reservation.estimatedArrivalTime} /> : null}
           </Section>
 
           <Section label="Room Selection">

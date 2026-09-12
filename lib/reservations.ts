@@ -41,6 +41,15 @@ export interface ReservationSummary {
   branch: { currency: string };
   /** Latest mark only, if any — see the backend's own `RESERVATION_INCLUDE` comment. */
   noShowRecords: NoShowRecord[];
+  /**
+   * Set when the guest completed check-in themselves through the public
+   * booking engine's "Manage your booking" page. Null for every reservation
+   * nobody pre-checked in — including every walk-in and staff-made booking,
+   * which is the normal case, not an anomaly.
+   */
+  preArrivalCompletedAt: string | null;
+  /** The guest's own stated arrival time (HH:mm, branch timezone) — an intention, not a commitment. */
+  estimatedArrivalTime: string | null;
 }
 
 export interface AvailabilityNight {

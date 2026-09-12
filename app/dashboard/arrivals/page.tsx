@@ -41,6 +41,11 @@ export default function ArrivalsDashboardPage() {
     );
   }, [arrivalsQuery.data, search]);
 
+  // Counted across ALL of today's arrivals, not the filtered rows — it's a
+  // summary of the day's workload, and it shouldn't change as someone types
+  // in the search box.
+  const preArrivalCount = useMemo(() => (arrivalsQuery.data ?? []).filter((r) => r.preArrivalCompletedAt).length, [arrivalsQuery.data]);
+
   if (!activeBranchId) return null;
 
   const columns: TableColumn<ReservationSummary>[] = [
@@ -50,10 +55,28 @@ export default function ArrivalsDashboardPage() {
     { key: 'email', label: 'Email', render: (r) => r.guest.email ?? '—', sortValue: (r) => r.guest.email ?? '' },
     { key: 'phone', label: 'Phone No', render: (r) => r.guest.phone ?? '—', sortValue: (r) => r.guest.phone ?? '' },
     {
+      key: 'expected',
+      label: 'Expected',
+      render: (r) => (r.estimatedArrivalTime ? <span className="tabular-nums">{r.estimatedArrivalTime}</span> : <span className="text-secondary-light">—</span>),
+      // Guests who never said sort to the end rather than the beginning: a
+      // desk sorting by arrival wants the times in order first, not a block
+      // of blanks. 'zz' is past any real HH:mm.
+      sortValue: (r) => r.estimatedArrivalTime ?? 'zz',
+    },
+    {
       key: 'status',
       label: 'Status',
-      render: () => <span className="text-primary-text font-semibold">Pending Check-In</span>,
-      sortValue: () => 'Pending Check-In',
+      // Previously this rendered the identical string on every row, which
+      // told the desk nothing. Now it distinguishes the guests whose check-in
+      // is already half-done, which is the whole operational point of
+      // pre-arrival.
+      render: (r) =>
+        r.preArrivalCompletedAt ? (
+          <span className="font-semibold text-green-700">Checked in online</span>
+        ) : (
+          <span className="text-primary-text font-semibold">Pending Check-In</span>
+        ),
+      sortValue: (r) => (r.preArrivalCompletedAt ? 'Checked in online' : 'Pending Check-In'),
     },
     {
       key: 'action',
@@ -72,6 +95,13 @@ export default function ArrivalsDashboardPage() {
       <PageHeader icon={<PlaneLandingIcon className="size-8" />} title="Arrivals Dashboard" subtitle="See guests arriving today" />
 
       <SearchInput label="Search arrivals by guest name" placeholder="Search by guest name" value={search} onChange={setSearch} />
+
+      {preArrivalCount > 0 ? (
+        <p className="text-small text-secondary">
+          <span className="font-semibold text-green-700">{preArrivalCount}</span> of {arrivalsQuery.data?.length ?? 0} arriving guests checked in online — those
+          only need a room assigned and a key.
+        </p>
+      ) : null}
 
       {arrivalsQuery.isLoading ? (
         <p className="text-body text-primary-dark/70">Loading arrivals…</p>

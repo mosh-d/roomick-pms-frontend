@@ -1998,3 +1998,27 @@ Once done, the section becomes a short confirmation echoing the expected arrival
 
 ### Verified live
 `npx tsc --noEmit`, `eslint` (0 errors, same 6 pre-existing warnings), `npm run build`. Live against real Postgres (26/26), logged out: the form appears for a confirmed booking with the property's real house rules; the submit button is disabled until the rules are accepted and enables when they are; submitting persists the phone, uppercased nationality and arrival time (API-reconfirmed); the UI switches to the completed state echoing the arrival time; a second lookup shows that completed state; and there's no horizontal scroll at 390px.
+
+## Phase 69 — Pre-arrival reaches the front desk: Arrivals Dashboard and check-in (2026-09-12)
+
+Phase 68 let guests check in online, but nothing on the staff side showed it — the data existed and the desk couldn't see it, so the feature had no operational payoff yet. This closes that loop.
+
+### No backend change was needed, and that was checked rather than assumed
+`listArrivals` returns rows via Prisma `include: RESERVATION_INCLUDE`, and `include` returns every scalar column alongside the relations — so `preArrivalCompletedAt` and `estimatedArrivalTime` were already in the arrivals response the moment the migration landed. The live pass asserts this against the existing endpoint directly. The only change was widening `ReservationSummary` to type fields that were already arriving.
+
+### The Status column now carries information
+It previously rendered the literal "Pending Check-In" on every row — a column that said the same thing for every guest. It now distinguishes "Checked in online" from "Pending Check-In", which is exactly the difference that tells an agent whose check-in will take thirty seconds.
+
+### A new Expected column, sortable, with blanks last
+Sorting puts real times in order and guests who never gave a time at the end — a desk sorting by arrival wants the sequence first, not a block of blanks. Implemented with a sort value past any real `HH:mm` rather than special-casing the table.
+
+### The summary counts the day, not the search
+"2 of 3 arriving guests checked in online" is computed over all of today's arrivals, deliberately not the filtered rows — it describes the day's workload and shouldn't shift as someone types in the search box. Verified live by searching and confirming it didn't change.
+
+### The check-in page says the details are already confirmed
+Opening check-in for a pre-arrived guest shows a line stating they checked in online, when, and roughly when they're arriving — "details below are confirmed by them" — plus an Expected Arrival row in Guest Details. It still says photo ID needs checking, because identity documents aren't collected online. A guest who didn't pre-arrive gets neither, so the absence reads as normal rather than as missing data.
+
+### Verified live
+`npx tsc --noEmit`, `eslint` (0 errors, the same 6 pre-existing warnings), `npm run build`. Live against real Postgres (17/17): three same-day public bookings, two checked in online at 18:45 and 09:15; the existing arrivals endpoint carries the fields; the dashboard shows the summary, the Expected times and the two statuses correctly; searching filters rows but leaves the summary alone; sorting by Expected yields 09:15, 18:45, then the blank; the check-in page shows the banner, the reminder, the guest's own corrected phone and the Expected Arrival row for the pre-arrived guest, and none of it for the other. Zero console errors.
+
+Run against the developer's own already-running dev servers on 3000/3001 — a fresh `start:dev` failed with `EADDRINUSE` because they were in use, and they were left running rather than stopped.
