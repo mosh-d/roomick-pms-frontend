@@ -255,6 +255,59 @@ function BookingFlow({
   );
 }
 
+/**
+ * A room's photos: one main image with the rest as selectable thumbnails.
+ *
+ * Plain `<img>` rather than `next/image` on purpose — these are arbitrary
+ * third-party URLs a property pasted in, and `next/image` would require every
+ * possible host to be allow-listed in `next.config.ts` ahead of time, which
+ * can't work for user-supplied links.
+ *
+ * A URL that doesn't load is hidden entirely rather than left as a broken
+ * image icon. On a guest-facing booking page a visibly broken image reads as
+ * a broken hotel, and there's nothing useful a guest can do about it.
+ */
+function RoomPhotos({ photoUrls, roomName }: { photoUrls: string[]; roomName: string }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [failed, setFailed] = useState<string[]>([]);
+
+  const usable = photoUrls.filter((url) => !failed.includes(url));
+  if (usable.length === 0) return null;
+
+  const active = usable[Math.min(activeIndex, usable.length - 1)];
+
+  return (
+    <div className="flex flex-col gap-2 w-full sm:w-56 shrink-0">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={active}
+        alt={roomName}
+        className="w-full aspect-4/3 max-w-full rounded-card object-cover border border-secondary/20"
+        onError={() => setFailed((f) => [...f, active])}
+      />
+      {usable.length > 1 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {usable.slice(0, 5).map((url, index) => (
+            <button
+              key={url}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              aria-label={`${roomName} photo ${index + 1}`}
+              aria-current={url === active}
+              className={`size-10 rounded-control overflow-hidden border transition-colors cursor-pointer ${
+                url === active ? 'border-secondary' : 'border-secondary/20 hover:border-secondary/50'
+              }`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={url} alt="" className="size-full object-cover" onError={() => setFailed((f) => [...f, url])} />
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function RoomTypeCard({
   roomType,
   currency,
@@ -279,6 +332,7 @@ function RoomTypeCard({
 
   return (
     <Card tone={selected ? 'accent' : 'secondary'} className="flex flex-wrap items-start justify-between gap-4">
+      {roomType.photoUrls.length > 0 ? <RoomPhotos photoUrls={roomType.photoUrls} roomName={roomType.name} /> : null}
       <div className="flex flex-col gap-1 min-w-48">
         <p className="text-body font-bold text-secondary">{roomType.name}</p>
         <p className="text-small text-secondary-light">

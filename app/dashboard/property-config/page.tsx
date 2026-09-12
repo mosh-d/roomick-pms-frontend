@@ -9,6 +9,7 @@ import { Select, type SelectOption } from '@/components/ui/Select';
 import { YesNoToggle } from '@/components/ui/YesNoToggle';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { MultiSelectTagInput } from '@/components/ui/MultiSelectTagInput';
 import { Table, type TableColumn } from '@/components/ui/Table';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { PropertyConfigIcon, HotelCheckInIcon, OverbookingIcon } from '@/components/ui/Icons';
@@ -387,6 +388,80 @@ function RoomTypeModal({
   return <RoomTypeModalInner key={existing?.id ?? 'new'} onClose={onClose} branchId={branchId} auth={auth} existing={existing} />;
 }
 
+/** Starting suggestions only — `allowCustom` means a property can type anything else it offers. */
+const AMENITY_OPTIONS = [
+  { value: 'WiFi', label: 'WiFi' },
+  { value: 'Air conditioning', label: 'Air conditioning' },
+  { value: 'Television', label: 'Television' },
+  { value: 'Private bathroom', label: 'Private bathroom' },
+  { value: 'Balcony', label: 'Balcony' },
+  { value: 'Sea view', label: 'Sea view' },
+  { value: 'Kitchenette', label: 'Kitchenette' },
+  { value: 'Work desk', label: 'Work desk' },
+  { value: 'Safe', label: 'Safe' },
+  { value: 'Mini bar', label: 'Mini bar' },
+  { value: 'Room service', label: 'Room service' },
+  { value: 'Breakfast included', label: 'Breakfast included' },
+];
+
+/**
+ * A repeatable list of image URLs, with a live thumbnail per row.
+ *
+ * URLs rather than uploads on purpose: `RoomType.photoUrls` is a `String[]`
+ * and this app has no image-upload/hosting path — the only file storage that
+ * exists is for encrypted compliance documents, which is a deliberately
+ * different thing (private, encrypted, access-controlled) from a public
+ * marketing photo. Pasting a URL from wherever the property already hosts its
+ * images is the honest capability today; an uploader would need real image
+ * hosting behind it.
+ *
+ * The thumbnail matters because a typo'd URL is otherwise invisible until a
+ * guest loads the booking page and sees a broken image.
+ */
+function PhotoUrlListInput({ value, onChange }: { value: string[]; onChange: (next: string[]) => void }) {
+  const rows = value.length > 0 ? value : [''];
+
+  function update(index: number, next: string) {
+    const copy = [...rows];
+    copy[index] = next;
+    onChange(copy);
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-small font-semibold text-secondary">Photos (optional)</span>
+      {rows.map((url, index) => (
+        // Index key is correct here: these rows have no stable identity of
+        // their own and are edited in place, so keying by value would
+        // remount the focused input on every keystroke.
+        <div key={index} className="flex items-center gap-2">
+          {url.trim() ? (
+            // Deliberately a plain <img>, not next/image: these are arbitrary
+            // third-party URLs, and next/image would need every possible host
+            // allow-listed in next.config.ts up front.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={url} alt="" className="size-10 shrink-0 rounded-control object-cover border border-secondary/20" />
+          ) : (
+            <span className="size-10 shrink-0 rounded-control border border-dashed border-secondary/30" aria-hidden />
+          )}
+          <div className="flex-1">
+            <Input id={`room-type-photo-${index}`} label="" value={url} onChange={(e) => update(index, e.target.value)} placeholder="https://…" />
+          </div>
+          <Button type="button" size="sm" variant="outline" onClick={() => onChange(rows.filter((_, i) => i !== index))} disabled={rows.length === 1 && !rows[0]}>
+            Remove
+          </Button>
+        </div>
+      ))}
+      <div>
+        <Button type="button" size="sm" variant="outline" onClick={() => onChange([...rows, ''])} disabled={rows.some((u) => !u.trim())}>
+          Add photo
+        </Button>
+      </div>
+      <p className="text-tiny text-secondary-light">Paste image links from wherever you already host them. The first photo is the one guests see first.</p>
+    </div>
+  );
+}
+
 function RoomTypeModalInner({
   onClose,
   branchId,
@@ -405,11 +480,24 @@ function RoomTypeModalInner({
   const [adults, setAdults] = useState(String(existing?.capacity.adults ?? 2));
   const [children, setChildren] = useState(String(existing?.capacity.children ?? 0));
   const [bedType, setBedType] = useState(existing?.bedType ?? '');
+  const [sizeM2, setSizeM2] = useState(existing?.sizeM2 ?? '');
+  const [amenities, setAmenities] = useState<string[]>(existing?.amenities ?? []);
+  const [photoUrls, setPhotoUrls] = useState<string[]>(existing?.photoUrls ?? []);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit() {
     setError(null);
-    const body = { name, baseRate: Number(baseRate), capacity: { adults: Number(adults), children: Number(children) }, bedType: bedType || undefined };
+    const body = {
+      name,
+      baseRate: Number(baseRate),
+      capacity: { adults: Number(adults), children: Number(children) },
+      bedType: bedType || undefined,
+      sizeM2: sizeM2 ? Number(sizeM2) : undefined,
+      amenities,
+      // Trim blanks so an empty row left behind in the editor never reaches
+      // the public booking page as a broken image.
+      photoUrls: photoUrls.map((u) => u.trim()).filter(Boolean),
+    };
     try {
       if (existing) await updateMutation.mutateAsync({ roomTypeId: existing.id, ...body });
       else await createMutation.mutateAsync(body);
@@ -429,7 +517,20 @@ function RoomTypeModalInner({
         <Input id="room-type-adults" label="Max Adults" type="number" min={1} max={20} value={adults} onChange={(e) => setAdults(e.target.value)} />
         <Input id="room-type-children" label="Max Children" type="number" min={0} max={20} value={children} onChange={(e) => setChildren(e.target.value)} />
       </div>
-      <Input id="room-type-bed-type" label="Bed Type (optional)" value={bedType} onChange={(e) => setBedType(e.target.value)} />
+      <div className="grid grid-cols-2 gap-3">
+        <Input id="room-type-bed-type" label="Bed Type (optional)" value={bedType} onChange={(e) => setBedType(e.target.value)} />
+        <Input id="room-type-size" label="Size m² (optional)" type="number" min={0} step="0.1" value={sizeM2} onChange={(e) => setSizeM2(e.target.value)} />
+      </div>
+      <MultiSelectTagInput
+        id="room-type-amenities"
+        label="Amenities (optional)"
+        options={AMENITY_OPTIONS}
+        value={amenities}
+        onChange={setAmenities}
+        allowCustom
+        hint="Shown to guests on your public booking page."
+      />
+      <PhotoUrlListInput value={photoUrls} onChange={setPhotoUrls} />
       {error ? <p className="text-small text-red-600">{error}</p> : null}
       {existing ? <p className="text-tiny text-secondary-light">Changing the rate only affects future bookings — existing reservations keep their own confirmed rate.</p> : null}
       <div className="flex items-center gap-3">

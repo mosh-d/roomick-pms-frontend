@@ -1944,3 +1944,22 @@ Unpublishing keeps the slug attached to the branch so nobody else can claim it �
 
 ### Verified live
 `npx tsc --noEmit`, `eslint` (0 errors, the same 6 pre-existing warnings), `npm run build`. Live against real Postgres, driving a real browser through the whole loop (19/19): the section renders in its honest not-published state; the address pre-fills from the property name; messy input normalises in the preview; publishing from the UI flips it to Live and the API agrees; the public endpoint then resolves for anonymous callers and a **logged-out second browser context** loads the real booking page with the real room type and rate; changing the address updates the live URL and the old one 404s immediately; unpublishing returns the section to not-published, names the still-reserved slug, and the guest page falls back to its honest not-found state. Zero console/page errors.
+
+## Phase 66 — Room presentation, end to end: size, amenities and photos (2026-09-12)
+
+Closes a gap created by Phase 64. The public booking page renders bed type, size, amenities **and photos** — but the Room Type modal only ever let a hotel set bed type. `sizeM2`, `amenities` and `photoUrls` were in the database, accepted by the backend DTO, and fetched and typed in `lib/rooms.ts`; nothing in the UI could write them. So every published booking page was guaranteed to look sparse no matter how much effort the property put in.
+
+### Photos are URLs, not uploads — and that's the honest capability
+`RoomType.photoUrls` is a `String[]`, and this app has no image-upload or image-hosting path. The only file storage that exists is for encrypted compliance documents, which is a deliberately different thing — private, encrypted, access-controlled — from a public marketing photo. Pasting a link from wherever the property already hosts its images is what can actually be delivered today; an uploader would need real image hosting behind it, which is its own piece of work.
+
+Each row renders a **live thumbnail** of whatever URL is typed, because a typo'd link is otherwise completely invisible until a guest loads the booking page and sees a broken image.
+
+### A photo that fails to load is hidden, not left broken
+`RoomPhotos` tracks failed URLs via `onError` and drops them; if every photo fails, the gallery renders nothing at all rather than a broken-image icon. On a guest-facing booking page a visibly broken image reads as a broken hotel, and it's not something the guest can do anything about.
+
+Both the editor thumbnails and the guest gallery use plain `<img>` rather than `next/image` — these are arbitrary user-supplied third-party URLs, and `next/image` requires every possible host to be allow-listed in `next.config.ts` up front, which cannot work for links a property pastes in.
+
+### Verified live
+`npx tsc --noEmit`, `eslint` (0 errors, same 6 pre-existing warnings), `npm run build`. Live against real Postgres (14/14), driving both an owner session and a separate logged-out guest context: the booking page starts with **zero** images; the Edit modal now exposes size, amenities and photos; typed amenities render as tags; a pasted URL renders a live thumbnail immediately; saving persists all three (blank photo rows stripped); the guest page then shows the photos, `42 m²` and both amenities; a thumbnail strip appears for multiple photos and clicking one switches the main image; a deliberately unresolvable URL ends up hidden rather than broken; and the gallery doesn't break layout at 390px.
+
+One check initially failed and was a **test** fault, not a product one: it used a fixed 2.5s wait for the browser to give up on an unresolvable host, which is environment-dependent. Replaced with polling, after which it passed — confirming the fallback genuinely works rather than papering over it.
