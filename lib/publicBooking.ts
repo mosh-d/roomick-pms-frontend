@@ -118,6 +118,35 @@ export function usePublicQuoteQuery(slug: string, roomTypeId: string | null, che
   });
 }
 
+export interface PublicBookingDetail {
+  confirmationNumber: string;
+  status: string;
+  checkInDate: string;
+  checkOutDate: string;
+  adults: number;
+  children: number;
+  specialRequests: string | null;
+  roomTypeName: string;
+  guestName: string;
+  guestEmail: string | null;
+  totalRate: string;
+  currency: string;
+  property: PublicProperty;
+}
+
+/**
+ * A mutation rather than a query even though it reads: it's a POST carrying a
+ * confirmation number and email (deliberately not in a query string), and it
+ * should only ever run when the guest actually submits the form — never
+ * automatically on mount or refocus, which is what a `useQuery` would do.
+ */
+export function useBookingLookupMutation(slug: string) {
+  return useMutation({
+    mutationFn: (body: { confirmationNumber: string; email: string }) =>
+      apiFetch<PublicBookingDetail>(`/public/properties/${slug}/bookings/lookup`, { method: 'POST', body }),
+  });
+}
+
 export function usePublicBookingMutation(slug: string) {
   return useMutation({
     mutationFn: (body: PublicBookingRequest) => apiFetch<PublicBookingConfirmation>(`/public/properties/${slug}/reservations`, { method: 'POST', body }),

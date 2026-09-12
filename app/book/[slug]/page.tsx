@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
@@ -86,7 +87,7 @@ export default function PublicBookingPage() {
       </header>
 
       {confirmation ? (
-        <BookingConfirmed confirmation={confirmation} property={property} onBookAnother={() => setConfirmation(null)} />
+        <BookingConfirmed confirmation={confirmation} property={property} slug={slug} onBookAnother={() => setConfirmation(null)} />
       ) : (
         <BookingFlow slug={slug} property={property} onBooked={setConfirmation} />
       )}
@@ -97,10 +98,12 @@ export default function PublicBookingPage() {
 function BookingConfirmed({
   confirmation,
   property,
+  slug,
   onBookAnother,
 }: {
   confirmation: PublicBookingConfirmation;
   property: PublicProperty;
+  slug: string;
   onBookAnother: () => void;
 }) {
   return (
@@ -136,6 +139,16 @@ function BookingConfirmed({
         </dl>
         <p className="text-small text-primary-dark/70">
           Payment is taken at the property on arrival. Please quote your confirmation number when you check in.
+        </p>
+        {/* The only discovery path for the lookup page — no confirmation email
+            is sent yet, so if a guest doesn't note this down here, they have
+            no way back to their booking. */}
+        <p className="text-small text-primary-dark/70">
+          Keep this confirmation number safe — you can view this booking again at{' '}
+          <Link href={`/book/${slug}/manage`} className="underline font-semibold">
+            Manage your booking
+          </Link>
+          .
         </p>
       </Card>
       <div>

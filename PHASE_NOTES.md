@@ -1963,3 +1963,22 @@ Both the editor thumbnails and the guest gallery use plain `<img>` rather than `
 `npx tsc --noEmit`, `eslint` (0 errors, same 6 pre-existing warnings), `npm run build`. Live against real Postgres (14/14), driving both an owner session and a separate logged-out guest context: the booking page starts with **zero** images; the Edit modal now exposes size, amenities and photos; typed amenities render as tags; a pasted URL renders a live thumbnail immediately; saving persists all three (blank photo rows stripped); the guest page then shows the photos, `42 m²` and both amenities; a thumbnail strip appears for multiple photos and clicking one switches the main image; a deliberately unresolvable URL ends up hidden rather than broken; and the gallery doesn't break layout at 390px.
 
 One check initially failed and was a **test** fault, not a product one: it used a fixed 2.5s wait for the browser to give up on an unresolvable host, which is environment-dependent. Replaced with polling, after which it passed — confirming the fallback genuinely works rather than papering over it.
+
+## Phase 67 — Manage your booking: guest lookup (2026-09-12)
+
+First slice of the growth plan's Month 9 Guest Self-Service Portal. `/book/[slug]/manage` — public, unauthenticated, outside `/dashboard`, same as the booking page itself. See the backend's own `PHASE_NOTES.md` for the authentication model and its documented limits.
+
+### Discovery is the weak point, and it's acknowledged in the UI
+No confirmation email is sent yet (the mail pipeline exists; only a log transport is wired). So the link on the booking confirmation page is, right now, the **only** route a guest has back to their booking. The confirmation copy says "keep this confirmation number safe" for exactly that reason. This stops being load-bearing the moment a real mail transport lands.
+
+### Guest vocabulary, not staff vocabulary
+`ReservationStatus` values are internal (`checked_in`, `no_show`, `walked`) and would be confusing or alarming on a guest-facing page. `STATUS_LABELS` maps each to something a guest would recognise — `walked` becomes "Moved to another property" rather than leaking an industry term for being relocated.
+
+### A lookup that reads is still a mutation here
+`useBookingLookupMutation`, not a query: it's a POST carrying a confirmation number and email, and it must run **only** when the guest submits. A `useQuery` would re-run it on mount and window refocus, repeatedly replaying credentials against a hard-throttled endpoint.
+
+### Read-only, and it says so
+The page tells the guest to contact the property directly to change or cancel, rather than showing controls that don't exist. Changes carry real policy consequences and are their own pass.
+
+### Verified live
+`npx tsc --noEmit`, `eslint` (0 errors, same 6 pre-existing warnings), `npm run build` (`/book/[slug]/manage` compiles as a dynamic route). Live against real Postgres (25/25), fully logged out: the form renders with no dashboard chrome; a wrong email shows an honest not-found message revealing nothing; the correct details render the booking with a guest-friendly "Confirmed" status, the real total and night count, and the guest's own special request read back to them; the confirmation page links here and the link lands correctly; and the page doesn't scroll horizontally at 390px.
