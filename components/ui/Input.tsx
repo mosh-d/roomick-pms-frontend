@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useState, type InputHTMLAttributes } from 'react';
+import { forwardRef, useId, useState, type InputHTMLAttributes } from 'react';
 import { EyeIcon, EyeOffIcon, InfoCircleIcon } from './Icons';
 
 /**
@@ -64,8 +64,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   ref,
 ) {
   const [revealed, setRevealed] = useState(false);
+  // A field given neither `id` nor `name` used to render `<label htmlFor={undefined}>` — announced unlabelled,
+  // label click did nothing — and every such field on a page shared `aria-describedby="undefined-hint"`.
+  const autoId = useId();
   const isPassword = type === 'password';
-  const fieldId = id ?? name;
+  const fieldId = id ?? name ?? autoId;
   const hintId = hint ? `${fieldId}-hint` : undefined;
   const errorId = error ? `${fieldId}-error` : undefined;
   const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined;
