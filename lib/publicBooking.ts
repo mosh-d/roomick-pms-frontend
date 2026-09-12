@@ -129,9 +129,30 @@ export interface PublicBookingDetail {
   roomTypeName: string;
   guestName: string;
   guestEmail: string | null;
+  guestPhone: string | null;
+  guestNationality: string | null;
   totalRate: string;
   currency: string;
+  preArrivalCompletedAt: string | null;
+  estimatedArrivalTime: string | null;
+  houseRules: string | null;
   property: PublicProperty;
+}
+
+export interface PreArrivalRequest {
+  confirmationNumber: string;
+  email: string;
+  phone?: string;
+  nationality?: string;
+  estimatedArrivalTime?: string;
+  acceptHouseRules: boolean;
+}
+
+/** Returns the same `PublicBookingDetail` the lookup does, so the page can render the updated booking without a second round trip. */
+export function usePreArrivalMutation(slug: string) {
+  return useMutation({
+    mutationFn: (body: PreArrivalRequest) => apiFetch<PublicBookingDetail>(`/public/properties/${slug}/bookings/pre-arrival`, { method: 'POST', body }),
+  });
 }
 
 /**

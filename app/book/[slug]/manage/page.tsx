@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ApiError } from '@/lib/api';
-import { useBookingLookupMutation, usePublicPropertyQuery, type PublicBookingDetail } from '@/lib/publicBooking';
+import { useBookingLookupMutation, usePreArrivalMutation, usePublicPropertyQuery, type PublicBookingDetail } from '@/lib/publicBooking';
 
 /** Guest-facing wording for `ReservationStatus`. The raw enum values are staff vocabulary and shouldn't leak onto this page. */
 const STATUS_LABELS: Record<string, string> = {
@@ -80,7 +80,18 @@ export default function ManageBookingPage() {
       </header>
 
       {booking ? (
-        <BookingDetail booking={booking} onLookupAnother={() => setBooking(null)} />
+        <>
+          <BookingDetail booking={booking} onLookupAnother={() => setBooking(null)} />
+          {booking.status === 'confirmed' ? (
+            <PreArrivalSection
+              key={booking.confirmationNumber}
+              slug={slug}
+              booking={booking}
+              lookupEmail={email.trim()}
+              onCompleted={setBooking}
+            />
+          ) : null}
+        </>
       ) : (
         <Section label="Find Your Booking">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 max-w-xl">
@@ -124,6 +135,119 @@ export default function ManageBookingPage() {
         </Link>
       </p>
     </Container>
+  );
+}
+
+/**
+ * Pre-arrival check-in — the guest completing their own details before they
+ * travel, so the desk only has to confirm and hand over a key.
+ *
+ * Only offered on a `confirmed` booking. A stay that's already started,
+ * ended or been cancelled has nothing to prepare for, and the backend
+ * refuses it anyway — this just avoids showing a form that can only fail.
+ *
+ * ID documents are deliberately not collected here. The property may still
+ * need to see one on arrival; that's said plainly rather than implying
+ * check-in is entirely done.
+ */
+function PreArrivalSection({
+  slug,
+  booking,
+  lookupEmail,
+  onCompleted,
+}: {
+  slug: string;
+  booking: PublicBookingDetail;
+  lookupEmail: string;
+  onCompleted: (booking: PublicBookingDetail) => void;
+}) {
+  const preArrivalMutation = usePreArrivalMutation(slug);
+  const [phone, setPhone] = useState(booking.guestPhone ?? '');
+  const [nationality, setNationality] = useState(booking.guestNationality ?? '');
+  const [arrivalTime, setArrivalTime] = useState(booking.estimatedArrivalTime ?? '');
+  const [accepted, setAccepted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const alreadyDone = Boolean(booking.preArrivalCompletedAt);
+
+  async function submit() {
+    if (!accepted) return;
+    setError(null);
+    try {
+      onCompleted(
+        await preArrivalMutation.mutateAsync({
+          confirmationNumber: booking.confirmationNumber,
+          email: lookupEmail || booking.guestEmail || '',
+          phone: phone.trim() || undefined,
+          nationality: nationality.trim() || undefined,
+          estimatedArrivalTime: arrivalTime || undefined,
+          acceptHouseRules: true,
+        }),
+      );
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
+    }
+  }
+
+  if (alreadyDone) {
+    return (
+      <Section label="Check-In Details">
+        <Card tone="secondary" className="flex flex-col gap-2">
+          <p className="text-small font-semibold text-green-800">Check-in details completed</p>
+          <p className="text-small text-secondary">
+            Thanks — we have everything we need. {booking.estimatedArrivalTime ? `We'll expect you around ${booking.estimatedArrivalTime}.` : ''} Please bring
+            photo ID for the front desk.
+          </p>
+        </Card>
+      </Section>
+    );
+  }
+
+  return (
+    <Section label="Check In Online">
+      <Card tone="secondary" className="flex flex-col gap-3">
+        <p className="text-small text-secondary">Complete these now and check-in at the property will just be collecting your key.</p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-2">
+          <Input id="pre-arrival-phone" label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+234…" />
+          <Input
+            id="pre-arrival-nationality"
+            label="Nationality"
+            value={nationality}
+            onChange={(e) => setNationality(e.target.value.toUpperCase().slice(0, 2))}
+            placeholder="NG"
+            hint="Two-letter country code."
+          />
+          <Input id="pre-arrival-arrival-time" label="Expected arrival" type="time" value={arrivalTime} onChange={(e) => setArrivalTime(e.target.value)} />
+        </div>
+
+        {booking.houseRules ? (
+          <div className="flex flex-col gap-1">
+            <p className="text-small font-semibold text-secondary">House rules</p>
+            <div className="max-h-40 overflow-y-auto rounded-control border border-secondary/20 p-3 text-small text-secondary whitespace-pre-wrap">
+              {booking.houseRules}
+            </div>
+          </div>
+        ) : null}
+
+        <label className="flex items-center gap-2 text-small text-secondary">
+          <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />
+          I accept {booking.houseRules ? 'the house rules above' : "the property's house rules"}
+        </label>
+
+        {error ? <p className="text-small text-red-600">{error}</p> : null}
+
+        <div>
+          <Button type="button" onClick={submit} loading={preArrivalMutation.isPending} disabled={!accepted}>
+            Complete Check-In
+          </Button>
+        </div>
+
+        <p className="text-tiny text-secondary-light">
+          You&rsquo;ll still need to show photo ID when you arrive — identity documents can&rsquo;t be submitted online yet.
+        </p>
+      </Card>
+    </Section>
   );
 }
 

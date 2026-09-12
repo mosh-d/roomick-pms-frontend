@@ -1982,3 +1982,19 @@ The page tells the guest to contact the property directly to change or cancel, r
 
 ### Verified live
 `npx tsc --noEmit`, `eslint` (0 errors, same 6 pre-existing warnings), `npm run build` (`/book/[slug]/manage` compiles as a dynamic route). Live against real Postgres (25/25), fully logged out: the form renders with no dashboard chrome; a wrong email shows an honest not-found message revealing nothing; the correct details render the booking with a guest-friendly "Confirmed" status, the real total and night count, and the guest's own special request read back to them; the confirmation page links here and the link lands correctly; and the page doesn't scroll horizontally at 390px.
+
+## Phase 68 — Check in online: guest pre-arrival (2026-09-12)
+
+Second slice of Month 9's Guest Self-Service Portal, added to `/book/[slug]/manage` beneath the booking itself. See the backend's `PHASE_NOTES.md` for the data-model reasoning (corrected details go to the guest profile, not the reservation, so the registration card picks them up automatically).
+
+### Only offered where it can actually succeed
+The form renders only for a `confirmed` booking. A stay that's already started, ended or been cancelled has nothing to prepare for and the backend refuses it — showing a form whose only outcome is an error would be worse than not showing one.
+
+### The completed state replaces the form, rather than sitting beside it
+Once done, the section becomes a short confirmation echoing the expected arrival time. Re-looking-up the booking later shows that state, not an empty form inviting the guest to do it again — verified live by looking the same booking up a second time.
+
+### It says what online check-in does NOT cover
+"You'll still need to show photo ID when you arrive — identity documents can't be submitted online yet." Identity capture is deliberately out of scope (a separate security surface), and a guest who assumed check-in was fully complete would be unpleasantly surprised at the desk. The house rules themselves are rendered in a scrollable box so a guest is accepting something they can actually read, and the submit button stays disabled until they do.
+
+### Verified live
+`npx tsc --noEmit`, `eslint` (0 errors, same 6 pre-existing warnings), `npm run build`. Live against real Postgres (26/26), logged out: the form appears for a confirmed booking with the property's real house rules; the submit button is disabled until the rules are accepted and enables when they are; submitting persists the phone, uppercased nationality and arrival time (API-reconfirmed); the UI switches to the completed state echoing the arrival time; a second lookup shows that completed state; and there's no horizontal scroll at 390px.
