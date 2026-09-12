@@ -19,6 +19,9 @@ import {
   useBranchDetailQuery,
   useUpdateBranchMutation,
   useSetNoShowPolicyMutation,
+  useBookingEngineQuery,
+  usePublishBookingEngineMutation,
+  useUnpublishBookingEngineMutation,
   type BranchDetail,
 } from '@/lib/propertyConfig';
 import { useRoomTypesQuery, useCreateRoomTypeMutation, useUpdateRoomTypeMutation, type RoomTypeSummary } from '@/lib/rooms';
@@ -211,6 +214,158 @@ function NoShowPolicySection({ branch, auth }: { branch: BranchDetail; auth: Aut
   );
 }
 
+/** Slugify exactly the way the backend's own `PublishBookingEngineDto` validates: lowercase alphanumeric words separated by single hyphens. */
+function toSlug(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 63);
+}
+
+/**
+ * Direct Booking Engine controls (Month 7). The endpoints shipped with the
+ * backend but had no UI, so publishing a property meant calling the API by
+ * hand — this is that gap closed.
+ *
+ * Publishing is a genuinely outward-facing action (it puts a page on the
+ * public internet), so the slug is previewed as the full URL before the
+ * button is pressed, and unpublishing is offered right next to it.
+ */
+function BookingEngineSection({ branch, auth }: { branch: BranchDetail; auth: AuthOpts }) {
+  const statusQuery = useBookingEngineQuery(branch.id, auth);
+  const publishMutation = usePublishBookingEngineMutation(branch.id, auth);
+  const unpublishMutation = useUnpublishBookingEngineMutation(branch.id, auth);
+
+  const status = statusQuery.data;
+  // Keyed on the loaded status so the field initialises once the real slug
+  // arrives, without a set-state-in-effect.
+  return statusQuery.isLoading ? (
+    <Section label="Direct Booking Engine">
+      <p className="text-body text-primary-dark/70">Loading…</p>
+    </Section>
+  ) : (
+    <BookingEngineForm
+      key={status?.slug ?? 'unpublished'}
+      branchName={branch.name}
+      status={status ?? { slug: null, bookingEngineEnabled: false }}
+      onPublish={(slug) => publishMutation.mutateAsync({ slug })}
+      onUnpublish={() => unpublishMutation.mutateAsync()}
+      publishing={publishMutation.isPending}
+      unpublishing={unpublishMutation.isPending}
+    />
+  );
+}
+
+function BookingEngineForm({
+  branchName,
+  status,
+  onPublish,
+  onUnpublish,
+  publishing,
+  unpublishing,
+}: {
+  branchName: string;
+  status: { slug: string | null; bookingEngineEnabled: boolean };
+  onPublish: (slug: string) => Promise<unknown>;
+  onUnpublish: () => Promise<unknown>;
+  publishing: boolean;
+  unpublishing: boolean;
+}) {
+  const [slug, setSlug] = useState(() => status.slug ?? toSlug(branchName));
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const normalised = toSlug(slug);
+  const bookingUrl = typeof window === 'undefined' ? `/book/${normalised}` : `${window.location.origin}/book/${normalised}`;
+  const liveUrl = status.slug ? (typeof window === 'undefined' ? `/book/${status.slug}` : `${window.location.origin}/book/${status.slug}`) : null;
+
+  async function publish() {
+    if (!normalised) return;
+    setError(null);
+    try {
+      await onPublish(normalised);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
+    }
+  }
+
+  async function unpublish() {
+    setError(null);
+    try {
+      await onUnpublish();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
+    }
+  }
+
+  return (
+    <Section label="Direct Booking Engine">
+      <Card tone="secondary" className="flex flex-col gap-3 max-w-2xl">
+        <p className="text-small text-secondary">
+          Take bookings directly from your own website with no channel commission. Guests book at a public address without needing an account, and their
+          reservations arrive in Roomick exactly like a front-desk booking.
+        </p>
+
+        {status.bookingEngineEnabled && liveUrl ? (
+          <div className="flex flex-wrap items-center gap-2 rounded-control bg-green-700/10 px-3 py-2">
+            <span className="text-small font-semibold text-green-800">Live</span>
+            <a href={liveUrl} target="_blank" rel="noreferrer" className="text-small text-secondary underline break-all">
+              {liveUrl}
+            </a>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void navigator.clipboard.writeText(liveUrl).then(() => setCopied(true));
+              }}
+            >
+              {copied ? 'Copied' : 'Copy link'}
+            </Button>
+          </div>
+        ) : (
+          <p className="text-small text-secondary-light">
+            Not published — this property currently accepts no online bookings{status.slug ? `, but "${status.slug}" stays reserved for it.` : '.'}
+          </p>
+        )}
+
+        <Input
+          id="booking-engine-slug"
+          label="Public booking address"
+          value={slug}
+          onChange={(e) => {
+            setSlug(e.target.value);
+            setError(null);
+          }}
+          hint="Lowercase letters, numbers and hyphens. Guests will see this in the URL."
+        />
+        <p className="text-tiny text-secondary-light break-all">
+          Will publish at <span className="font-semibold text-secondary">{bookingUrl}</span>
+        </p>
+
+        {error ? <p className="text-small text-red-600">{error}</p> : null}
+
+        <div className="flex flex-wrap gap-3">
+          <Button type="button" onClick={publish} loading={publishing} disabled={!normalised}>
+            {status.bookingEngineEnabled ? (normalised === status.slug ? 'Republish' : 'Change address') : 'Publish'}
+          </Button>
+          {status.bookingEngineEnabled ? (
+            <Button type="button" variant="outline" onClick={unpublish} loading={unpublishing}>
+              Unpublish
+            </Button>
+          ) : null}
+        </div>
+
+        <p className="text-tiny text-secondary-light">
+          Guests pay at the property on arrival — card payment at the time of booking isn&apos;t built yet. Changing the address takes the old link down
+          immediately.
+        </p>
+      </Card>
+    </Section>
+  );
+}
+
 function RoomTypeModal({
   open,
   onClose,
@@ -371,6 +526,7 @@ export default function PropertyConfigPage() {
       ) : branchQuery.data ? (
         <>
           <BranchDetailsSection branch={branchQuery.data} auth={auth} />
+          <BookingEngineSection branch={branchQuery.data} auth={auth} />
           <NoShowPolicySection branch={branchQuery.data} auth={auth} />
         </>
       ) : null}

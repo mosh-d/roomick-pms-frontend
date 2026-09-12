@@ -115,3 +115,43 @@ export function useSetNoShowPolicyMutation(branchId: string, { accessToken, tena
     onSuccess: () => queryClient.invalidateQueries({ queryKey: branchDetailQueryKey(branchId) }),
   });
 }
+
+// --- Direct Booking Engine (Month 7) ----------------------------------------
+// The OWNER-side controls for publishing a property to the public booking
+// engine. These live here rather than in lib/publicBooking.ts on purpose:
+// that module is the guest-facing client and deliberately takes no auth
+// options at all (see its own header). These are ordinary authenticated
+// branch-configuration calls and belong with the rest of them.
+
+export interface BookingEngineStatus {
+  slug: string | null;
+  bookingEngineEnabled: boolean;
+}
+
+function bookingEngineQueryKey(branchId: string) {
+  return ['booking-engine', branchId] as const;
+}
+
+export function useBookingEngineQuery(branchId: string | null, { accessToken, tenantId }: AuthOpts) {
+  return useQuery({
+    queryKey: bookingEngineQueryKey(branchId ?? ''),
+    queryFn: () => apiFetch<BookingEngineStatus>(`/branches/${branchId}/booking-engine`, { accessToken, tenantId }),
+    enabled: branchId !== null,
+  });
+}
+
+export function usePublishBookingEngineMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { slug: string }) => apiFetch<{ slug: string; bookingEngineEnabled: true }>(`/branches/${branchId}/booking-engine`, { method: 'PUT', accessToken, tenantId, body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: bookingEngineQueryKey(branchId) }),
+  });
+}
+
+export function useUnpublishBookingEngineMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch<{ bookingEngineEnabled: false }>(`/branches/${branchId}/booking-engine`, { method: 'DELETE', accessToken, tenantId }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: bookingEngineQueryKey(branchId) }),
+  });
+}
