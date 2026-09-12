@@ -236,10 +236,15 @@ export default function GuestFolioPage() {
   );
 }
 
-/** Tax rows are the engine's own ledger entries; a parent charge shows its tax as a "+X tax" suffix, matching the reference's line list. */
+/**
+ * Tax rows are the engine's own ledger entries; a parent charge shows its tax as a "+X tax" suffix, matching the
+ * reference's line list. A correction shows the tax it reversed the same way ("-X tax"), so staff can see the VAT
+ * came off with the charge.
+ */
 function LineItemRow({ item, symbol }: { item: LineItem; symbol: string }) {
   const isTax = item.chargeType === 'tax';
   const isCredit = Number(item.amount) < 0;
+  const tax = Number(item.taxAmount);
   return (
     <tr className="border-b border-primary/15 last:border-0">
       <td className="text-small text-primary-dark py-3 pr-4 whitespace-nowrap">
@@ -253,8 +258,11 @@ function LineItemRow({ item, symbol }: { item: LineItem; symbol: string }) {
       </td>
       <td className={`text-small py-3 text-right whitespace-nowrap ${isCredit ? 'text-green-700' : 'text-primary-dark'}`}>
         <span className="font-semibold">{formatMoney(item.amount, symbol)}</span>
-        {!isTax && Number(item.taxAmount) > 0 ? (
-          <span className="text-tiny text-primary-dark/70 ml-2">+{formatMoney(item.taxAmount, symbol)} tax</span>
+        {!isTax && tax !== 0 ? (
+          <span className="text-tiny text-primary-dark/70 ml-2">
+            {tax > 0 ? '+' : ''}
+            {formatMoney(item.taxAmount, symbol)} tax
+          </span>
         ) : null}
       </td>
     </tr>

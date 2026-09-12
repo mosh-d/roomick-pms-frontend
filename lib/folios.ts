@@ -26,6 +26,10 @@ export interface LineItem {
   postedAt: string;
   isVoid: boolean;
   taxRuleIds: string[];
+  /** Tax lines only: the charge this tax was computed on — it's corrected and split together with that charge. `null` on charges, and on tax posted before the link existed. */
+  parentLineItemId: string | null;
+  /** Reversal lines only: the line this one reverses. A line can be corrected once. */
+  correctsLineItemId: string | null;
 }
 
 export interface FolioPayment {
@@ -76,6 +80,8 @@ export interface FolioDetail {
 
 export interface FolioListRow {
   id: string;
+  /** `null` on the primary folio; a split folio's own name (e.g. "Company"). */
+  label: string | null;
   status: FolioStatus;
   openedAt: string | null;
   closedAt: string | null;

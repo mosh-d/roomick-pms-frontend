@@ -42,6 +42,10 @@ import { useAuthStore } from '@/lib/store/authStore';
  *
  * Selecting by charge type is exactly the reference's Charge Type mode:
  * filter, select all, move.
+ *
+ * A charge's tax lines (`parentLineItemId`) move with it — the backend
+ * enforces that and refuses a split that would strand one. This page only
+ * mirrors the rule, so the preview shows the amount that will really move.
  */
 export default function SplitBillingPage() {
   const user = useAuthStore((s) => s.user);
@@ -73,7 +77,11 @@ export default function SplitBillingPage() {
     return (foliosQuery.data ?? [])
       .filter((f) => f.status !== 'settled')
       .filter((f) => !q || f.guest.name.toLowerCase().includes(q))
-      .map((f) => ({ value: f.id, label: `${f.guest.name}${f.reservation?.room ? ` — Room ${f.reservation.room.number}` : ''}` }));
+      // A split folio's own name keeps it apart from the guest's primary folio — otherwise both read "Guest — Room 101".
+      .map((f) => ({
+        value: f.id,
+        label: `${f.guest.name}${f.label ? ` (${f.label})` : ''}${f.reservation?.room ? ` — Room ${f.reservation.room.number}` : ''}`,
+      }));
   }, [foliosQuery.data, search]);
 
   /** Only other folios on the SAME reservation can receive a split — a different guest's bill is a transfer, which the backend rejects here. */
@@ -90,10 +98,24 @@ export default function SplitBillingPage() {
     return chargeTypeFilter ? items.filter((li) => li.chargeType === chargeTypeFilter) : items;
   }, [source, chargeTypeFilter]);
 
+  /** Charge id → the tax lines computed on it, which move with it rather than being picked on their own. */
+  const taxByCharge = useMemo(() => {
+    const map = new Map<string, LineItem[]>();
+    for (const li of source?.lineItems ?? []) {
+      const chargeId = isLinkedTax(li) ? li.parentLineItemId : null;
+      if (li.isVoid || !chargeId) continue;
+      map.set(chargeId, [...(map.get(chargeId) ?? []), li]);
+    }
+    return map;
+  }, [source]);
+
+  const pickedItems = useMemo(() => (source?.lineItems ?? []).filter((li) => selectedIds.has(li.id)), [source, selectedIds]);
+  const taxMovingWith = useMemo(() => pickedItems.flatMap((li) => taxByCharge.get(li.id) ?? []), [pickedItems, taxByCharge]);
+
   const symbol = currencySymbolFor(source?.currency);
   const selectedTotal = useMemo(
-    () => (source?.lineItems ?? []).filter((li) => selectedIds.has(li.id)).reduce((sum, li) => sum + Number(li.amount), 0),
-    [source, selectedIds],
+    () => [...pickedItems, ...taxMovingWith].reduce((sum, li) => sum + Number(li.amount), 0),
+    [pickedItems, taxMovingWith],
   );
 
   function toggle(id: string) {
@@ -135,7 +157,8 @@ export default function SplitBillingPage() {
         lineItemIds: [...selectedIds],
         reason: reason.trim(),
       });
-      setNotice(`Moved ${selectedIds.size} charge${selectedIds.size === 1 ? '' : 's'} (${formatMoney(selectedTotal, symbol)}).`);
+      const taxNote = taxMovingWith.length ? ` with ${taxMovingWith.length} tax line${taxMovingWith.length === 1 ? '' : 's'}` : '';
+      setNotice(`Moved ${selectedIds.size} charge${selectedIds.size === 1 ? '' : 's'}${taxNote} (${formatMoney(selectedTotal, symbol)}).`);
       setSelectedIds(new Set());
       setReason('');
     } catch (e) {
@@ -236,8 +259,8 @@ export default function SplitBillingPage() {
         <Section label="Bill Splitter">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <p className="text-small text-primary-dark/70 max-w-xl">
-              Pick the charges to move. Tax rows are separate ledger entries — select them alongside their parent charge if the tax should
-              follow it.
+              Pick the charges to move. A charge&apos;s tax moves with it automatically, so neither bill is left carrying tax on a charge it
+              doesn&apos;t have.
             </p>
             <div className="w-56">
               <Select
@@ -260,7 +283,7 @@ export default function SplitBillingPage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setSelectedIds(new Set(movableItems.map((li) => li.id)))}
+                  onClick={() => setSelectedIds(new Set(movableItems.filter((li) => !isLinkedTax(li)).map((li) => li.id)))}
                 >
                   Select all shown
                 </Button>
@@ -281,9 +304,11 @@ export default function SplitBillingPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {movableItems.map((item) => (
-                      <SplitRow key={item.id} item={item} checked={selectedIds.has(item.id)} onToggle={toggle} symbol={symbol} />
-                    ))}
+                    {movableItems.map((item) => {
+                      const locked = isLinkedTax(item);
+                      const checked = selectedIds.has(locked ? (item.parentLineItemId ?? '') : item.id);
+                      return <SplitRow key={item.id} item={item} checked={checked} locked={locked} onToggle={toggle} symbol={symbol} />;
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -292,6 +317,9 @@ export default function SplitBillingPage() {
                 <Card tone="secondary" className="flex flex-col gap-2">
                   <h3 className="text-body font-bold text-secondary">Preview</h3>
                   <DetailRow label="Charges selected" value={String(selectedIds.size)} />
+                  {taxMovingWith.length > 0 ? (
+                    <DetailRow label="Tax lines moving with them" value={String(taxMovingWith.length)} />
+                  ) : null}
                   <DetailRow label="Amount moving" value={formatMoney(selectedTotal, symbol)} />
                   <div className="pt-2 border-t border-secondary/20 flex flex-col gap-2">
                     <DetailRow
@@ -324,14 +352,22 @@ export default function SplitBillingPage() {
   );
 }
 
+/** A tax line tied to the charge it was computed on. Tax posted before the link existed has no parent and is still picked by hand. */
+function isLinkedTax(item: LineItem): boolean {
+  return item.chargeType === 'tax' && Boolean(item.parentLineItemId);
+}
+
 function SplitRow({
   item,
   checked,
+  locked,
   onToggle,
   symbol,
 }: {
   item: LineItem;
   checked: boolean;
+  /** Linked tax line: mirrors its charge's checkbox and can't be picked on its own. */
+  locked: boolean;
   onToggle: (id: string) => void;
   symbol: string;
 }) {
@@ -341,9 +377,10 @@ function SplitRow({
         <input
           type="checkbox"
           checked={checked}
+          disabled={locked}
           onChange={() => onToggle(item.id)}
-          aria-label={`Move ${item.description}`}
-          className="size-4 cursor-pointer accent-primary"
+          aria-label={locked ? `${item.description} — moves with its charge` : `Move ${item.description}`}
+          className={`size-4 accent-primary ${locked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
         />
       </td>
       <td className="text-small text-primary-dark py-3 pr-4 whitespace-nowrap">
@@ -351,6 +388,7 @@ function SplitRow({
       </td>
       <td className={`text-small py-3 pr-4 ${item.chargeType === 'tax' ? 'text-primary-dark/70' : 'text-primary-dark'}`}>
         {item.description}
+        {locked ? <span className="block text-tiny text-primary-dark/60">Moves with its charge</span> : null}
       </td>
       <td className="py-3 pr-4">
         <span className="inline-flex rounded-pill bg-primary/15 px-2 py-0.5 text-tiny font-semibold text-primary-dark capitalize">

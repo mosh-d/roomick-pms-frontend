@@ -2047,3 +2047,25 @@ The booking card said "Payment is taken at the property on arrival. Please quote
 `npx tsc --noEmit`, `eslint` (0 errors, same 6 pre-existing warnings), `npm run build`. Live against real Postgres (25/25, browser portion logged out): a checked-in guest is offered their bill; it shows the accrual note with the full-stay rate, the minibar charge and its adjustment, the cash payment in guest wording, the backend's exact balance, and the split-billing note — and not the Company folio's charge or the receipt reference; Refresh works; nothing scrolls sideways at 390px; zero console errors.
 
 One tooling note: a first type-check failed inside `.next/dev/types/validator.ts`, a file `next dev` generates — truncated when the verification dev server was force-stopped mid-write. Removing the generated folder (it rebuilds on the next start) cleared it; no source change was involved.
+
+## Phase 71 — Corrections take their tax with them; splits move tax with its charge (2026-09-12)
+
+Frontend side of the backend's tax-link fix (see the backend's `PHASE_NOTES.md`): each tax line is now linked to the charge it was computed on, a correction reverses both, and a split moves both.
+
+### Split Billing
+- **Linked tax lines are locked to their charge.** Their checkbox mirrors the charge's, can't be ticked on its own, and reads "Moves with its charge"; "Select all shown" picks charges only. The backend refuses a split that would strand a tax line — the page simply doesn't offer one. Tax posted before the link existed has no parent and is still picked by hand.
+- **The preview shows what really moves.** "Amount moving" and "Source balance after" include the tax travelling with the picked charges, there's a "Tax lines moving with them" count, and the notice reads "Moved 1 charge with 1 tax line (₦2,150.00)." Before, picking a ₦2,000 laundry charge previewed ₦2,000.
+- The instruction "select them alongside their parent charge if the tax should follow it" no longer applies and is gone.
+- **The source list tells a guest's folios apart.** Options were guest name + room, so a reservation's primary folio and its Company folio both read "Tunde Bello — Room 101". The folio list now carries `label`, and a split folio reads "Tunde Bello (Company) — Room 101".
+
+### Guest Folio
+A correction row shows the tax it reversed — "-₦375.00 tax" beside the "+₦375.00 tax" on the original charge — so staff can see the VAT came off with it. (Corrections are still made through the API; this page has no correction action.)
+
+### An accessibility bug in `Input`, found by the browser pass
+`Input` took its id from `id ?? name`. A field given neither — the split page's "Reason" and "New folio name", and any call site like them — rendered `<label htmlFor={undefined}>`: announced unlabelled by screen readers, clicking the label did nothing, and every such field on a page shared `aria-describedby="undefined-hint"`. It now falls back to React's `useId()`; fields that pass `id` or `name` are unchanged.
+
+### Noticed, unchanged
+In-House Guest List, Departures and Check-Out map each reservation to one folio for their balance column and the check-out warning. The list is newest-first, so the map ends on the primary folio — the guest's own bill — and a Company folio's balance isn't part of the check-out warning. Defensible for company-billed charges, but it rests on list order rather than an explicit `label === null`; worth making explicit when those pages are next touched.
+
+### Verified
+`npx tsc --noEmit`, `eslint` (0 errors), `npm run build`. Browser against real Postgres (18/18): the folio page shows "+₦375.00 tax" on the minibar charge and "-₦375.00 tax" on its correction; the split source list shows "Tunde Bello — Room 101" and "Tunde Bello (Company) — Room 101"; all four linked tax lines (room, minibar, the minibar reversal, laundry) are locked; "Select all shown" picks the 4 charges and previews ₦34,400.00 with 4 tax lines and ₦0.00 left on the source; ticking laundry ticks its VAT and previews ₦2,150.00; Reason and New folio name are properly labelled; the split lands the charge and its VAT on the Company folio; nothing scrolls sideways at 390px; zero console errors.
