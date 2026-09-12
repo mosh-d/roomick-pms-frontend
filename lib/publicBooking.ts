@@ -1,0 +1,125 @@
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { apiFetch } from './api';
+
+/**
+ * The Direct Booking Engine's client (Month 7).
+ *
+ * Deliberately takes NO auth options — every other lib/ module in this app
+ * threads `{ accessToken, tenantId }` through because every other endpoint is
+ * behind the JWT + X-Tenant-ID guard chain. These routes are `@Public()` and
+ * resolve their tenant server-side from the booking slug, so passing either
+ * header would be meaningless at best and a leak of a staff session onto a
+ * guest-facing page at worst. `apiFetch` treats both as optional, so omitting
+ * them sends a genuinely anonymous request.
+ */
+
+export interface PublicProperty {
+  slug: string;
+  name: string;
+  category: string | null;
+  currency: string;
+  timezone: string;
+  checkInTime: string;
+  checkOutTime: string;
+  address: { street?: string; city?: string; state?: string; country?: string; zip?: string } | null;
+  brandName: string;
+}
+
+export interface PublicRoomType {
+  id: string;
+  name: string;
+  bedType: string | null;
+  sizeM2: string | null;
+  amenities: string[];
+  photoUrls: string[];
+  baseRate: string;
+  maxAdults: number;
+  maxChildren: number;
+}
+
+export interface PublicAvailabilityNight {
+  date: string;
+  available: number;
+}
+
+export interface PublicAvailabilityRow {
+  roomTypeId: string;
+  roomTypeName: string;
+  nights: PublicAvailabilityNight[];
+}
+
+export interface PublicQuote {
+  currency: string;
+  nightlyRate: string;
+  subtotal: string;
+  taxTotal: string;
+  totalWithTax: string;
+  nights: number;
+}
+
+export interface PublicBookingConfirmation {
+  confirmationNumber: string;
+  checkInDate: string;
+  checkOutDate: string;
+  roomTypeName: string;
+  guestName: string;
+  totalRate: string;
+  currency: string;
+}
+
+export interface PublicBookingRequest {
+  roomTypeId: string;
+  checkInDate: string;
+  checkOutDate: string;
+  adults: number;
+  children?: number;
+  guestName: string;
+  guestEmail: string;
+  guestPhone?: string;
+  specialRequests?: string;
+  promoCode?: string;
+}
+
+export function usePublicPropertyQuery(slug: string) {
+  return useQuery({
+    queryKey: ['public-property', slug] as const,
+    queryFn: () => apiFetch<PublicProperty>(`/public/properties/${slug}`, {}),
+    // A property that doesn't resolve won't start resolving on a retry —
+    // the 404 is deliberate and final (unpublished, suspended, or never real).
+    retry: false,
+  });
+}
+
+export function usePublicRoomTypesQuery(slug: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['public-room-types', slug] as const,
+    queryFn: () => apiFetch<PublicRoomType[]>(`/public/properties/${slug}/room-types`, {}),
+    enabled,
+  });
+}
+
+export function usePublicAvailabilityQuery(slug: string, from: string, to: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['public-availability', slug, from, to] as const,
+    queryFn: () => apiFetch<PublicAvailabilityRow[]>(`/public/properties/${slug}/availability?from=${from}&to=${to}`, {}),
+    enabled,
+  });
+}
+
+export function usePublicQuoteQuery(slug: string, roomTypeId: string | null, checkInDate: string, checkOutDate: string, promoCode: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['public-quote', slug, roomTypeId, checkInDate, checkOutDate, promoCode] as const,
+    queryFn: () => {
+      const params = new URLSearchParams({ roomTypeId: roomTypeId ?? '', checkInDate, checkOutDate });
+      if (promoCode.trim()) params.set('promoCode', promoCode.trim());
+      return apiFetch<PublicQuote>(`/public/properties/${slug}/quote?${params.toString()}`, {});
+    },
+    enabled: enabled && roomTypeId !== null,
+  });
+}
+
+export function usePublicBookingMutation(slug: string) {
+  return useMutation({
+    mutationFn: (body: PublicBookingRequest) => apiFetch<PublicBookingConfirmation>(`/public/properties/${slug}/reservations`, { method: 'POST', body }),
+  });
+}

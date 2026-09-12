@@ -1903,3 +1903,28 @@ Both the Demand Forecast and Rate Recommendations sections carry an explicit, re
 
 ### Closing note
 This is the true final item of the original 11 architecture-map gaps — Phase 62 believed itself to be last at the time it was written, which was accurate given what remained undecided then; Revenue Management's resolution here is what actually closes the set. Every one of the 11 is now either fully built or has an honestly-scoped partial build with explicitly-stated, deliberate limitations — none was silently skipped, half-built without saying so, or dressed up with a capability (AI included) that doesn't actually exist.
+
+## Phase 64 — Direct Booking Engine: the first page in this app built for a guest, not a staff member (2026-09-12)
+
+First item of the growth plan's Months 7–12, and a genuinely different kind of page from everything before it. `/book/[slug]` is public, unauthenticated, and lives **outside `/dashboard`** — no sidebar, no breadcrumb shell, no auth store, no `PageHeader`. See the backend's own `PHASE_NOTES.md` for the API design and its security reasoning.
+
+### `lib/publicBooking.ts` deliberately takes no auth options at all
+Every other `lib/` module threads `{ accessToken, tenantId }` through every hook, because every other endpoint is behind the guard chain. These routes are `@Public()` and resolve their tenant server-side from the slug, so passing either header would be meaningless at best — and at worst would leak a staff session onto a guest-facing page if someone happened to be signed in on the same browser. `apiFetch` already treats both as optional, so omitting them sends a genuinely anonymous request. The absence is the point, and it's commented as such so nobody "helpfully" adds them later.
+
+### Nothing on this page computes a price
+Every figure in the price panel — nightly rate, subtotal, tax, total — is read straight off the backend's Rate Resolver quote. The page never multiplies a nightly rate by a night count to render a total, even though it trivially could. That's what makes rate parity between a direct booking and a front-desk booking structural rather than a claim: there is only one cascade, and this page is just another caller of it.
+
+### "Rooms left" shows the minimum across the stay, not the first night
+A room type free on 2 of 3 nights cannot take a 3-night booking, so showing the first night's count would overstate what's actually bookable. The card shows `Math.min` across every night in the range instead — the honest number for the stay being searched.
+
+### `children` is a reserved prop name — caught by lint, not by review
+The guest-details component originally took a `children: number` prop (child guests). React's `no-children-prop` rule correctly errored on it: `children` means nested JSX, and passing a number under that name is a real bug waiting to happen, not a style preference. Renamed to `childGuests`, with a comment, since the API field itself is legitimately still `children`.
+
+### Payment is described honestly
+The price panel and the confirmation both say payment is taken at the property on arrival. That's true today — card payment is Month 11 and no processor integration exists anywhere in this app. No "Pay now" button was rendered as a disabled tease.
+
+### Verified live
+`npx tsc --noEmit`, `eslint` (0 errors — the 1 real error it caught is the `children` rename above; otherwise the same 6 pre-existing, unrelated warnings), `npm run build` (`/book/[slug]` compiles as a dynamic route, every other route unaffected). Live against real Postgres, driving a real browser with **no session whatsoever**: an unknown slug renders an honest "Property not found" rather than crashing; a published property renders its real name, brand, address and check-in/out times; both real room types render with real rates, bed type, size and amenities; live availability shows the real pool (4 standard, 2 suite); no dashboard chrome leaks onto the page; picking dates and a room reveals a real 3-night Rate Resolver quote (30000 × 3 = 90000); submitting books successfully and shows a real `RES-*` confirmation number; that booking is then visible to staff through the authenticated API as a real reservation with `channel: 'direct'`, `createdBy: null`, the guest profile created from the typed details and the special request persisted; re-loading the page shows availability dropped from 4 to 3; unpublishing takes the page down immediately; and the page does not scroll horizontally at 390px. Zero console/page errors throughout.
+
+### Carried forward
+A Property Config UI for the publish/slug controls (the endpoints are built and tested; an owner currently has to call them directly) · room photos are fetched and typed but not yet rendered as a gallery · a multi-property landing page for a group with several published branches · card payment at booking (Month 11).
