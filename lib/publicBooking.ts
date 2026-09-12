@@ -168,6 +168,51 @@ export function useBookingLookupMutation(slug: string) {
   });
 }
 
+export interface PublicFolioLine {
+  description: string;
+  chargeType: string;
+  amount: string;
+  serviceDate: string | null;
+  postedAt: string;
+}
+
+export interface PublicFolioPayment {
+  method: string;
+  purpose: string;
+  amount: string;
+  recordedAt: string;
+}
+
+/** Mirrors the backend's `PublicGuestFolio` — `getFolio`'s own totals, projected to guest-safe fields. */
+export interface PublicGuestFolio {
+  confirmationNumber: string;
+  currency: string;
+  lineItems: PublicFolioLine[];
+  payments: PublicFolioPayment[];
+  subTotal: string;
+  taxTotal: string;
+  totalCost: string;
+  paymentsTotal: string;
+  balanceDue: string;
+  stillAccruing: boolean;
+  roomTotalForStay: string | null;
+  otherFoliosExist: boolean;
+  asOf: string;
+}
+
+/**
+ * A mutation, fired from an explicit "View your bill" button, for the same
+ * reason the lookup is one: it POSTs credentials to a hard-throttled route, and
+ * should spend that budget only when the guest actually asks — never on mount
+ * or window refocus.
+ */
+export function useGuestFolioMutation(slug: string) {
+  return useMutation({
+    mutationFn: (body: { confirmationNumber: string; email: string }) =>
+      apiFetch<PublicGuestFolio>(`/public/properties/${slug}/bookings/folio`, { method: 'POST', body }),
+  });
+}
+
 export function usePublicBookingMutation(slug: string) {
   return useMutation({
     mutationFn: (body: PublicBookingRequest) => apiFetch<PublicBookingConfirmation>(`/public/properties/${slug}/reservations`, { method: 'POST', body }),

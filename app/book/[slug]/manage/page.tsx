@@ -9,7 +9,45 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ApiError } from '@/lib/api';
-import { useBookingLookupMutation, usePreArrivalMutation, usePublicPropertyQuery, type PublicBookingDetail } from '@/lib/publicBooking';
+import {
+  useBookingLookupMutation,
+  useGuestFolioMutation,
+  usePreArrivalMutation,
+  usePublicPropertyQuery,
+  type PublicBookingDetail,
+  type PublicGuestFolio,
+} from '@/lib/publicBooking';
+
+/** Guest wording for `ChargeType`. */
+const CHARGE_LABELS: Record<string, string> = {
+  room: 'Room',
+  fnb: 'Food & drink',
+  spa: 'Spa',
+  laundry: 'Laundry',
+  minibar: 'Minibar',
+  transport: 'Transport',
+  tax: 'Tax',
+  penalty: 'Penalty',
+  correction: 'Adjustment',
+  misc: 'Other',
+};
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cash: 'Cash',
+  card: 'Card',
+  bank_transfer: 'Bank transfer',
+  voucher: 'Voucher',
+  loyalty_points: 'Loyalty points',
+};
+
+const PAYMENT_PURPOSE_LABELS: Record<string, string> = {
+  payment: 'Payment',
+  deposit: 'Deposit',
+  deposit_application: 'Deposit applied',
+};
+
+/** Guests with a bill to see. A folio only exists from check-in onward. */
+const FOLIO_VISIBLE_STATUSES = new Set(['checked_in', 'checked_out']);
 
 /** Guest-facing wording for `ReservationStatus`. The raw enum values are staff vocabulary and shouldn't leak onto this page. */
 const STATUS_LABELS: Record<string, string> = {
@@ -82,6 +120,9 @@ export default function ManageBookingPage() {
       {booking ? (
         <>
           <BookingDetail booking={booking} onLookupAnother={() => setBooking(null)} />
+          {FOLIO_VISIBLE_STATUSES.has(booking.status) ? (
+            <GuestFolioSection key={booking.confirmationNumber} slug={slug} booking={booking} lookupEmail={email.trim()} />
+          ) : null}
           {booking.status === 'confirmed' ? (
             <PreArrivalSection
               key={booking.confirmationNumber}
@@ -251,6 +292,144 @@ function PreArrivalSection({
   );
 }
 
+/**
+ * The guest's own bill, read-only (growth plan Month 9).
+ *
+ * Every figure is the backend's — this component adds nothing up itself. The
+ * backend guarantees the lines and payments it returns reconcile with the
+ * totals, so what's listed is exactly what's counted.
+ *
+ * Two things a guest could easily misread are said explicitly: mid-stay, room
+ * nights are posted one at a time (so the full-stay rate is shown beside the
+ * running bill), and charges billed to someone else on a split folio aren't
+ * shown here at all.
+ */
+function GuestFolioSection({ slug, booking, lookupEmail }: { slug: string; booking: PublicBookingDetail; lookupEmail: string }) {
+  const folioMutation = useGuestFolioMutation(slug);
+  const [folio, setFolio] = useState<PublicGuestFolio | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function load() {
+    setError(null);
+    try {
+      setFolio(await folioMutation.mutateAsync({ confirmationNumber: booking.confirmationNumber, email: lookupEmail || booking.guestEmail || '' }));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
+    }
+  }
+
+  if (!folio) {
+    return (
+      <Section label="Your Bill">
+        <Card tone="secondary" className="flex flex-col gap-3">
+          <p className="text-small text-secondary">See the charges on your stay so far, what you&rsquo;ve paid, and your balance.</p>
+          {error ? <p className="text-small text-red-600">{error}</p> : null}
+          <div>
+            <Button type="button" onClick={load} loading={folioMutation.isPending}>
+              View your bill
+            </Button>
+          </div>
+        </Card>
+      </Section>
+    );
+  }
+
+  const balance = Number(folio.balanceDue);
+  const money = (amount: string) => `${folio.currency} ${amount}`;
+
+  return (
+    <Section label="Your Bill">
+      <Card tone="secondary" className="flex flex-col gap-4">
+        {folio.stillAccruing ? (
+          <p className="text-small text-secondary">
+            Room charges are added each night, so this shows what&rsquo;s been posted so far.
+            {folio.roomTotalForStay ? ` Your room rate for the full stay is ${money(folio.roomTotalForStay)}.` : ''}
+          </p>
+        ) : null}
+
+        <div className="flex flex-col gap-1">
+          <p className="text-small font-semibold text-secondary">Charges</p>
+          {folio.lineItems.length === 0 ? (
+            <p className="text-small text-secondary-light">No charges posted yet.</p>
+          ) : (
+            <ul className="flex flex-col divide-y divide-secondary/10">
+              {folio.lineItems.map((item, index) => (
+                <li key={index} className="flex items-start justify-between gap-4 py-2 text-small text-secondary">
+                  <div className="flex flex-col min-w-0">
+                    <span className="wrap-break-word">{item.description}</span>
+                    <span className="text-tiny text-secondary-light">
+                      {CHARGE_LABELS[item.chargeType] ?? item.chargeType} · {new Date(item.serviceDate ?? item.postedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <span className="shrink-0 tabular-nums">{money(item.amount)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {folio.payments.length > 0 ? (
+          <div className="flex flex-col gap-1">
+            <p className="text-small font-semibold text-secondary">Payments</p>
+            <ul className="flex flex-col divide-y divide-secondary/10">
+              {folio.payments.map((payment, index) => (
+                <li key={index} className="flex items-start justify-between gap-4 py-2 text-small text-secondary">
+                  <div className="flex flex-col min-w-0">
+                    <span>
+                      {PAYMENT_PURPOSE_LABELS[payment.purpose] ?? payment.purpose} · {PAYMENT_METHOD_LABELS[payment.method] ?? payment.method}
+                    </span>
+                    <span className="text-tiny text-secondary-light">{new Date(payment.recordedAt).toLocaleDateString()}</span>
+                  </div>
+                  <span className="shrink-0 tabular-nums">{money(payment.amount)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        <dl className="flex flex-col gap-1 text-small text-secondary border-t border-secondary/20 pt-3 max-w-sm w-full ml-auto">
+          <div className="flex justify-between gap-4">
+            <dt>Charges</dt>
+            <dd className="tabular-nums">{money(folio.subTotal)}</dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt>Tax</dt>
+            <dd className="tabular-nums">{money(folio.taxTotal)}</dd>
+          </div>
+          <div className="flex justify-between gap-4 font-semibold">
+            <dt>Total</dt>
+            <dd className="tabular-nums">{money(folio.totalCost)}</dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt>Paid</dt>
+            <dd className="tabular-nums">{money(folio.paymentsTotal)}</dd>
+          </div>
+          <div className={`flex justify-between gap-4 text-body font-bold pt-1 ${balance > 0 ? 'text-red-600' : 'text-green-800'}`}>
+            <dt>{balance > 0 ? 'Balance due' : balance < 0 ? 'In credit' : 'Paid in full'}</dt>
+            <dd className="tabular-nums">{balance === 0 ? '' : money(Math.abs(balance).toFixed(2))}</dd>
+          </div>
+        </dl>
+
+        {folio.otherFoliosExist ? (
+          <p className="text-tiny text-secondary-light">
+            Some charges on this stay are billed separately — for example to a company account — and aren&rsquo;t shown here. The front desk can help with those.
+          </p>
+        ) : null}
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-tiny text-secondary-light">
+            As of {new Date(folio.asOf).toLocaleString()}. To settle your bill, please see the front desk — payments can&rsquo;t be made online yet.
+          </p>
+          <Button type="button" size="sm" variant="outline" onClick={load} loading={folioMutation.isPending}>
+            Refresh
+          </Button>
+        </div>
+        {error ? <p className="text-small text-red-600">{error}</p> : null}
+      </Card>
+    </Section>
+  );
+}
+
 function BookingDetail({ booking, onLookupAnother }: { booking: PublicBookingDetail; onLookupAnother: () => void }) {
   const nights = Math.round((Date.parse(booking.checkOutDate) - Date.parse(booking.checkInDate)) / 86_400_000);
   const isCancelled = booking.status === 'cancelled' || booking.status === 'no_show';
@@ -310,7 +489,10 @@ function BookingDetail({ booking, onLookupAnother }: { booking: PublicBookingDet
           </div>
         ) : null}
 
-        {!isCancelled ? <p className="text-tiny text-primary-dark/70">Payment is taken at the property on arrival. Please quote your confirmation number when you check in.</p> : null}
+        {/* Arrival instructions only make sense before arrival. Once checked in,
+            the bill below shows payments and the balance, and this line would
+            contradict it. */}
+        {booking.status === 'confirmed' ? <p className="text-tiny text-primary-dark/70">Payment is taken at the property on arrival. Please quote your confirmation number when you check in.</p> : null}
       </Card>
 
       <p className="text-small text-secondary-light">

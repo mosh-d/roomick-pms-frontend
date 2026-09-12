@@ -2022,3 +2022,28 @@ Opening check-in for a pre-arrived guest shows a line stating they checked in on
 `npx tsc --noEmit`, `eslint` (0 errors, the same 6 pre-existing warnings), `npm run build`. Live against real Postgres (17/17): three same-day public bookings, two checked in online at 18:45 and 09:15; the existing arrivals endpoint carries the fields; the dashboard shows the summary, the Expected times and the two statuses correctly; searching filters rows but leaves the summary alone; sorting by Expected yields 09:15, 18:45, then the blank; the check-in page shows the banner, the reminder, the guest's own corrected phone and the Expected Arrival row for the pre-arrived guest, and none of it for the other. Zero console errors.
 
 Run against the developer's own already-running dev servers on 3000/3001 — a fresh `start:dev` failed with `EADDRINUSE` because they were in use, and they were left running rather than stopped.
+
+## Phase 70 — Your Bill: a read-only folio view for guests (2026-09-12)
+
+Third slice of Month 9's Guest Self-Service Portal — the growth plan's "mid-stay: read-only folio view". A "Your Bill" section on `/book/[slug]/manage`, offered only to `checked_in` and `checked_out` stays (a folio doesn't exist before check-in). See the backend's `PHASE_NOTES.md` for the API design, including a pre-existing staff-side tax bug this view made visible.
+
+### The component adds nothing up
+Every figure — each line, each payment, charges, tax, total, paid, balance — is the backend's. The backend guarantees the lines it returns reconcile with its totals, so what the guest sees listed is exactly what's counted. The component only formats.
+
+### Loaded by an explicit button, not on mount
+"View your bill" is a mutation for the same reason the lookup is: it POSTs credentials to a hard-throttled route (10/hour), and that budget should be spent only when the guest asks — never on mount or window refocus. A Refresh button re-fetches on demand.
+
+### Three things a guest could misread are said outright
+- **Accrual.** Room nights are posted one at a time, so mid-stay the bill shows only nights posted so far; the full-stay room rate is quoted beside it so one night's charge isn't read as the total.
+- **Split billing.** Charges on another folio (e.g. billed to a company) aren't shown; the page says they exist and points to the front desk.
+- **Settling.** Payments can't be made online, and the page says so.
+
+Balance renders as "Balance due" (red), "Paid in full", or "In credit" — never a bare negative number. Charge types, payment methods and payment purposes map to guest wording (`correction` → "Adjustment", `bank_transfer` → "Bank transfer").
+
+### A copy contradiction fixed while here
+The booking card said "Payment is taken at the property on arrival. Please quote your confirmation number when you check in" to guests who had already checked in — directly above a bill showing a payment made and a balance due. It now shows only for `confirmed` stays.
+
+### Verified live
+`npx tsc --noEmit`, `eslint` (0 errors, same 6 pre-existing warnings), `npm run build`. Live against real Postgres (25/25, browser portion logged out): a checked-in guest is offered their bill; it shows the accrual note with the full-stay rate, the minibar charge and its adjustment, the cash payment in guest wording, the backend's exact balance, and the split-billing note — and not the Company folio's charge or the receipt reference; Refresh works; nothing scrolls sideways at 390px; zero console errors.
+
+One tooling note: a first type-check failed inside `.next/dev/types/validator.ts`, a file `next dev` generates — truncated when the verification dev server was force-stopped mid-write. Removing the generated folder (it rebuilds on the next start) cleared it; no source change was involved.
