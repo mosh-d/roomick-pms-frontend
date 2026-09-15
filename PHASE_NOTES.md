@@ -2152,3 +2152,56 @@ Browser against real Postgres and the owner's running servers, 23/23:
 - the Shifts page counting the POS cash;
 - no sideways scroll at 390px on either page;
 - zero console errors.
+
+## Phase 75 — Comp Set, group blocks that hold rooms, rooming lists and BEOs (2026-09-15)
+
+Month 8's remaining deliverables (see the backend's `PHASE_NOTES.md`).
+
+### Revenue Management — Comp Set Analysis
+The inert card is replaced by a working section:
+- **Competitors** show as chips. Add one; "Remove" and "Add back" take a hotel out of the comp set and put it back.
+- **Rate entry.** Pick one of our room types, then enter a competitor's nightly rate for their closest room. It can cover one night or a run of nights ("Through" is optional), and those nights can be cleared.
+- **The table** covers the next 14 nights. It shows:
+  - our rate (the booking engine's one-night quote);
+  - each competitor's rate;
+  - the market median;
+  - a position badge — Above market, In line or Below market with the percentage, or No comp data.
+- The page says plainly that rates are entered by hand, and what the flag threshold is.
+- Approving a rate recommendation refreshes the comp set, since it changes our rate.
+
+### Sales & Events
+- **Creating a block** now takes the group's arrival and departure, a cut-off (limited to on or before arrival) and an optional contact.
+- **Each block is a card** showing:
+  - rate and stay, and the contact;
+  - a pickup bar;
+  - a hold badge: "Holding N rooms · cut-off in N days", "Cut-off passed — unbooked rooms back on sale", "Released", or "No rooms held — no stay dates".
+- **Book Into Block** prefills the block's dates. **Release** asks first, and says how many held rooms go back on sale.
+- **Upload Rooming List:**
+  - Download a CSV template, then choose a file. The page reads it in the browser: quoted fields, a byte-order mark, `YYYY-MM-DD` or `DD/MM/YYYY` dates, and columns matched by name.
+  - It lists any problems, or previews the guests.
+  - It won't book a list longer than the rooms left.
+  - Afterwards it shows who was booked, with confirmation numbers, and who wasn't and why.
+  - An Excel file gets "save it as CSV first".
+- **Event spaces** take optional seats per layout. Booking a space adds a layout (each option shows its seats), guaranteed headcount and contact.
+- **"Details & BEO"** opens the event:
+  - Edit layout, headcount, contact, catering lines, AV and notes.
+  - Saving shows the server's subtotal, tax and total; the tax is labelled an estimate, by the branch's F&B rules.
+  - "Save & Download BEO" saves, then downloads the PDF.
+- Block changes refresh the availability views, since held rooms change what's for sale.
+
+### Verified
+`npx tsc --noEmit` and `eslint` on the changed files are clean. `npm run build` wasn't run, because the owner's `next dev` was running in the same folder.
+
+Browser against real Postgres and the owner's running servers, 16/16:
+- the comp set table with both competitors and "Below market -26.8%", and "No comp data" for a night without rates;
+- entering a rate for one night: median ₦42,500, "Below market -29.4%";
+- removing a competitor drops its column, and offers "Add back";
+- a new block shows "Holding 3 rooms · cut-off in 5 days", 0 of 3 booked, with its contact;
+- a CSV without a guest-name column is explained and can't be booked;
+- a good CSV reads a quoted name and a DD/MM/YYYY date;
+- both guests are booked with confirmation numbers, and the card moves to 2 of 3 booked, holding 1 room;
+- 130 guests banquet-style refused with the layout's seats; 100 books and shows "Banquet · 100 guests";
+- catering ₦850,000 + ₦63,750 VAT = ₦913,750 from the server;
+- Save & Download BEO downloads `beo-acme-gala-dinner.pdf`;
+- no sideways scroll at 390px on either page (the comp set table scrolls inside its card);
+- zero console errors.

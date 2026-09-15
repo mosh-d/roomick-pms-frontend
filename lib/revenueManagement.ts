@@ -94,6 +94,100 @@ export function useApproveRateRecommendationMutation(branchId: string, roomTypeI
   return useMutation({
     mutationFn: (body: { roomTypeId: string; date: string; adjustmentPct: number }) =>
       apiFetch<{ id: string }>(`/branches/${branchId}/rate-recommendations/approve`, { method: 'POST', accessToken, tenantId, body }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: rateRecommendationsQueryKey(branchId, roomTypeId ?? '') }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: rateRecommendationsQueryKey(branchId, roomTypeId ?? '') });
+      // An approved recommendation changes our published rate, which the comp set compares.
+      queryClient.invalidateQueries({ queryKey: ['comp-set', branchId] });
+    },
+  });
+}
+
+// --- Comp set ---------------------------------------------------------------------
+
+/** Mirrors `Competitor` (roomick-pms-backend/prisma/schema.prisma). */
+export interface Competitor {
+  id: string;
+  branchId: string;
+  name: string;
+  /** false = taken out of the comp set; its rates are kept. */
+  isActive: boolean;
+  createdAt: string;
+}
+
+/** Mirrors `MarketPosition` (comp-set.service.ts): against the comp set's median, beyond the threshold either way. */
+export type MarketPosition = 'above_market' | 'in_line' | 'below_market' | 'no_data';
+
+export interface CompSetDay {
+  date: string;
+  /** What the booking engine quotes a one-night direct stay — the Rate Resolver's own figure. */
+  ourRate: string;
+  competitorRates: Array<{ competitorId: string; rate: string | null }>;
+  marketMedian: string | null;
+  marketLow: string | null;
+  marketHigh: string | null;
+  diffPct: number | null;
+  position: MarketPosition;
+  rank: number | null;
+  ofTotal: number | null;
+}
+
+export interface CompSetAnalysis {
+  currency: string;
+  roomTypeId: string;
+  roomTypeName: string;
+  thresholdPct: number;
+  competitors: Array<{ id: string; name: string }>;
+  days: CompSetDay[];
+}
+
+function competitorsQueryKey(branchId: string) {
+  return ['competitors', branchId] as const;
+}
+
+export function useCompetitorsQuery(branchId: string | null, { accessToken, tenantId }: AuthOpts) {
+  return useQuery({
+    queryKey: competitorsQueryKey(branchId ?? ''),
+    queryFn: () => apiFetch<Competitor[]>(`/branches/${branchId}/competitors`, { accessToken, tenantId }),
+    enabled: branchId !== null,
+  });
+}
+
+export function useCreateCompetitorMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { name: string }) => apiFetch<Competitor>(`/branches/${branchId}/competitors`, { method: 'POST', accessToken, tenantId, body }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: competitorsQueryKey(branchId) });
+      queryClient.invalidateQueries({ queryKey: ['comp-set', branchId] });
+    },
+  });
+}
+
+export function useUpdateCompetitorMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ competitorId, ...body }: { competitorId: string; name?: string; isActive?: boolean }) =>
+      apiFetch<Competitor>(`/competitors/${competitorId}`, { method: 'PATCH', accessToken, tenantId, body }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: competitorsQueryKey(branchId) });
+      queryClient.invalidateQueries({ queryKey: ['comp-set', branchId] });
+    },
+  });
+}
+
+export function useSetCompetitorRatesMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { competitorId: string; roomTypeId: string; fromDate: string; throughDate: string; rate?: number; clear?: boolean }) =>
+      apiFetch<{ nights: number }>(`/branches/${branchId}/competitor-rates`, { method: 'PUT', accessToken, tenantId, body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comp-set', branchId] }),
+  });
+}
+
+export function useCompSetQuery(branchId: string | null, roomTypeId: string | null, days: number, { accessToken, tenantId }: AuthOpts) {
+  return useQuery({
+    queryKey: ['comp-set', branchId ?? '', roomTypeId ?? '', days] as const,
+    queryFn: () => apiFetch<CompSetAnalysis>(`/branches/${branchId}/comp-set?roomTypeId=${roomTypeId}&days=${days}`, { accessToken, tenantId }),
+    enabled: branchId !== null && roomTypeId !== null,
   });
 }
