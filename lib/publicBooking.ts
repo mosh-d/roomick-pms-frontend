@@ -23,6 +23,8 @@ export interface PublicProperty {
   checkOutTime: string;
   address: { street?: string; city?: string; state?: string; country?: string; zip?: string } | null;
   brandName: string;
+  /** Generated server-side from the same policy the charge is computed from, so the words can't disagree with the charge. */
+  cancellationPolicy: { summary: string; freeCancellationHours: number; allowOnlineCancellation: boolean };
 }
 
 export interface PublicRoomType {
@@ -55,6 +57,8 @@ export interface PublicQuote {
   taxTotal: string;
   totalWithTax: string;
   nights: number;
+  /** The terms this stay would book under — `freeCancellationAvailable: false` when it starts so soon the free window has already closed. */
+  cancellation: { summary: string; freeCancellationUntil: string; freeCancellationAvailable: boolean };
 }
 
 export interface PublicBookingConfirmation {
@@ -136,6 +140,8 @@ export interface PublicBookingDetail {
   preArrivalCompletedAt: string | null;
   estimatedArrivalTime: string | null;
   houseRules: string | null;
+  /** The terms THIS booking was made under — the property's policy can change later without changing them. */
+  cancellationPolicySummary: string;
   property: PublicProperty;
 }
 
@@ -210,6 +216,42 @@ export function useGuestFolioMutation(slug: string) {
   return useMutation({
     mutationFn: (body: { confirmationNumber: string; email: string }) =>
       apiFetch<PublicGuestFolio>(`/public/properties/${slug}/bookings/folio`, { method: 'POST', body }),
+  });
+}
+
+/** Mirrors the backend's `PublicCancellationQuote` — the terms and the charge, no ids. */
+export interface PublicCancellationQuote {
+  confirmationNumber: string;
+  currency: string;
+  canCancelOnline: boolean;
+  blockedReason: string | null;
+  policySummary: string;
+  freeCancellationUntil: string;
+  withinFreeWindow: boolean;
+  charge: { amount: string; tax: string; total: string };
+  paidSoFar: string;
+  refundDue: string;
+}
+
+export interface PublicCancellationResult {
+  booking: PublicBookingDetail;
+  charged: string;
+  currency: string;
+}
+
+/** A mutation for the same reason the lookup is one: credentials in a POST body, spent only when the guest asks. */
+export function useCancellationQuoteMutation(slug: string) {
+  return useMutation({
+    mutationFn: (body: { confirmationNumber: string; email: string }) =>
+      apiFetch<PublicCancellationQuote>(`/public/properties/${slug}/bookings/cancellation-quote`, { method: 'POST', body }),
+  });
+}
+
+/** `acknowledgedPenaltyTotal` is the charge the guest was shown; the backend refuses the cancel if it has changed since. */
+export function useCancelBookingMutation(slug: string) {
+  return useMutation({
+    mutationFn: (body: { confirmationNumber: string; email: string; acknowledgedPenaltyTotal: string; reason?: string }) =>
+      apiFetch<PublicCancellationResult>(`/public/properties/${slug}/bookings/cancel`, { method: 'POST', body }),
   });
 }
 

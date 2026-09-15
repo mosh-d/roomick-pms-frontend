@@ -270,11 +270,64 @@ export function useCheckOutMutation(branchId: string, { accessToken, tenantId }:
   });
 }
 
+/** Mirrors the backend's `CancellationQuote` (reservations/policies.ts). Money as strings, like every other amount here. */
+export interface CancellationQuote {
+  reservationId: string;
+  status: ReservationStatus;
+  cancellable: boolean;
+  currency: string;
+  policy: {
+    freeCancellationHours: number;
+    lateCancellationPenalty: 'first_night' | 'full_stay' | 'flat_fee' | 'none';
+    flatFeeAmount: number | null;
+    allowOnlineCancellation: boolean;
+    summary: string;
+  };
+  checkInAt: string;
+  freeCancellationUntil: string;
+  withinFreeWindow: boolean;
+  pastCheckInTime: boolean;
+  penaltyType: 'first_night' | 'full_stay' | 'flat_fee' | 'none';
+  penaltyAmount: string;
+  penaltyTax: string;
+  penaltyTotal: string;
+  paidSoFar: string;
+  refundDue: string;
+  amountOwed: string;
+}
+
+/** Re-fetched every time a reservation is picked — the free window can close while the page is open, so a cached quote would be wrong. */
+export function useCancellationQuoteQuery(reservationId: string | null, { accessToken, tenantId }: AuthOpts) {
+  return useQuery({
+    queryKey: ['cancellation-quote', reservationId ?? ''] as const,
+    queryFn: () => apiFetch<CancellationQuote>(`/reservations/${reservationId}/cancellation-quote`, { accessToken, tenantId }),
+    enabled: reservationId !== null,
+    staleTime: 0,
+  });
+}
+
+type CancelInput = { reservationId: string; reason?: string; acknowledgedPenaltyTotal?: string };
+
 export function useCancelReservationMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ reservationId, reason }: { reservationId: string; reason?: string }) =>
-      apiFetch<ReservationSummary>(`/reservations/${reservationId}/cancel`, { method: 'POST', accessToken, tenantId, body: { reason } }),
+    mutationFn: ({ reservationId, reason, acknowledgedPenaltyTotal }: CancelInput) =>
+      apiFetch<ReservationSummary>(`/reservations/${reservationId}/cancel`, { method: 'POST', accessToken, tenantId, body: { reason, acknowledgedPenaltyTotal } }),
+    onSuccess: () => invalidateAfterLifecycleChange(queryClient, branchId),
+  });
+}
+
+/** Manager override — cancels without the charge. Owner/Manager only (the backend route enforces it; the page only hides it). */
+export function useCancelWithWaiverMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ reservationId, reason, acknowledgedPenaltyTotal, waiverReason }: CancelInput & { waiverReason: string }) =>
+      apiFetch<ReservationSummary>(`/reservations/${reservationId}/cancel-with-waiver`, {
+        method: 'POST',
+        accessToken,
+        tenantId,
+        body: { reason, acknowledgedPenaltyTotal, waiverReason },
+      }),
     onSuccess: () => invalidateAfterLifecycleChange(queryClient, branchId),
   });
 }

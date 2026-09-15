@@ -11,10 +11,14 @@ import { Button } from '@/components/ui/Button';
 import { ApiError } from '@/lib/api';
 import {
   useBookingLookupMutation,
+  useCancelBookingMutation,
+  useCancellationQuoteMutation,
   useGuestFolioMutation,
   usePreArrivalMutation,
   usePublicPropertyQuery,
   type PublicBookingDetail,
+  type PublicCancellationQuote,
+  type PublicCancellationResult,
   type PublicGuestFolio,
 } from '@/lib/publicBooking';
 
@@ -49,6 +53,9 @@ const PAYMENT_PURPOSE_LABELS: Record<string, string> = {
 /** Guests with a bill to see. A folio only exists from check-in onward. */
 const FOLIO_VISIBLE_STATUSES = new Set(['checked_in', 'checked_out']);
 
+/** Stays a guest can still cancel. Mirrors the backend's `CANCELLABLE_STATUSES`. */
+const CANCELLABLE_STATUSES = new Set(['confirmed', 'waitlisted']);
+
 /** Guest-facing wording for `ReservationStatus`. The raw enum values are staff vocabulary and shouldn't leak onto this page. */
 const STATUS_LABELS: Record<string, string> = {
   confirmed: 'Confirmed',
@@ -72,9 +79,10 @@ const STATUS_LABELS: Record<string, string> = {
  * plan calls for — it needs working outbound email, which this app doesn't
  * have yet.
  *
- * This slice is read-only. Changing or cancelling a stay has real policy
- * consequences (penalties, rate re-resolution) and belongs in its own pass
- * rather than being bolted on here.
+ * A guest can check in online, see their bill once they're staying, and
+ * cancel within the property's cancellation policy. Changing dates or room
+ * still goes through the property — it means re-pricing the stay, which is its
+ * own pass.
  */
 export default function ManageBookingPage() {
   const params = useParams<{ slug: string }>();
@@ -87,6 +95,7 @@ export default function ManageBookingPage() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [booking, setBooking] = useState<PublicBookingDetail | null>(null);
+  const [justCancelled, setJustCancelled] = useState<{ charged: string; currency: string } | null>(null);
 
   const canSubmit = confirmationNumber.trim().length > 0 && email.trim().length > 0;
 
@@ -119,7 +128,14 @@ export default function ManageBookingPage() {
 
       {booking ? (
         <>
-          <BookingDetail booking={booking} onLookupAnother={() => setBooking(null)} />
+          {justCancelled ? <CancellationConfirmed charged={justCancelled.charged} currency={justCancelled.currency} /> : null}
+          <BookingDetail
+            booking={booking}
+            onLookupAnother={() => {
+              setBooking(null);
+              setJustCancelled(null);
+            }}
+          />
           {FOLIO_VISIBLE_STATUSES.has(booking.status) ? (
             <GuestFolioSection key={booking.confirmationNumber} slug={slug} booking={booking} lookupEmail={email.trim()} />
           ) : null}
@@ -130,6 +146,18 @@ export default function ManageBookingPage() {
               booking={booking}
               lookupEmail={email.trim()}
               onCompleted={setBooking}
+            />
+          ) : null}
+          {CANCELLABLE_STATUSES.has(booking.status) ? (
+            <CancelBookingSection
+              key={`cancel-${booking.confirmationNumber}`}
+              slug={slug}
+              booking={booking}
+              lookupEmail={email.trim()}
+              onCancelled={(result) => {
+                setJustCancelled({ charged: result.charged, currency: result.currency });
+                setBooking(result.booking);
+              }}
             />
           ) : null}
         </>
@@ -289,6 +317,158 @@ function PreArrivalSection({
         </p>
       </Card>
     </Section>
+  );
+}
+
+/**
+ * Cancelling your own booking (growth plan Month 9, "cancel own booking
+ * within policy") — through the same backend path a front-desk cancellation
+ * takes, so the policy can't be applied differently online.
+ *
+ * Two steps on purpose. "Review cancellation" fetches the terms as they stand
+ * right now — free, or the exact charge — and only then is Cancel offered,
+ * with any charge spelled out and explicitly acknowledged. That amount goes
+ * back with the cancel: if the free window closed while the page sat open,
+ * the backend refuses rather than charging something unseen, and the new
+ * terms are shown instead.
+ */
+function CancelBookingSection({
+  slug,
+  booking,
+  lookupEmail,
+  onCancelled,
+}: {
+  slug: string;
+  booking: PublicBookingDetail;
+  lookupEmail: string;
+  onCancelled: (result: PublicCancellationResult) => void;
+}) {
+  const quoteMutation = useCancellationQuoteMutation(slug);
+  const cancelMutation = useCancelBookingMutation(slug);
+  const [quote, setQuote] = useState<PublicCancellationQuote | null>(null);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const credentials = { confirmationNumber: booking.confirmationNumber, email: lookupEmail || booking.guestEmail || '' };
+  const money = (amount: string) => `${quote?.currency ?? booking.currency} ${amount}`;
+
+  async function review(keepError = false) {
+    if (!keepError) setError(null);
+    setAcknowledged(false);
+    try {
+      setQuote(await quoteMutation.mutateAsync(credentials));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
+    }
+  }
+
+  async function confirm() {
+    if (!quote) return;
+    setError(null);
+    try {
+      onCancelled(await cancelMutation.mutateAsync({ ...credentials, acknowledgedPenaltyTotal: quote.charge.total, reason: reason.trim() || undefined }));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
+      // The terms moved while the page was open — show the new ones rather than leave a button that can only fail.
+      if (err instanceof ApiError && err.code === 'CANCELLATION_TERMS_CHANGED') await review(true);
+    }
+  }
+
+  const free = quote ? Number(quote.charge.total) === 0 : false;
+  // In the property's own timezone, and labelled so — the deadline is the property's check-in clock, not the guest's.
+  const deadline = quote
+    ? new Date(quote.freeCancellationUntil).toLocaleString(undefined, { timeZone: booking.property.timezone, dateStyle: 'medium', timeStyle: 'short' })
+    : '';
+
+  return (
+    <Section label="Cancel Booking">
+      <Card tone="secondary" className="flex flex-col gap-3">
+        <p className="text-small text-secondary">{booking.cancellationPolicySummary}</p>
+
+        {!quote ? (
+          <div>
+            <Button type="button" variant="outline" onClick={() => review()} loading={quoteMutation.isPending}>
+              Review cancellation
+            </Button>
+          </div>
+        ) : !quote.canCancelOnline ? (
+          <p className="text-small text-secondary">{quote.blockedReason}</p>
+        ) : (
+          <>
+            {free ? (
+              <p className="text-small font-semibold text-green-800">
+                {quote.withinFreeWindow ? `Cancelling now is free — free cancellation runs until ${deadline} (property time).` : 'Cancelling now is free.'}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <p className="text-small font-semibold text-red-600">
+                  The free cancellation window closed at {deadline} (property time), so cancelling now is charged.
+                </p>
+                <dl className="flex flex-col gap-1 text-small text-secondary max-w-sm">
+                  <ChargeRow label="Cancellation charge" value={money(quote.charge.amount)} />
+                  {Number(quote.charge.tax) > 0 ? <ChargeRow label="Tax" value={money(quote.charge.tax)} /> : null}
+                  <ChargeRow label="Total" value={money(quote.charge.total)} bold />
+                  {Number(quote.paidSoFar) > 0 ? <ChargeRow label="Already paid" value={money(quote.paidSoFar)} /> : null}
+                  {Number(quote.refundDue) > 0 ? <ChargeRow label="Refund due to you" value={money(quote.refundDue)} /> : null}
+                </dl>
+              </div>
+            )}
+
+            <Input id="cancel-reason" label="Reason (optional)" value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
+
+            {!free ? (
+              <label className="flex items-center gap-2 text-small text-secondary">
+                <input type="checkbox" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} />
+                I understand cancelling will be charged {money(quote.charge.total)}
+              </label>
+            ) : null}
+
+            <div className="flex flex-wrap gap-3">
+              <Button type="button" variant="danger" onClick={confirm} loading={cancelMutation.isPending} disabled={!free && !acknowledged}>
+                Cancel Booking
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setQuote(null);
+                  setError(null);
+                }}
+              >
+                Keep my booking
+              </Button>
+            </div>
+          </>
+        )}
+        {error ? <p className="text-small text-red-600">{error}</p> : null}
+      </Card>
+    </Section>
+  );
+}
+
+function ChargeRow({ label, value, bold = false }: { label: string; value: string; bold?: boolean }) {
+  return (
+    <div className={`flex justify-between gap-4 ${bold ? 'font-semibold' : ''}`}>
+      <dt>{label}</dt>
+      <dd className="tabular-nums">{value}</dd>
+    </div>
+  );
+}
+
+function CancellationConfirmed({ charged, currency }: { charged: string; currency: string }) {
+  const free = Number(charged) === 0;
+  return (
+    <div role="status">
+      <Card tone="secondary" className="flex flex-col gap-1">
+        <p className="text-body font-semibold text-secondary">Your booking has been cancelled.</p>
+        <p className="text-small text-secondary">
+          {free
+            ? 'No cancellation charge applies.'
+            : `A cancellation charge of ${currency} ${charged} applies under the property's policy. Payments can't be made online yet — the property will settle it with you.`}
+        </p>
+      </Card>
+    </div>
   );
 }
 
@@ -496,7 +676,7 @@ function BookingDetail({ booking, onLookupAnother }: { booking: PublicBookingDet
       </Card>
 
       <p className="text-small text-secondary-light">
-        Need to change or cancel this booking? Please contact {booking.property.name} directly — changes can&rsquo;t be made online yet.
+        Need to change your dates or room? Please contact {booking.property.name} directly — changes can&rsquo;t be made online yet.
       </p>
 
       <div>

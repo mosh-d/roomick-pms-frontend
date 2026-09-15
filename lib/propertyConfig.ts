@@ -24,9 +24,28 @@ export interface BranchDetail {
   checkOutTime: string;
   category: string | null;
   policies: Record<string, unknown> | null;
-  noShowPolicy: { cutoffTime?: string; defaultPenalty?: string; autoMark?: boolean; notifyMinutesBefore?: number } | null;
+  noShowPolicy: { cutoffTime?: string; defaultPenalty?: string; flatFeeAmount?: number; autoMark?: boolean; notifyMinutesBefore?: number } | null;
+  /** NULL until an owner saves one — the backend then applies `DEFAULT_CANCELLATION_POLICY`. */
+  cancellationPolicy: CancellationPolicySettings | null;
   regCardTemplate: unknown;
 }
+
+export type PenaltyType = 'first_night' | 'full_stay' | 'flat_fee' | 'none';
+
+export interface CancellationPolicySettings {
+  freeCancellationHours: number;
+  lateCancellationPenalty: PenaltyType;
+  flatFeeAmount: number | null;
+  allowOnlineCancellation: boolean;
+}
+
+/** Mirror of the backend's `DEFAULT_CANCELLATION_POLICY` (reservations/policies.ts) — what applies while a branch hasn't saved its own. */
+export const DEFAULT_CANCELLATION_POLICY: CancellationPolicySettings = {
+  freeCancellationHours: 24,
+  lateCancellationPenalty: 'first_night',
+  flatFeeAmount: null,
+  allowOnlineCancellation: true,
+};
 
 /** `GET /brands` is Owner-only — pass `enabled: false` for a non-owner viewer so this never fires a request that can only 403. */
 export function useBrandsQuery({ accessToken, tenantId }: AuthOpts, enabled = true) {
@@ -110,8 +129,17 @@ export function useUpdateBranchMutation(branchId: string, { accessToken, tenantI
 export function useSetNoShowPolicyMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { cutoffTime?: string; defaultPenalty?: string; autoMark?: boolean; notifyMinutesBefore?: number }) =>
+    mutationFn: (body: { cutoffTime?: string; defaultPenalty?: string; flatFeeAmount?: number; autoMark?: boolean; notifyMinutesBefore?: number }) =>
       apiFetch<BranchDetail>(`/branches/${branchId}/policies/no-show`, { method: 'PATCH', accessToken, tenantId, body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: branchDetailQueryKey(branchId) }),
+  });
+}
+
+export function useSetCancellationPolicyMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { freeCancellationHours: number; lateCancellationPenalty: PenaltyType; flatFeeAmount?: number; allowOnlineCancellation: boolean }) =>
+      apiFetch<BranchDetail>(`/branches/${branchId}/policies/cancellation`, { method: 'PATCH', accessToken, tenantId, body }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: branchDetailQueryKey(branchId) }),
   });
 }

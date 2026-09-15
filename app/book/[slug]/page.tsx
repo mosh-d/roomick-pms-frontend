@@ -140,6 +140,7 @@ function BookingConfirmed({
         <p className="text-small text-primary-dark/70">
           Payment is taken at the property on arrival. Please quote your confirmation number when you check in.
         </p>
+        <p className="text-small text-primary-dark/70">Cancellation policy: {property.cancellationPolicy.summary}</p>
         {/* The only discovery path for the lookup page — no confirmation email
             is sent yet, so if a guest doesn't note this down here, they have
             no way back to their booking. */}
@@ -490,6 +491,16 @@ function GuestDetailsSection({
           </dl>
         )}
         <p className="text-tiny text-primary-dark/70">Payment is taken at the property on arrival.</p>
+        {/* The terms are stated before the guest commits — and flagged when the stay starts so soon that the free
+            window has already closed, so a booking made tonight for tomorrow isn't a surprise charge. */}
+        {quoteQuery.data ? (
+          <p className={`text-tiny ${quoteQuery.data.cancellation.freeCancellationAvailable ? 'text-primary-dark/70' : 'text-red-600'}`}>
+            {quoteQuery.data.cancellation.summary}
+            {quoteQuery.data.cancellation.freeCancellationAvailable
+              ? ''
+              : ' This stay starts soon, so the free cancellation window has already passed — cancelling after booking would be charged.'}
+          </p>
+        ) : null}
       </Card>
 
       {error ? <p className="text-small text-red-600">{error}</p> : null}

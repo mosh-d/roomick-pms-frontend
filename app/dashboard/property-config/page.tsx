@@ -20,6 +20,9 @@ import {
   useBranchDetailQuery,
   useUpdateBranchMutation,
   useSetNoShowPolicyMutation,
+  useSetCancellationPolicyMutation,
+  DEFAULT_CANCELLATION_POLICY,
+  type PenaltyType,
   useBookingEngineQuery,
   usePublishBookingEngineMutation,
   useUnpublishBookingEngineMutation,
@@ -170,9 +173,18 @@ function NoShowPolicySection({ branch, auth }: { branch: BranchDetail; auth: Aut
   const updateMutation = useSetNoShowPolicyMutation(branch.id, auth);
   const [cutoffTime, setCutoffTime] = useState(branch.noShowPolicy?.cutoffTime ?? '18:00');
   const [defaultPenalty, setDefaultPenalty] = useState(branch.noShowPolicy?.defaultPenalty ?? 'none');
+  const [flatFeeAmount, setFlatFeeAmount] = useState(branch.noShowPolicy?.flatFeeAmount ? String(branch.noShowPolicy.flatFeeAmount) : '');
   const [autoMark, setAutoMark] = useState(branch.noShowPolicy?.autoMark ?? false);
   const [notifyMinutesBefore, setNotifyMinutesBefore] = useState(String(branch.noShowPolicy?.notifyMinutesBefore ?? 120));
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // "Flat Fee" used to be selectable with nowhere to enter the fee — the policy saved, and every no-show was charged nothing.
+  const feeValid = defaultPenalty !== 'flat_fee' || Number(flatFeeAmount) > 0;
+
+  function edited() {
+    setSaved(false);
+    setError(null);
+  }
 
   return (
     <Section label="No-Show Policy">
@@ -183,31 +195,153 @@ function NoShowPolicySection({ branch, auth }: { branch: BranchDetail; auth: Aut
           type="time"
           hint="Night audit auto-marks a no-show once this time passes with no check-in."
           value={cutoffTime}
-          onChange={(e) => { setCutoffTime(e.target.value); setSaved(false); }}
+          onChange={(e) => { setCutoffTime(e.target.value); edited(); }}
         />
-        <Select id="noshow-default-penalty" label="Default Penalty" options={PENALTY_OPTIONS} value={defaultPenalty} onChange={(v) => { setDefaultPenalty(v); setSaved(false); }} />
-        <YesNoToggle label="Auto-mark no-shows during night audit" name="autoMark" value={autoMark ? 'yes' : 'no'} onChange={(v) => { setAutoMark(v === 'yes'); setSaved(false); }} />
+        <Select id="noshow-default-penalty" label="Default Penalty" options={PENALTY_OPTIONS} value={defaultPenalty} onChange={(v) => { setDefaultPenalty(v); edited(); }} />
+        {defaultPenalty === 'flat_fee' ? (
+          <Input
+            id="noshow-flat-fee"
+            label="Flat Fee Amount"
+            type="number"
+            min={0}
+            step="0.01"
+            hint="What a no-show is charged under this policy."
+            value={flatFeeAmount}
+            onChange={(e) => { setFlatFeeAmount(e.target.value); edited(); }}
+          />
+        ) : null}
+        <YesNoToggle label="Auto-mark no-shows during night audit" name="autoMark" value={autoMark ? 'yes' : 'no'} onChange={(v) => { setAutoMark(v === 'yes'); edited(); }} />
         <Input
           id="noshow-notify-minutes"
           label="Notify Minutes Before Cutoff"
           type="number"
           min={0}
           value={notifyMinutesBefore}
-          onChange={(e) => { setNotifyMinutesBefore(e.target.value); setSaved(false); }}
+          onChange={(e) => { setNotifyMinutesBefore(e.target.value); edited(); }}
         />
+        {error ? <p className="text-small text-red-600">{error}</p> : null}
         {saved ? <p className="text-small text-green-700">Saved.</p> : null}
         <div>
           <Button
             type="button"
             onClick={() =>
               updateMutation.mutate(
-                { cutoffTime, defaultPenalty, autoMark, notifyMinutesBefore: Number(notifyMinutesBefore) },
-                { onSuccess: () => setSaved(true) },
+                {
+                  cutoffTime,
+                  defaultPenalty,
+                  flatFeeAmount: defaultPenalty === 'flat_fee' ? Number(flatFeeAmount) : undefined,
+                  autoMark,
+                  notifyMinutesBefore: Number(notifyMinutesBefore),
+                },
+                {
+                  onSuccess: () => setSaved(true),
+                  onError: (e) => setError(e instanceof ApiError ? e.message : 'Something went wrong. Please try again.'),
+                },
               )
             }
-            disabled={updateMutation.isPending}
+            disabled={updateMutation.isPending || !feeValid}
           >
-            {updateMutation.isPending ? 'Saving…' : 'Save Policy'}
+            {updateMutation.isPending ? 'Saving…' : 'Save No-Show Policy'}
+          </Button>
+        </div>
+      </Card>
+    </Section>
+  );
+}
+
+const CANCELLATION_PENALTY_OPTIONS: SelectOption[] = [
+  { value: 'first_night', label: 'First Night' },
+  { value: 'full_stay', label: 'Full Stay' },
+  { value: 'flat_fee', label: 'Flat Fee' },
+  { value: 'none', label: 'Nothing — always free' },
+];
+
+/**
+ * Cancellation policy (pms-frontend-structure-2.html's "Policy configuration
+ * section"). The backend applies it to every cancellation — front desk,
+ * manager override and guests cancelling online — and generates the sentence
+ * guests read from it, so there's no separate policy text to keep in step. A
+ * branch that has never saved one runs on the standard default, and this says
+ * so.
+ */
+function CancellationPolicySection({ branch, auth }: { branch: BranchDetail; auth: AuthOpts }) {
+  const updateMutation = useSetCancellationPolicyMutation(branch.id, auth);
+  const current = branch.cancellationPolicy ?? DEFAULT_CANCELLATION_POLICY;
+  const [hours, setHours] = useState(String(current.freeCancellationHours));
+  const [penalty, setPenalty] = useState<PenaltyType>(current.lateCancellationPenalty);
+  const [flatFee, setFlatFee] = useState(current.flatFeeAmount ? String(current.flatFeeAmount) : '');
+  const [online, setOnline] = useState(current.allowOnlineCancellation);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const hoursValid = /^\d+$/.test(hours) && Number(hours) <= 720;
+  const feeValid = penalty !== 'flat_fee' || Number(flatFee) > 0;
+
+  function edited() {
+    setSaved(false);
+    setError(null);
+  }
+
+  function save() {
+    updateMutation.mutate(
+      {
+        freeCancellationHours: Number(hours),
+        lateCancellationPenalty: penalty,
+        flatFeeAmount: penalty === 'flat_fee' ? Number(flatFee) : undefined,
+        allowOnlineCancellation: online,
+      },
+      {
+        onSuccess: () => setSaved(true),
+        onError: (e) => setError(e instanceof ApiError ? e.message : 'Something went wrong. Please try again.'),
+      },
+    );
+  }
+
+  return (
+    <Section label="Cancellation Policy">
+      <Card tone="secondary" className="flex flex-col gap-3 max-w-lg">
+        {branch.cancellationPolicy ? null : (
+          <p className="text-small text-secondary">
+            Running on the standard default until you save your own: free cancellation until 24 hours before check-in, then the first night is charged.
+          </p>
+        )}
+        <Input
+          id="cancellation-free-hours"
+          label="Free Cancellation Until (hours before check-in)"
+          type="number"
+          min={0}
+          max={720}
+          hint="Counted back from the check-in time on the arrival day. 0 means free right up to check-in."
+          value={hours}
+          onChange={(e) => { setHours(e.target.value); edited(); }}
+        />
+        <Select
+          id="cancellation-penalty"
+          label="Charge After That"
+          options={CANCELLATION_PENALTY_OPTIONS}
+          value={penalty}
+          onChange={(v) => { setPenalty(v as PenaltyType); edited(); }}
+        />
+        {penalty === 'flat_fee' ? (
+          <Input
+            id="cancellation-flat-fee"
+            label="Cancellation Fee"
+            type="number"
+            min={0}
+            step="0.01"
+            value={flatFee}
+            onChange={(e) => { setFlatFee(e.target.value); edited(); }}
+          />
+        ) : null}
+        <YesNoToggle label="Guests can cancel online" name="allowOnlineCancellation" value={online ? 'yes' : 'no'} onChange={(v) => { setOnline(v === 'yes'); edited(); }} />
+        <p className="text-tiny text-secondary-light">
+          Changes apply to new bookings — each booking keeps the terms it was made under. Online cancellation closes at check-in time on the arrival day; after that the no-show policy applies. Staff can always cancel from Cancel Reservation, and managers can waive the charge there.
+        </p>
+        {error ? <p className="text-small text-red-600">{error}</p> : null}
+        {saved ? <p className="text-small text-green-700">Saved.</p> : null}
+        <div>
+          <Button type="button" onClick={save} disabled={updateMutation.isPending || !hoursValid || !feeValid}>
+            {updateMutation.isPending ? 'Saving…' : 'Save Cancellation Policy'}
           </Button>
         </div>
       </Card>
@@ -629,6 +763,7 @@ export default function PropertyConfigPage() {
           <BranchDetailsSection branch={branchQuery.data} auth={auth} />
           <BookingEngineSection branch={branchQuery.data} auth={auth} />
           <NoShowPolicySection branch={branchQuery.data} auth={auth} />
+          <CancellationPolicySection branch={branchQuery.data} auth={auth} />
         </>
       ) : null}
 
