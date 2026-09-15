@@ -26,6 +26,8 @@ const ROUTE_TITLES: Record<string, string> = {
   '/dashboard/hq': 'Enterprise / HQ',
   '/dashboard/folio-transfer': 'Folio Transfer',
   '/dashboard/pos': 'Point of Sale',
+  '/dashboard/pos/terminal': 'POS Terminal',
+  '/dashboard/pos/menu': 'Menu Management',
   '/dashboard/room-status-board': 'Room Status Board',
   '/dashboard/arrivals': 'Arrivals Dashboard',
   '/dashboard/departures': 'Departures Dashboard',

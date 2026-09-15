@@ -291,7 +291,9 @@ function OpenShiftDetail({ shiftId, branchId, auth }: { shiftId: string; branchI
   if (!shift) return <p className="text-body text-primary-dark/70">Loading…</p>;
 
   const cashPayments = (shift.payments ?? []).filter((p) => p.method === 'cash');
-  const cashTakenSoFar = cashPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+  // Point of Sale cash lands in the same drawer — closing the shift expects both.
+  const posCashSoFar = (shift.posOrders ?? []).reduce((sum, o) => sum + Number(o.total), 0);
+  const cashTakenSoFar = cashPayments.reduce((sum, p) => sum + Number(p.amount), 0) + posCashSoFar;
   const unresolvedIssues = (shift.issues ?? []).filter((i) => i.status !== 'resolved');
 
   async function addIssue() {
@@ -320,6 +322,7 @@ function OpenShiftDetail({ shiftId, branchId, auth }: { shiftId: string; branchI
           <div>
             <p className="text-tiny text-primary-dark/70">Cash Taken So Far</p>
             <p className="text-body font-semibold text-primary-dark">{cashTakenSoFar.toFixed(2)}</p>
+            {posCashSoFar > 0 ? <p className="text-tiny text-primary-dark/70">incl. {posCashSoFar.toFixed(2)} at Point of Sale</p> : null}
           </div>
         </Card>
       </Section>

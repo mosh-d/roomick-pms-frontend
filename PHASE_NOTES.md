@@ -2104,3 +2104,51 @@ The inbox sits at the top of the existing Guest Communications Log page rather t
 
 ### Verified
 `npx tsc --noEmit`, `eslint` (0 errors, the same 6 pre-existing warnings). `npm run build` not run — the owner's `next dev` was running in the same folder. Browser against real Postgres (12 checks, 11 passed as written): the guest sees "View messages" and an empty thread, sends a tagged late check-out request and sees it; staff see the conversation with "1 new" and its preview, open the thread (the automated booking confirmation and the request), the badge clears, the portal hint shows, the reply is sent and appears as "Staff · Guest portal", and switching to email shows the not-delivered warning; the guest's Refresh shows the reply; nothing scrolls sideways at 390px; zero console errors. The failing check compared positions in the whole page's text, where the conversation list's preview of the guest's message comes before the thread — a script bug; the thread's order (confirmation first) is confirmed by the API check. Not re-run, to leave the owner's local guest budget alone.
+
+## Phase 74 — Point of Sale: the terminal and Menu Management (2026-09-15)
+
+Month 10 (see the backend's `PHASE_NOTES.md`). The Point of Sale hub's two cards are now real links. Roomick-UI.pdf has no POS screens (Point of Sale is only a sidebar entry), so both pages follow pms-frontend-structure's POS section.
+
+### POS Terminal (`/dashboard/pos/terminal`)
+- **Outlet.** An outlet picker; someone who can only use one outlet lands straight on it.
+- **Menu.** Category tabs over a grid of item tiles. An 86'd item is greyed out and can't be tapped.
+- **Choices.** An item with choices opens a dialog: pick one or any, with required choices enforced before "Add to order". Each option shows what it adds.
+- **Basket.** Repeats of the same item with the same choices merge into one line, with −/+ controls. Every figure — line totals, subtotal, tax, total — comes from the server's quote; the page never adds anything up. The last figures stay on screen, dimmed, while a change re-prices.
+- **Payment.** "Paid by" is Charge to room, Cash or Card, chosen afresh for each order.
+  - Charge to room needs a room number and "Find guest". The guest's name and departure date are read back, and editing the room number drops the confirmation.
+  - A settled bill is flagged and blocks the charge.
+  - The pay button names the amount and, for a room charge, the room.
+- **Table number** for restaurants and bars.
+- **After a sale.** The order number and a "Print receipt" button. The receipt prints from a hidden iframe sized for an 80mm printer, so the dashboard never reaches the paper and no popup opens. A room charge's receipt has a signature line.
+- **Today's Orders.**
+  - The day's takings by settlement.
+  - Each order with its items, who served it, the room and guest for a room charge, and a Receipt button.
+  - For managers, Void. The void dialog says what happens: the charge comes off the guest's bill with its tax, comes out of the shift's expected cash, or needs refunding on the card machine.
+
+### Menu Management (`/dashboard/pos/menu`)
+- **Managers — outlets.** The outlets with their type, item count and assigned POS staff. Managers can:
+  - add an outlet (its type can't be changed later, and the page says why);
+  - rename one, or deactivate and reactivate it;
+  - assign POS staff. This uses the Users module's existing per-person endpoint, so saving sends one update for each person whose tick changed.
+- **Everyone who works a till.** Each outlet's menu by category, with an "86 it" / "Back on" toggle.
+- **Managers — items.** Add, edit and remove items; the category field suggests existing categories. The choices builder takes a name, "one option" or "any number", whether it's required, and options, each with the amount it adds.
+
+### Shifts
+"Cash Taken So Far" now includes POS cash sales, with an "incl. … at Point of Sale" line. That's the same total the backend's shift close expects.
+
+### Verified
+`npx tsc --noEmit` and `eslint` on the changed files are clean. `npm run build` wasn't run, because the owner's `next dev` was running in the same folder.
+
+Browser against real Postgres and the owner's running servers, 23/23:
+- the hub link through to the terminal, picking an outlet, and its category tabs;
+- two Chapmans priced by the server at ₦5,375;
+- the suya's dialog refusing to add without a heat, showing +₦1,500 for extra meat, then the total at ₦13,975;
+- the room charge needing the guest, the lookup reading back the name, editing the number dropping it, and order #1 charged to Room 101;
+- the printed receipt's content: property, outlet, order, lines, VAT, room and guest, signature line;
+- a cash sale as order #2;
+- voiding #1 with the dialog's wording, and today's takings dropping it;
+- Menu Management's outlets and staff line, 86'ing Chapman, and adding Zobo with a priced "Size: Large" choice;
+- the till greying Chapman out and pricing a large Zobo at ₦2,150;
+- the Shifts page counting the POS cash;
+- no sideways scroll at 390px on either page;
+- zero console errors.

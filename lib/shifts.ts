@@ -43,6 +43,8 @@ export interface Shift {
   agent?: { id: string; name: string };
   issues?: ShiftIssue[];
   payments?: Array<{ id: string; method: string; amount: string; recordedAt: string }>;
+  /** Point of Sale cash sales rung up this shift, voids excluded — the same drawer as `payments` (`getShift`). */
+  posOrders?: Array<{ id: string; orderNo: number; total: string; createdAt: string; outlet: { name: string } }>;
 }
 
 export interface HandoverContext {
