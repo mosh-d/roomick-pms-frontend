@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { ChevronDownIcon, CheckIcon, InfoCircleIcon } from './Icons';
 import { FIELD_PLACEHOLDER_CLASS, FIELD_UNDERLINE_CLASS } from './Input';
 
@@ -79,7 +79,10 @@ export function Select({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const fieldId = id ?? name ?? 'select';
+  // A fixed 'select' fallback gave every unnamed Select on a page the same id (and listbox id), so labels and
+  // `aria-controls` could point at the wrong field. `useId` keeps each one distinct.
+  const autoId = useId();
+  const fieldId = id ?? name ?? autoId;
   const listboxId = `${fieldId}-listbox`;
   const selected = options.find((o) => o.value === value) ?? null;
   const filteredOptions = filterText.trim()

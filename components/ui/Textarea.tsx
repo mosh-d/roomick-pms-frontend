@@ -1,4 +1,4 @@
-import { forwardRef, type TextareaHTMLAttributes } from 'react';
+import { forwardRef, useId, type TextareaHTMLAttributes } from 'react';
 import { InfoCircleIcon } from './Icons';
 import { FIELD_PLACEHOLDER_CLASS, FIELD_UNDERLINE_CLASS } from './Input';
 
@@ -13,7 +13,9 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   { label, hint, error, id, name, rows = 3, className = '', ...rest },
   ref,
 ) {
-  const fieldId = id ?? name;
+  // Same fix as Input: without an `id` or `name` the label pointed at nothing.
+  const autoId = useId();
+  const fieldId = id ?? name ?? autoId;
   const hintId = hint ? `${fieldId}-hint` : undefined;
   const errorId = error ? `${fieldId}-error` : undefined;
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { XIcon, PlusIcon, CheckIcon, ChevronDownIcon } from './Icons';
 import { SELECTED_OPTION_CLASSES, UNSELECTED_OPTION_CLASSES, type SelectOption } from './Select';
 import { FIELD_PLACEHOLDER_CLASS, FIELD_UNDERLINE_CLASS } from './Input';
@@ -53,7 +53,9 @@ export function MultiSelectTagInput({
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
-  const fieldId = id ?? name ?? 'multi-select';
+  // Same as Select: a fixed fallback collided between two unnamed instances on one page.
+  const autoId = useId();
+  const fieldId = id ?? name ?? autoId;
 
   useEffect(() => {
     if (!open) return;
