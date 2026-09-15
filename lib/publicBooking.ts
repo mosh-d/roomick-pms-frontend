@@ -255,6 +255,41 @@ export function useCancelBookingMutation(slug: string) {
   });
 }
 
+/** One message as the guest sees it — mirrors the backend's `PublicMessage`. */
+export interface PublicMessage {
+  from: 'you' | 'property';
+  body: string;
+  requestLabel: string | null;
+  sentAt: string;
+}
+
+export interface PublicMessageThread {
+  confirmationNumber: string;
+  propertyName: string;
+  messages: PublicMessage[];
+}
+
+export interface PublicMessageSent extends PublicMessageThread {
+  housekeepingTaskCreated: boolean;
+}
+
+export type GuestRequestType = 'late_checkout' | 'housekeeping';
+
+/** A mutation, fired from an explicit button, because it spends the same throttled guest-credential budget as the lookup. */
+export function useGuestMessagesMutation(slug: string) {
+  return useMutation({
+    mutationFn: (body: { confirmationNumber: string; email: string }) =>
+      apiFetch<PublicMessageThread>(`/public/properties/${slug}/bookings/messages`, { method: 'POST', body }),
+  });
+}
+
+export function useSendGuestMessageMutation(slug: string) {
+  return useMutation({
+    mutationFn: (body: { confirmationNumber: string; email: string; body: string; requestType?: GuestRequestType }) =>
+      apiFetch<PublicMessageSent>(`/public/properties/${slug}/bookings/messages/send`, { method: 'POST', body }),
+  });
+}
+
 export function usePublicBookingMutation(slug: string) {
   return useMutation({
     mutationFn: (body: PublicBookingRequest) => apiFetch<PublicBookingConfirmation>(`/public/properties/${slug}/reservations`, { method: 'POST', body }),

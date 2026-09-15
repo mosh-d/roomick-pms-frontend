@@ -7,6 +7,8 @@ import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Select, type SelectOption } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { ApiError } from '@/lib/api';
 import {
@@ -14,12 +16,16 @@ import {
   useCancelBookingMutation,
   useCancellationQuoteMutation,
   useGuestFolioMutation,
+  useGuestMessagesMutation,
   usePreArrivalMutation,
   usePublicPropertyQuery,
+  useSendGuestMessageMutation,
+  type GuestRequestType,
   type PublicBookingDetail,
   type PublicCancellationQuote,
   type PublicCancellationResult,
   type PublicGuestFolio,
+  type PublicMessage,
 } from '@/lib/publicBooking';
 
 /** Guest wording for `ChargeType`. */
@@ -148,6 +154,7 @@ export default function ManageBookingPage() {
               onCompleted={setBooking}
             />
           ) : null}
+          <GuestMessagesSection key={`messages-${booking.confirmationNumber}`} slug={slug} booking={booking} lookupEmail={email.trim()} />
           {CANCELLABLE_STATUSES.has(booking.status) ? (
             <CancelBookingSection
               key={`cancel-${booking.confirmationNumber}`}
@@ -315,6 +322,115 @@ function PreArrivalSection({
         <p className="text-tiny text-secondary-light">
           You&rsquo;ll still need to show photo ID when you arrive — identity documents can&rsquo;t be submitted online yet.
         </p>
+      </Card>
+    </Section>
+  );
+}
+
+const MESSAGE_KIND_OPTIONS: SelectOption[] = [
+  { value: 'message', label: 'A question or message' },
+  { value: 'late_checkout', label: 'Late check-out request' },
+  { value: 'housekeeping', label: 'Housekeeping — towels, amenities, cleaning' },
+];
+
+/**
+ * Messaging the property (growth plan Month 9, the unified inbox's web
+ * channel — the one that works without any SMS or email provider). Replies
+ * from the desk appear here.
+ *
+ * Loaded by an explicit button, like the bill, because every call spends the
+ * shared, throttled guest-credential budget — never on mount or refocus. A
+ * housekeeping request from a guest who's in their room goes straight to
+ * housekeeping, and the page says so.
+ */
+function GuestMessagesSection({ slug, booking, lookupEmail }: { slug: string; booking: PublicBookingDetail; lookupEmail: string }) {
+  const listMutation = useGuestMessagesMutation(slug);
+  const sendMutation = useSendGuestMessageMutation(slug);
+  const [messages, setMessages] = useState<PublicMessage[] | null>(null);
+  const [kind, setKind] = useState('message');
+  const [body, setBody] = useState('');
+  const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const credentials = { confirmationNumber: booking.confirmationNumber, email: lookupEmail || booking.guestEmail || '' };
+
+  async function load() {
+    setError(null);
+    try {
+      setMessages((await listMutation.mutateAsync(credentials)).messages);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
+    }
+  }
+
+  async function send() {
+    if (!body.trim()) return;
+    setError(null);
+    setNotice(null);
+    try {
+      const sent = await sendMutation.mutateAsync({
+        ...credentials,
+        body: body.trim(),
+        requestType: kind === 'message' ? undefined : (kind as GuestRequestType),
+      });
+      setMessages(sent.messages);
+      setBody('');
+      setKind('message');
+      setNotice(sent.housekeepingTaskCreated ? 'Sent — and passed straight to housekeeping.' : `Sent. ${sent.propertyName} will reply here.`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
+    }
+  }
+
+  return (
+    <Section label="Messages">
+      <Card tone="secondary" className="flex flex-col gap-3">
+        {messages === null ? (
+          <>
+            <p className="text-small text-secondary">Questions or requests about your stay? Message {booking.property.name} here — their replies appear on this page.</p>
+            <div>
+              <Button type="button" variant="outline" onClick={load} loading={listMutation.isPending}>
+                View messages
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            {messages.length === 0 ? (
+              <p className="text-small text-secondary-light">No messages yet.</p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {messages.map((message, index) => (
+                  <li
+                    key={index}
+                    className={`rounded-control p-3 text-small ${message.from === 'you' ? 'bg-secondary-light/10 mr-6' : 'bg-accent/15 ml-6'}`}
+                  >
+                    <p className="text-tiny text-secondary-light">
+                      {message.from === 'you' ? 'You' : booking.property.name} · {new Date(message.sentAt).toLocaleString()}
+                      {message.requestLabel ? ` · ${message.requestLabel}` : ''}
+                    </p>
+                    <p className="text-secondary whitespace-pre-wrap wrap-break-word">{message.body}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="flex flex-col gap-2 border-t border-secondary/20 pt-3">
+              <Select id="message-kind" label="What's this about?" options={MESSAGE_KIND_OPTIONS} value={kind} onChange={setKind} />
+              <Textarea id="message-body" label="Your message" value={body} maxLength={2000} rows={3} onChange={(e) => setBody(e.target.value)} />
+              <div className="flex flex-wrap items-center gap-3">
+                <Button type="button" onClick={send} loading={sendMutation.isPending} disabled={!body.trim()}>
+                  Send
+                </Button>
+                <Button type="button" size="sm" variant="outline" onClick={load} loading={listMutation.isPending}>
+                  Refresh
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+        {notice ? <p className="text-small font-semibold text-green-800">{notice}</p> : null}
+        {error ? <p className="text-small text-red-600">{error}</p> : null}
       </Card>
     </Section>
   );
