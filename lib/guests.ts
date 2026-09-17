@@ -109,8 +109,6 @@ interface UpdateGuestInput {
   preferences?: GuestPreferences;
   vipLevel?: number;
   tags?: string[];
-  loyaltyTier?: string;
-  loyaltyPoints?: number;
 }
 
 export function useUpdateGuestMutation(guestId: string, { accessToken, tenantId }: AuthOpts) {

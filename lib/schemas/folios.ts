@@ -12,12 +12,12 @@ export const CHARGE_TYPE_OPTIONS = [
   { value: 'misc', label: 'Miscellaneous' },
 ] as const;
 
+/** No "Loyalty Points" here: points are paid with through Redeem Points on the bill, which takes them off the guest's balance. */
 export const PAYMENT_METHOD_OPTIONS = [
   { value: 'cash', label: 'Cash' },
   { value: 'card', label: 'Card' },
   { value: 'bank_transfer', label: 'Bank Transfer' },
   { value: 'voucher', label: 'Voucher' },
-  { value: 'loyalty_points', label: 'Loyalty Points' },
 ] as const;
 
 export const PAYMENT_PURPOSE_OPTIONS = [

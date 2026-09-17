@@ -18,6 +18,7 @@ import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
 import { PostChargeForm } from './_components/PostChargeForm';
 import { RecordPaymentForm } from './_components/RecordPaymentForm';
+import { RedeemPointsCard } from './_components/RedeemPointsCard';
 
 /**
  * Guest Folio (Roomick-UI.pdf page 33) — guest details, the line-item
@@ -211,6 +212,7 @@ export default function GuestFolioPage() {
           </Section>
 
           <Section label="Payment">
+            <RedeemPointsCard folioId={params.folioId} guest={folio.guest} balanceDue={folio.totals.balanceDue} currencySymbol={symbol} auth={auth} />
             <RecordPaymentForm
               branchId={activeBranchId}
               folioId={params.folioId}

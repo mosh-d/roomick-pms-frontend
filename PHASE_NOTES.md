@@ -2205,3 +2205,47 @@ Browser against real Postgres and the owner's running servers, 16/16:
 - Save & Download BEO downloads `beo-acme-gala-dinner.pdf`;
 - no sideways scroll at 390px on either page (the comp set table scrolls inside its card);
 - zero console errors.
+
+## Phase 76 — The loyalty programme: settings, a guest's points, and redeeming on the bill (2026-09-15)
+
+Month 11's first slice (see the backend's `PHASE_NOTES.md`).
+
+### Loyalty & Marketing
+The inert Loyalty Program Config card is replaced by the programme editor:
+- **Settings:** on/off; the currency, chosen from those the branches charge in; points per 100 of that currency; and what a point is worth.
+- **Tiers:** each has a name, the points it starts at, and benefit checkboxes.
+- **Guidance:** a line says what a guest gets back per 100 spent, and until the programme is saved the page says the figures are only suggestions.
+
+The members section is unchanged, apart from a "Points Outstanding" label. Email Campaign Builder is still an inert card.
+
+### Guest profile
+- The free-text Loyalty Tier and Loyalty Points inputs are gone; the API now refuses those fields.
+- A new Loyalty section shows:
+  - the tier;
+  - points and what they're worth;
+  - lifetime points;
+  - progress to the next tier;
+  - the tier's benefits;
+  - the points history.
+- "Enrol in Loyalty" appears for non-members while the programme is on.
+- Managers can add or remove points with a reason.
+
+### The bill
+- A Redeem Points card appears for a member with points. It shows the most this bill can take, with a "Use N" shortcut. Redeeming confirms the points left, and the card stays after the last point is spent so the confirmation isn't lost.
+- The payment form no longer lists "Loyalty Points".
+
+### Verified
+`npx tsc --noEmit` and `eslint` on the changed files are clean. `npm run build` wasn't run, because the owner's `next dev` was running in the same folder.
+
+Browser against real Postgres and the owner's running servers, 15/15:
+- the saved programme loads (on, 1 point per NGN 100, four tiers);
+- the first stay's member is listed with 300 points in Member;
+- changing the rate saves, and the "gets back" line updates;
+- the profile shows Member, 300 points worth NGN 300.00, and "200 points to Silver", with no loyalty inputs in the form;
+- a manager's +250 with a reason shows Silver and a "+250" history row;
+- saving the rest of the profile still works;
+- the bill offers 550 points (Silver), each worth ₦1.00, up to 550;
+- 300 points redeemed, "250 points left"; "Use 250" spends the rest and the card says "no points left";
+- the payment methods are Cash, Card, Bank Transfer and Voucher;
+- no sideways scroll at 390px on Loyalty, the guest profile and the bill;
+- zero console errors.
