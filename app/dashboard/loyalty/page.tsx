@@ -30,7 +30,7 @@ type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined 
  * Loyalty & Marketing (ref p21). The programme is real: guests earn points
  * on a stay's spend before tax when they check out, move up tiers on their
  * lifetime points, and redeem points against a bill. Email Campaign Builder
- * is still an inert card.
+ * links to its own pages under /dashboard/loyalty/campaigns.
  */
 export default function LoyaltyMarketingPage() {
   const user = useAuthStore((s) => s.user);
@@ -44,7 +44,12 @@ export default function LoyaltyMarketingPage() {
       <MembersSection auth={auth} />
       <Section label="Email Campaign Builder">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <HubCard icon={<EmailCampaignIcon className="size-5" />} title="Email Campaign Builder" description="Template, segment, schedule, A/B test" />
+          <HubCard
+            icon={<EmailCampaignIcon className="size-5" />}
+            title="Email Campaign Builder"
+            description="Template, segment, schedule, A/B test"
+            href="/dashboard/loyalty/campaigns"
+          />
         </div>
       </Section>
     </Container>

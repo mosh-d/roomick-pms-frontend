@@ -82,6 +82,8 @@ export interface PublicBookingRequest {
   guestPhone?: string;
   specialRequests?: string;
   promoCode?: string;
+  /** The guest ticked "email me offers". Unticked is not a withdrawal — only the unsubscribe link withdraws. */
+  marketingOptIn?: boolean;
 }
 
 export function usePublicPropertyQuery(slug: string) {
@@ -152,6 +154,7 @@ export interface PreArrivalRequest {
   nationality?: string;
   estimatedArrivalTime?: string;
   acceptHouseRules: boolean;
+  marketingOptIn?: boolean;
 }
 
 /** Returns the same `PublicBookingDetail` the lookup does, so the page can render the updated booking without a second round trip. */

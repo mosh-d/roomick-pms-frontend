@@ -21,6 +21,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/dashboard/revenue': 'Revenue Management',
   '/dashboard/sales-events': 'Sales & Events',
   '/dashboard/loyalty': 'Loyalty & Marketing',
+  '/dashboard/loyalty/campaigns': 'Email Campaigns',
   '/dashboard/integrations': 'Integrations & APIs',
   '/dashboard/system-admin': 'System Admin',
   '/dashboard/hq': 'Enterprise / HQ',
@@ -64,6 +65,7 @@ function pageTitleFor(pathname: string): string {
   if (pathname.startsWith('/dashboard/billing/')) return 'Guest Folio';
   if (pathname.startsWith('/dashboard/registration-cards/')) return 'Guest Registration Card';
   if (pathname.startsWith('/dashboard/guests/')) return 'Guest Profile';
+  if (pathname.startsWith('/dashboard/loyalty/campaigns/')) return 'Email Campaign';
   return ROUTE_TITLES[pathname] ?? '';
 }
 

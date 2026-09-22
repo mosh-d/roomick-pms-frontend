@@ -2249,3 +2249,66 @@ Browser against real Postgres and the owner's running servers, 15/15:
 - the payment methods are Cash, Card, Bank Transfer and Voucher;
 - no sideways scroll at 390px on Loyalty, the guest profile and the bill;
 - zero console errors.
+
+## Phase 77 — Email Campaign Builder: audiences, templates, campaigns, and marketing consent (2026-09-22)
+
+Month 11's marketing slice. The inert Email Campaign Builder card on Loyalty & Marketing now opens `/dashboard/loyalty/campaigns`. The sidebar is unchanged: the builder lives under Loyalty & Marketing, as in the reference.
+
+### Email Campaigns (`/dashboard/loyalty/campaigns`)
+- **A notice at the top** says when no email provider is connected: sends are recorded against each guest but go to the server log, so no one receives them and opens and clicks won't come in. It comes from `GET /marketing/delivery` and disappears once a real transport is live.
+- **Campaigns** — a table of name, status, audience, when, recipients, and opens and clicks with rates. **New Campaign** opens a modal with:
+  - name, audience and template;
+  - an optional subject override;
+  - an A/B toggle (variant B's template and the share on A, 5–95%);
+  - an optional send time (`datetime-local`, the viewer's own clock).
+  Creating goes straight to the campaign's own page.
+- **Audiences** — cards showing each audience's rules in plain English, as the server reads them back. **New Audience** / **Edit** open a rule builder:
+  - completed stays;
+  - lifetime spend;
+  - stayed in the last N days;
+  - hasn't stayed in N days (hinted "includes guests who never stayed");
+  - VIP level;
+  - loyalty tiers (from the programme);
+  - tags;
+  - two-letter nationalities.
+  **Check Audience** shows "N guests match; M can be emailed (opted in, with an address)" and a sample. A property filter saved through the API is kept on edit even though the builder doesn't show it.
+- **Templates** — cards with **New Template** / **Edit**. The message is plain text, with merge-field chips that insert the placeholder at the cursor. **Preview** renders the real HTML email, with example values and the unsubscribe footer, in an `<iframe sandbox="">`, so nothing in it can run.
+
+### A campaign's page (`/dashboard/loyalty/campaigns/[campaignId]`)
+- **Summary:** status, sent or scheduled time, audience and its rules, template(s) with the A/B split, and any failure reason in red (for example "Not sent: Nobody to send to…").
+- **Send** (draft, scheduled or failed only):
+  - **Send a test** to the manager's own address; the confirmation says it isn't counted or recorded against a guest.
+  - **Send at** / **Clear** to schedule or unschedule.
+  - **Send Now** opens a confirmation that counts the audience first ("This sends one email to each of 1 guest in … It can't be undone.").
+  - **Cancel Campaign.**
+- **Performance** (once sent): recipients, delivered (with how many are waiting or failed), opened %, clicked %, unsubscribed, and booked within 30 days. A note says the open rate is a floor and bookings aren't proof. There's an A/B comparison table when there are two variants.
+- **Recipients:** guest, email, variant, delivery status, and when each opened, clicked or unsubscribed. The first 100 are shown, with a note when there are more.
+- The campaign re-reads every minute while it's open.
+
+### Consent everywhere a guest can give it
+- **Guest profile:** a new **Marketing** section says "Opted in … since 22 Sep 2026, through the booking page" or "Not opted in. Unsubscribed on …". It warns when an opted-in guest has no email address. **Record Consent** (labelled "only when the guest has told you they want offers") and **Withdraw Consent** go through the consent endpoint.
+- **Booking page** (`/book/[slug]`) and **online check-in** (`/book/[slug]/manage`): an unticked "Email me offers and news from this property" box. It sends `marketingOptIn` only when ticked.
+
+### Files
+- `lib/marketing.ts` — types and hooks for segments, templates, campaigns, delivery status and consent. All query keys start with `marketing-`, and one predicate invalidates them all.
+- `app/dashboard/loyalty/campaigns/page.tsx` and `[campaignId]/page.tsx`.
+- `_components/campaignUi.tsx` — the status badge, date formatting and the delivery notice. Page files can't have extra named exports in the App Router, so these live here.
+- `lib/guests.ts` and `lib/publicBooking.ts` — the consent fields.
+- `app/dashboard/layout.tsx` — "Email Campaigns" and "Email Campaign" titles.
+
+### Verified
+- **Checks:** `npx tsc --noEmit` and `eslint` on the changed files are clean. `npm run build` passes; nothing else was using the folder this time.
+- **Browser, 24/24,** against real Postgres, using my own dev servers (the owner's weren't running), on the tenant the API check left behind:
+  - the Loyalty card opens the builder, and the no-provider notice shows;
+  - the sent A/B campaign is listed with 2 recipients and 1 (50%) opened and clicked;
+  - a new audience ("hasn't stayed in 30 days") checks as 3 matching, 1 emailable, and saves;
+  - a merge-field chip lands at the cursor, and the preview frame shows "Hello Kemi" with Unsubscribe;
+  - a campaign created from the modal opens as a draft;
+  - the test send's message shows;
+  - Send Now asks with the count and "can't be undone", then shows Sent, performance and the recipient;
+  - the A/B dashboard shows 50.0% opened, 50.0% clicked and 1 unsubscribed, with both templates compared;
+  - guest profiles show "Unsubscribed on …" and "through the front desk", and Record/Withdraw Consent update in place;
+  - the booking page's opt-in box is there and unticked;
+  - no sideways scroll at 390px on the campaigns page, a campaign and a guest profile;
+  - zero console errors.
+- **Copy fixed after reading the screenshots:** "1 guests" is now singular. The notice no longer says opens "stay at zero", which wasn't strictly true.

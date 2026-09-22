@@ -85,6 +85,12 @@ export interface GuestProfileDetail extends GuestSummary {
   tags: string[];
   loyaltyTier: string | null;
   loyaltyPoints: number | null;
+  /** Marketing consent — no campaign reaches a guest without it. */
+  marketingOptIn: boolean;
+  marketingOptInAt: string | null;
+  /** booking_engine | guest_portal | front_desk */
+  marketingOptInSource: string | null;
+  marketingUnsubscribedAt: string | null;
   stayHistory: GuestStaySummary[];
   totalSpend: string;
   notesFeed: GuestNoteSummary[];

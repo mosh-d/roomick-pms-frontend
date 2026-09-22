@@ -411,6 +411,8 @@ function GuestDetailsSection({
   const [guestEmail, setGuestEmail] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
   const [specialRequests, setSpecialRequests] = useState('');
+  // Unticked by default: consent to marketing has to be something the guest does, not something they fail to undo.
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const canSubmit = guestName.trim().length > 0 && guestEmail.trim().length > 0;
@@ -430,6 +432,7 @@ function GuestDetailsSection({
         guestPhone: guestPhone.trim() || undefined,
         specialRequests: specialRequests.trim() || undefined,
         promoCode: appliedPromo.trim() || undefined,
+        marketingOptIn: marketingOptIn || undefined,
       });
       onBooked(confirmation);
     } catch (err) {
@@ -445,6 +448,10 @@ function GuestDetailsSection({
         <Input id="guest-phone" label="Phone (optional)" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} />
         <Input id="guest-requests" label="Special Requests (optional)" value={specialRequests} onChange={(e) => setSpecialRequests(e.target.value)} />
       </div>
+      <label className="flex items-start gap-2 text-small text-secondary cursor-pointer">
+        <input id="marketing-opt-in" type="checkbox" checked={marketingOptIn} onChange={(e) => setMarketingOptIn(e.target.checked)} className="size-4 mt-0.5 accent-secondary" />
+        Email me offers and news from this property. I can unsubscribe at any time.
+      </label>
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="w-48">

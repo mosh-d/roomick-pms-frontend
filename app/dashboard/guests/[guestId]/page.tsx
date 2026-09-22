@@ -22,6 +22,7 @@ import {
 } from '@/lib/guests';
 import { ApiError } from '@/lib/api';
 import { benefitLabel, useAdjustPointsMutation, useEnrollGuestMutation, useGuestLoyaltyQuery } from '@/lib/loyalty';
+import { CONSENT_SOURCE_LABELS, useSetMarketingConsentMutation } from '@/lib/marketing';
 import { formatMoney } from '@/lib/numberFormat';
 import { isSupervisorAtBranch } from '@/lib/roles';
 import { useAuthStore } from '@/lib/store/authStore';
@@ -335,12 +336,70 @@ function LoyaltySection({ guestId, auth, canAdjust }: { guestId: string; auth: A
   );
 }
 
+/**
+ * Whether campaigns may reach this guest, and the record of how that came to
+ * be. The front desk can record consent given in person or on the phone —
+ * the button says so plainly, because recording consent nobody gave is the
+ * one thing here that can't be undone for the guest.
+ */
+function MarketingConsentSection({ guest, auth }: { guest: GuestProfileDetail; auth: AuthOpts }) {
+  const setConsent = useSetMarketingConsentMutation(guest.id, auth);
+  const [error, setError] = useState<string | null>(null);
+  const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : null);
+
+  function change(optIn: boolean) {
+    setError(null);
+    setConsent.mutate(optIn, { onError: (err) => setError(err instanceof ApiError ? err.message : 'Couldn’t save that.') });
+  }
+
+  const source = guest.marketingOptInSource ? (CONSENT_SOURCE_LABELS[guest.marketingOptInSource] ?? guest.marketingOptInSource) : null;
+
+  return (
+    <Section label="Marketing">
+      <Card className="flex flex-col gap-3">
+        {guest.marketingOptIn ? (
+          <p className="text-body text-secondary" id="marketing-consent-status">
+            <span className="font-semibold text-green-700">Opted in</span> to offers by email
+            {date(guest.marketingOptInAt) ? ` since ${date(guest.marketingOptInAt)}` : ''}
+            {source ? `, through ${source}` : ''}.
+          </p>
+        ) : (
+          <p className="text-body text-secondary" id="marketing-consent-status">
+            <span className="font-semibold">Not opted in.</span>{' '}
+            {guest.marketingUnsubscribedAt ? `Unsubscribed on ${date(guest.marketingUnsubscribedAt)}. ` : ''}
+            Campaigns never reach this guest.
+          </p>
+        )}
+        {guest.marketingOptIn && !guest.email ? (
+          <p className="text-small text-amber-700">There’s no email address on this profile, so campaigns can’t reach them yet.</p>
+        ) : null}
+        <div className="flex flex-wrap items-center gap-3">
+          {guest.marketingOptIn ? (
+            <Button type="button" size="sm" variant="outline" onClick={() => change(false)} loading={setConsent.isPending}>
+              Withdraw Consent
+            </Button>
+          ) : (
+            <>
+              <Button type="button" size="sm" variant="outline" onClick={() => change(true)} loading={setConsent.isPending}>
+                Record Consent
+              </Button>
+              <span className="text-small text-secondary/70">Only when the guest has told you they want offers by email.</span>
+            </>
+          )}
+        </div>
+        {error ? <p className="text-small text-red-600">{error}</p> : null}
+      </Card>
+    </Section>
+  );
+}
+
 /** Keyed on the guest's own id so the profile form's lazy `useState` initializers only ever run once real data exists — no effect needed to re-sync when the query resolves. */
 function GuestProfileContent({ guest, auth, canAdjustPoints }: { guest: GuestProfileDetail; auth: AuthOpts; canAdjustPoints: boolean }) {
   return (
     <>
       <ProfileForm guest={guest} auth={auth} />
       <LoyaltySection guestId={guest.id} auth={auth} canAdjust={canAdjustPoints} />
+      <MarketingConsentSection guest={guest} auth={auth} />
       <Card tone="accent" className="max-w-xs">
         <p className="text-tiny text-primary-dark/70">Total Spend</p>
         <p className="text-header font-bold text-primary-dark">{guest.totalSpend}</p>

@@ -242,6 +242,7 @@ function PreArrivalSection({
   const [nationality, setNationality] = useState(booking.guestNationality ?? '');
   const [arrivalTime, setArrivalTime] = useState(booking.estimatedArrivalTime ?? '');
   const [accepted, setAccepted] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const alreadyDone = Boolean(booking.preArrivalCompletedAt);
@@ -258,6 +259,7 @@ function PreArrivalSection({
           nationality: nationality.trim() || undefined,
           estimatedArrivalTime: arrivalTime || undefined,
           acceptHouseRules: true,
+          marketingOptIn: marketingOptIn || undefined,
         }),
       );
     } catch (err) {
@@ -309,6 +311,11 @@ function PreArrivalSection({
         <label className="flex items-center gap-2 text-small text-secondary">
           <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />
           I accept {booking.houseRules ? 'the house rules above' : "the property's house rules"}
+        </label>
+
+        <label className="flex items-center gap-2 text-small text-secondary">
+          <input id="pre-arrival-marketing-opt-in" type="checkbox" checked={marketingOptIn} onChange={(e) => setMarketingOptIn(e.target.checked)} />
+          Email me offers and news from this property (optional — unsubscribe any time)
         </label>
 
         {error ? <p className="text-small text-red-600">{error}</p> : null}
