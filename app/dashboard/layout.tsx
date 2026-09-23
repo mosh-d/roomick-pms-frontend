@@ -23,6 +23,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/dashboard/loyalty': 'Loyalty & Marketing',
   '/dashboard/loyalty/campaigns': 'Email Campaigns',
   '/dashboard/integrations': 'Integrations & APIs',
+  '/dashboard/integrations/marketplace': 'Integrations Marketplace',
   '/dashboard/system-admin': 'System Admin',
   '/dashboard/hq': 'Enterprise / HQ',
   '/dashboard/folio-transfer': 'Folio Transfer',
@@ -66,6 +67,7 @@ function pageTitleFor(pathname: string): string {
   if (pathname.startsWith('/dashboard/registration-cards/')) return 'Guest Registration Card';
   if (pathname.startsWith('/dashboard/guests/')) return 'Guest Profile';
   if (pathname.startsWith('/dashboard/loyalty/campaigns/')) return 'Email Campaign';
+  if (pathname.startsWith('/dashboard/integrations/marketplace/')) return 'Integration';
   return ROUTE_TITLES[pathname] ?? '';
 }
 

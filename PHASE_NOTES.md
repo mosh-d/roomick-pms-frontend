@@ -2312,3 +2312,43 @@ Month 11's marketing slice. The inert Email Campaign Builder card on Loyalty & M
   - no sideways scroll at 390px on the campaigns page, a campaign and a guest profile;
   - zero console errors.
 - **Copy fixed after reading the screenshots:** "1 guests" is now singular. The notice no longer says opens "stay at zero", which wasn't strictly true.
+
+## Phase 78 — Integrations Marketplace: browse by category, switch on, export journals, ask for reviews (2026-09-22)
+
+Month 11's last slice. Integrations & APIs gains a card that opens `/dashboard/integrations/marketplace`. The sidebar is unchanged — the marketplace lives under Integrations & APIs, which is where the reference puts integration admin.
+
+### The catalogue (`/dashboard/integrations/marketplace`)
+- Cards for every listing: name, category and vendor, what it does, and one badge — **On**, **Off**, **Available** or **Coming later**.
+- Search, and category chips with counts (All, Accounting, Marketing & Reputation, Channel Manager, Payments, Automation, Door Locks & Access).
+- A listing that isn't ready shows "Waiting on: …" on the card rather than a button that does nothing; one that's on shows what its last run did ("Exported 1 day…", "Asked 1 guest for a review").
+
+### A listing's page (`/dashboard/integrations/marketplace/[provider]`)
+Same shape for every connector: status and **Switch Off** at the top, what it does and how it works, then its own settings, then whatever it can do once it's on.
+
+- **QuickBooks Online / Xero** — a date format, the guest-ledger and tax accounts, an account per department, an account per payment method, and (Xero only) the tax rate to put on each line. Until it has been set up the page says the values are suggestions to check against the real chart of accounts. **Switch On** becomes **Save Settings** afterwards.
+  - **Export**: From and To (defaulting to the current month to yesterday), **Preview** and **Download CSV**. The preview lists each day's journal with its number, every line's account, description, debit and credit, and a Total row, above a line saying how many journals and lines there are and that every day balances. Downloading says where to import the file.
+  - A note explains the 31-day limit and that a correction changes the day it belongs to, so a corrected day should be exported again.
+- **Review Requests** — hours after check-out, a review page per property, the subject and the message (with the placeholders listed). Once it's on, a **What guests receive** section shows the real email for the chosen property, and warns if that property has no review page yet.
+- **Coming later** listings show the reason and no Switch On.
+
+### Files
+- `lib/marketplace.ts` — types and hooks for the catalogue, a listing, saving and disabling, the journal preview, the CSV download and the review preview. Query keys all start with `marketplace`.
+- `app/dashboard/integrations/marketplace/page.tsx`, `[provider]/page.tsx`, `_components/marketplaceUi.tsx` (the shared badge).
+- `app/dashboard/integrations/page.tsx` — the card into the marketplace.
+- `app/dashboard/layout.tsx` — "Integrations Marketplace" and "Integration" titles.
+
+### One thing worth remembering
+The listing page is keyed on the integration alone, not its on/off state: keying it on the state remounted the page the moment it was switched on and threw away the "it's on" confirmation the person had just earned.
+
+### Verified
+- **Checks:** `npx tsc --noEmit` and `eslint` clean; `npm run build` passes.
+- **Browser, 20/20**, against real Postgres on the tenant the API check left behind:
+  - the card from Integrations & APIs; seven listings; QuickBooks On with its last export; Stripe Coming later with its reason;
+  - the Accounting chip narrowing to two; search finding Review Requests;
+  - Xero's page showing its codes; a preview reading "1 journal, 4 lines, in NGN. Every day balances." with a 74,175.00 / 74,175.00 total;
+  - **Download CSV** really saving `xero-manual-journals-…csv` with Xero's own header row, and the page saying to import it as manual journals;
+  - switching off keeping the settings and hiding the export, then switching back on confirming and bringing it back;
+  - a coming-later listing offering no Switch On;
+  - the review email preview with its link, the last-run line, a saved delay change, and an http link refused with its reason;
+  - no sideways scroll at 390px on the catalogue, an accounting listing with a journal table, and review requests;
+  - zero console errors.

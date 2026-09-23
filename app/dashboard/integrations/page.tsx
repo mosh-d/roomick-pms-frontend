@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { MultiSelectTagInput } from '@/components/ui/MultiSelectTagInput';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { PaymentGatewayIcon } from '@/components/ui/Icons';
+import { IntegrationsIcon, PaymentGatewayIcon } from '@/components/ui/Icons';
 import { HubCard } from '../_components/HubCard';
 import {
   useApiKeysQuery,
@@ -68,6 +68,12 @@ export default function IntegrationsPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <HubCard icon={<PaymentGatewayIcon className="size-5" />} title="Payment Gateway" description="Stripe / Adyen / Authorize.net config" />
+        <HubCard
+          icon={<IntegrationsIcon className="size-5" />}
+          title="Integrations Marketplace"
+          description="Browse by category and switch on accounting exports, review requests and more"
+          href="/dashboard/integrations/marketplace"
+        />
       </div>
 
       <ApiKeysSection auth={auth} />
