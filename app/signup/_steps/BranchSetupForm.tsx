@@ -1,14 +1,18 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Section } from '@/components/ui/Section';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { RadioCard } from '@/components/ui/RadioCard';
+import { TaxRuleBuilder, taxRuleListProblems } from '@/components/tax/TaxRuleBuilder';
+import { describeTaxRuleDraft } from '@/lib/taxes';
+import { currencySymbolFor } from '@/lib/currencies';
 import { branchSetupSchema, type BranchSetupFormValues } from '@/lib/schemas/onboarding';
-import { useWizardStore, type BranchDraft } from '@/lib/store/wizardStore';
+import { branchTaxSetup, useWizardStore, type BranchDraft } from '@/lib/store/wizardStore';
 import { useAutosaveDraft } from '@/lib/useAutosaveDraft';
 import { COUNTRIES } from '@/lib/countries';
 import { defaultTimezoneFor, timezoneOptionsFor } from '@/lib/timezones';
@@ -21,6 +25,17 @@ const CATEGORY_OPTIONS = [
   { value: 'boutique', label: 'Boutique' },
   { value: 'hostel', label: 'Hostel' },
 ];
+
+/**
+ * Only this form's own fields. The draft also carries room types, buildings
+ * and tax rules; handing the whole draft to react-hook-form as defaults made
+ * every autosave write those back as they were when the step opened — which,
+ * with tax rules edited on this same step, would quietly undo them.
+ */
+const FORM_FIELDS = Object.keys(branchSetupSchema.shape) as Array<keyof BranchSetupFormValues>;
+function formFieldsOf(values: Partial<BranchSetupFormValues>): Partial<BranchSetupFormValues> {
+  return Object.fromEntries(FORM_FIELDS.filter((key) => key in values).map((key) => [key, values[key]])) as Partial<BranchSetupFormValues>;
+}
 
 export function emptyBranchDraft(): BranchDraft {
   return {
@@ -40,6 +55,9 @@ export function emptyBranchDraft(): BranchDraft {
     roomTypes: [],
     buildings: [],
     rooms: [],
+    useBrandTaxRules: true,
+    taxRules: [],
+    createdTaxRuleLocalIds: [],
   };
 }
 
@@ -47,9 +65,14 @@ export function emptyBranchDraft(): BranchDraft {
  * Onboarding step (Roomick-UI.pdf "Branch Setup") — the physical property.
  * Built directly against property/dto/branch.dto.ts's CreateBranchDto +
  * AddressDto — no star rating (not a DTO field despite the reference image
- * showing one), no tax-rule/staff-invite sections here (staff invite is
- * its own later step; tax rules have no backend support at all yet — see
- * PHASE_NOTES.md).
+ * showing one), and no staff-invite section here (staff invite is its own
+ * later step).
+ *
+ * Tax Rule Configuration (the reference's own section): the branch uses the
+ * brand's default rules from Organization Structure, or its own, built with
+ * the same Tax Rule Builder. Kept outside the react-hook-form state and
+ * written straight to `wizardStore`; Continue waits until every rule here is
+ * complete.
  *
  * One of potentially several branches now (`wizardStore.branches`, "Full"
  * onboarding mode — see PHASE_NOTES.md): this component always edits
@@ -90,8 +113,17 @@ export function emptyBranchDraft(): BranchDraft {
 export function BranchSetupForm({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
   const activeBranchLocalId = useWizardStore((state) => state.activeBranchLocalId);
   const branches = useWizardStore((state) => state.branches);
+  const brandTaxRules = useWizardStore((state) => state.brandTaxRules);
   const patch = useWizardStore((state) => state.patch);
   const branch = branches.find((b) => b.localId === activeBranchLocalId);
+  const [taxAttempted, setTaxAttempted] = useState(false);
+
+  // Read the store at write time, not the render's `branches`: the address
+  // autosave (debounced) and the tax rules both write this branch, and a
+  // stale copy from either would undo the other's last change.
+  function updateBranch(localId: string, change: Partial<BranchDraft>) {
+    patch({ branches: useWizardStore.getState().branches.map((b) => (b.localId === localId ? { ...b, ...change } : b)) });
+  }
 
   useEffect(() => {
     if (branch) return;
@@ -109,7 +141,7 @@ export function BranchSetupForm({ onBack, onNext }: { onBack: () => void; onNext
     formState: { errors, isSubmitting },
   } = useForm<BranchSetupFormValues>({
     resolver: zodResolver(branchSetupSchema),
-    defaultValues: branch ?? { checkInTime: '14:00', checkOutTime: '11:00' },
+    defaultValues: branch ? formFieldsOf(branch) : { checkInTime: '14:00', checkOutTime: '11:00' },
     mode: 'onTouched',
   });
 
@@ -118,7 +150,7 @@ export function BranchSetupForm({ onBack, onNext }: { onBack: () => void; onNext
   // losing whatever hadn't been submitted yet. See useAutosaveDraft.ts.
   useAutosaveDraft(watch, (values) => {
     if (!branch) return;
-    patch({ branches: branches.map((b) => (b.localId === branch.localId ? { ...b, ...values } : b)) });
+    updateBranch(branch.localId, formFieldsOf(values));
   });
 
   // Currency: derived silently, no field of its own — see this file's
@@ -142,13 +174,24 @@ export function BranchSetupForm({ onBack, onNext }: { onBack: () => void; onNext
 
   if (!branch) return null;
 
+  const tax = branchTaxSetup(branch, brandTaxRules);
+  const taxRulesReady = tax.useBrand || taxRuleListProblems(tax.ownRules).every((problem) => problem === null);
+  const symbol = currencySymbolFor(watch('currency') || branch.currency);
+
   function onSubmit(values: BranchSetupFormValues) {
-    patch({ branches: branches.map((b) => (b.localId === branch!.localId ? { ...b, ...values } : b)) });
+    if (!taxRulesReady) return;
+    updateBranch(branch!.localId, formFieldsOf(values));
     onNext();
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+    <form
+      onSubmit={(event) => {
+        setTaxAttempted(true);
+        return handleSubmit(onSubmit)(event);
+      }}
+      className="flex flex-col gap-4"
+    >
       <Section label="Property">
         <Input label="Property Name" {...register('name')} error={errors.name?.message} />
         <Controller
@@ -207,6 +250,47 @@ export function BranchSetupForm({ onBack, onNext }: { onBack: () => void; onNext
         />
         <Input label="Check-in Time" type="time" {...register('checkInTime')} error={errors.checkInTime?.message} />
         <Input label="Check-out Time" type="time" {...register('checkOutTime')} error={errors.checkOutTime?.message} />
+      </Section>
+
+      <Section label="Tax Rule Configuration">
+        <RadioCard
+          name={`branch-tax-${branch.localId}`}
+          options={[
+            {
+              value: 'brand',
+              title: 'Use Brand Default Tax Rules',
+              content: (
+                <div className="flex flex-col gap-1">
+                  {brandTaxRules.length === 0 ? (
+                    <p className="text-small text-secondary-light">The brand has no default tax rules, so this branch will charge no tax until you add some.</p>
+                  ) : (
+                    brandTaxRules.map((rule) => (
+                      <p key={rule.localId} className="text-small text-secondary">
+                        <span className="font-semibold">{rule.name || 'Untitled'}</span> — {describeTaxRuleDraft(rule, symbol)}
+                      </p>
+                    ))
+                  )}
+                </div>
+              ),
+            },
+            {
+              value: 'own',
+              title: 'Configure Branch Tax Rules',
+              content: (
+                <TaxRuleBuilder
+                  idPrefix={`branch-tax-${branch.localId}`}
+                  rules={tax.ownRules}
+                  onChange={(rules) => updateBranch(branch.localId, { taxRules: rules })}
+                  currency={watch('currency') || branch.currency || undefined}
+                  showErrors={taxAttempted}
+                />
+              ),
+            },
+          ]}
+          value={tax.useBrand ? 'brand' : 'own'}
+          onChange={(choice) => updateBranch(branch.localId, { useBrandTaxRules: choice === 'brand' })}
+        />
+        {taxAttempted && !taxRulesReady ? <p className="text-small text-red-600">Finish or remove the tax rules marked above to continue.</p> : null}
       </Section>
 
       <div className="flex items-center gap-3">

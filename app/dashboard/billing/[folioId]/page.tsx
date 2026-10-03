@@ -185,7 +185,10 @@ export default function GuestFolioPage() {
                   <tr key={row.ruleId} className="border-b border-primary/15 last:border-0">
                     <td className="py-3 pr-4">
                       <span className="inline-flex rounded-pill bg-primary/15 px-2 py-0.5 text-tiny font-semibold text-primary-dark">{row.ruleName}</span>
-                      <span className="text-small text-primary-dark/70 ml-2">({(Number(row.rate) * 100).toFixed(2)}%)</span>
+                      <span className="text-small text-primary-dark/70 ml-2">
+                        ({row.type === 'fixed' ? `${formatMoney(row.fixedAmount ?? '0', symbol)} a charge` : `${Number((Number(row.rate) * 100).toFixed(2))}%`}
+                        {row.inclusive ? ', included in prices' : ''})
+                      </span>
                     </td>
                     <td className="text-small text-primary-dark py-3 pr-4 text-right">{formatMoney(row.taxableBase, symbol)}</td>
                     <td className="text-small text-primary-dark py-3 text-right">{formatMoney(row.taxCollected, symbol)}</td>

@@ -8,7 +8,10 @@ export type AdjustmentType = 'fixed' | 'percentage';
 export interface RateQuote {
   nightlyRate: string;
   subtotal: string;
+  /** Tax added on top of `subtotal`. */
   taxTotal: string;
+  /** Tax already inside `subtotal`, for a branch with tax-inclusive rates — shown, never added. */
+  taxIncluded: string;
   totalWithTax: string;
   ratePlanId: string | null;
   ruleApplied: { type: 'override' | 'cascade' | 'base'; planName: string | null; adjustmentApplied: string | null };

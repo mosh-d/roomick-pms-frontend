@@ -532,6 +532,7 @@ function CancelBookingSection({
                   <ChargeRow label="Cancellation charge" value={money(quote.charge.amount)} />
                   {Number(quote.charge.tax) > 0 ? <ChargeRow label="Tax" value={money(quote.charge.tax)} /> : null}
                   <ChargeRow label="Total" value={money(quote.charge.total)} bold />
+                  {Number(quote.charge.taxIncluded) > 0 ? <ChargeRow label="Includes tax of" value={money(quote.charge.taxIncluded)} /> : null}
                   {Number(quote.paidSoFar) > 0 ? <ChargeRow label="Already paid" value={money(quote.paidSoFar)} /> : null}
                   {Number(quote.refundDue) > 0 ? <ChargeRow label="Refund due to you" value={money(quote.refundDue)} /> : null}
                 </dl>

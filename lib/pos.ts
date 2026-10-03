@@ -80,8 +80,12 @@ export interface PricedLine {
 export interface PosQuote {
   currency: string;
   lines: PricedLine[];
+  /** The items added up, at menu prices. */
   subtotal: string;
+  /** Tax added on top. */
   taxTotal: string;
+  /** Tax already inside the menu prices — shown, never added. */
+  taxIncluded: string;
   total: string;
 }
 

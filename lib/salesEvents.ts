@@ -170,7 +170,8 @@ export interface EventBookingDetail extends EventBookingSummary {
   space: EventSpaceSummary;
   currency: string;
   cateringLines: Array<CateringLine & { amount: string }>;
-  totals: { subtotal: string; taxTotal: string; total: string };
+  /** `taxTotal` is added on top of `subtotal`; `taxIncluded` is already inside it. */
+  totals: { subtotal: string; taxTotal: string; taxIncluded: string; total: string };
 }
 
 /** Seats for a layout — the space's figure for it, else its general capacity. */

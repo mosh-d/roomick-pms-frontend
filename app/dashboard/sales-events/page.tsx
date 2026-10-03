@@ -999,6 +999,12 @@ function EventDetailsForm({ detail, branchId, from, to, auth }: { detail: EventB
               <dt>Total</dt>
               <dd>{formatMoney(detail.totals.total, symbol)}</dd>
             </div>
+            {Number(detail.totals.taxIncluded) > 0 ? (
+              <div className="flex justify-between">
+                <dt>Includes tax of</dt>
+                <dd>{formatMoney(detail.totals.taxIncluded, symbol)}</dd>
+              </div>
+            ) : null}
             <p className="text-tiny text-secondary-light">As last saved.</p>
           </dl>
         ) : null}

@@ -495,6 +495,11 @@ function GuestDetailsSection({
                 {quoteQuery.data.currency} {quoteQuery.data.totalWithTax}
               </dd>
             </div>
+            {Number(quoteQuery.data.taxIncluded) > 0 ? (
+              <p className="text-tiny text-primary-dark/70 text-right">
+                Includes {quoteQuery.data.currency} {quoteQuery.data.taxIncluded} in taxes
+              </p>
+            ) : null}
           </dl>
         )}
         <p className="text-tiny text-primary-dark/70">Payment is taken at the property on arrival.</p>

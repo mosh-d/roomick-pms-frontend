@@ -22,6 +22,12 @@ export function printReceipt(order: PosOrder): void {
     })
     .join('');
 
+  // Menu prices that already hold the tax: the items add up to the total, and
+  // the order records what the outlet keeps before tax — so the receipt says
+  // "Before tax" rather than a "Subtotal" that doesn't match the items.
+  const itemsTotal = order.items.reduce((sum, line) => sum + Number(line.lineTotal), 0);
+  const taxInPrices = Math.abs(itemsTotal - Number(order.subtotal)) > 0.005;
+
   const settledTo =
     order.settlement === 'room' && order.reservation
       ? `Charged to Room ${escapeHtml(order.reservation.room?.number ?? '')} — ${escapeHtml(order.reservation.guest.name)}`
@@ -50,7 +56,7 @@ export function printReceipt(order: PosOrder): void {
     <table>${lines}</table>
     <div class="rule"></div>
     <table>
-      <tr><td>Subtotal</td><td class="amt">${money(order.subtotal)}</td></tr>
+      <tr><td>${taxInPrices ? 'Before tax' : 'Subtotal'}</td><td class="amt">${money(order.subtotal)}</td></tr>
       <tr><td>Tax</td><td class="amt">${money(order.taxTotal)}</td></tr>
       <tr class="total"><td>Total</td><td class="amt">${money(order.total)}</td></tr>
     </table>

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { RegisterFormValues } from '@/lib/schemas/auth';
 import type { BranchSetupFormValues, RoomTypeFormValues, BuildingFormValues } from '@/lib/schemas/onboarding';
+import type { TaxRuleDraft } from '@/components/tax/TaxRuleBuilder';
 
 export type SignupMode = 'demo' | 'real';
 /** Maps directly to the backend's BrandMode enum ('single' | 'multi', confirmed in roomick-pms-backend/prisma/schema.prisma). */
@@ -79,6 +80,25 @@ export interface BranchDraft extends BranchSetupFormValues {
   roomTypes: RoomTypeDraft[];
   buildings: BuildingDraft[];
   rooms: RoomCardDraft[];
+  // Tax rules (Roomick-UI.pdf "Tax Rule Configuration"): the brand's
+  // defaults, or the branch's own. Optional so a draft saved before these
+  // existed still loads — read them through `branchTaxSetup`.
+  useBrandTaxRules?: boolean;
+  taxRules?: TaxRuleDraft[];
+  /** localIds of the rules Finish has already created at this branch, so a retry doesn't make them twice. */
+  createdTaxRuleLocalIds?: string[];
+}
+
+/** A branch's tax choice with the defaults filled in — what every reader should go through. */
+export function branchTaxSetup(branch: BranchDraft, brandTaxRules: TaxRuleDraft[]) {
+  const useBrand = branch.useBrandTaxRules ?? true;
+  return {
+    useBrand,
+    ownRules: branch.taxRules ?? [],
+    /** The rules this branch will actually be created with. */
+    effectiveRules: useBrand ? brandTaxRules : (branch.taxRules ?? []),
+    createdLocalIds: branch.createdTaxRuleLocalIds ?? [],
+  };
 }
 
 export interface WizardData {
@@ -120,6 +140,8 @@ export interface WizardData {
   // tree's highlight and which branch's forms are actually shown — set
   // whenever the sidebar or an "Add"/"Continue" action moves focus.
   brandMode: BrandMode | null;
+  /** The brand's default tax rules (the Organization Structure step's Tax Rule Builder) — each branch uses them unless it sets its own. */
+  brandTaxRules: TaxRuleDraft[];
   branches: BranchDraft[];
   activeBranchLocalId: string | null;
   activeBuildingLocalId: string | null;
@@ -142,6 +164,7 @@ const initialData: WizardData = {
   emailVerified: false,
   loggedIn: false,
   brandMode: null,
+  brandTaxRules: [],
   branches: [],
   activeBranchLocalId: null,
   activeBuildingLocalId: null,

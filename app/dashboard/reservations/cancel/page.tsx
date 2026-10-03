@@ -181,6 +181,7 @@ export default function CancelReservationPage() {
                 <Row label={`Charge (${PENALTY_LABELS[quote.penaltyType]})`} value={formatMoney(quote.penaltyAmount, symbol)} />
                 <Row label="Tax" value={formatMoney(quote.penaltyTax, symbol)} />
                 <Row label="Total charge" value={waiving ? 'Waived' : formatMoney(quote.penaltyTotal, symbol)} />
+                {Number(quote.penaltyTaxIncluded) > 0 && !waiving ? <Row label="Includes tax of" value={formatMoney(quote.penaltyTaxIncluded, symbol)} /> : null}
                 <Row label="Paid so far" value={formatMoney(quote.paidSoFar, symbol)} />
                 {waiving ? (
                   Number(quote.paidSoFar) > 0 ? <Row label="Refund due" value={formatMoney(quote.paidSoFar, symbol)} /> : null

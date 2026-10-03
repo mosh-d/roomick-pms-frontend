@@ -2412,3 +2412,41 @@ Staff are given a custom role exactly as before, through Manager Dashboard → S
   - a recovery code signs in and My Account says "9 are left";
   - Staff Management shows On with no Reset for your own row; Security & Roles shows the new section;
   - no sideways scroll at 390px; zero console errors.
+
+## Phase 81 — Tax Rule Builder: Property Config, onboarding, and taxes included in prices (2026-10-03)
+
+The reference's Tax Rule Builder (Roomick-UI.pdf, Organization Structure and Branch Setup), built now that the backend supports it — see the backend's notes for fixed and included taxes.
+
+### One rule's fields (`components/tax/TaxRuleFields.tsx`)
+As the reference lays them out: **Tax Name**, **Type** (Exclusive / Inclusive), **Tax Rate** (Fixed Rate / Percentage Rate, with the figure underneath — `%` or the branch currency beside it) and **Applies to** (Rooms, Food and Drinks, Laundry, Spa, Minibar, Transport, Cancellation & No-Show Charges, Other Charges, or All). Ticking All clears the rest and vice versa. Shared by onboarding and Property Config; `lib/taxes.ts` turns it into the API body and back.
+
+### Property Config → Tax Rules (new section)
+- The branch's active rules in a table: tax, rate ("7.5%" or "₦500.00 a charge"), type ("Inclusive — inside the price"), what it applies to. A paragraph says what inclusive, exclusive and fixed mean.
+- **Add Tax Rule** and **Change** open the fields in a dialog. Change saves as a replacement — the old rule is retired and kept, so posted bills keep their tax — and says so.
+- **Retire** asks first. Retired rules sit under **Show retired rules (n)** with **Reinstate**.
+- Everyone who can open the page sees the rules; only an owner, manager or accountant at the branch gets the buttons.
+
+### Onboarding
+- **Organization Structure** gains the Tax Rule Builder: the brand's default rules, a card per rule ("Rule 1" with its ×) and **Add Tax Rule**. Optional; a half-made rule holds Continue and says why.
+- **Branch Setup** gains **Tax Rule Configuration**: **Use Brand Default Tax Rules** (listing them) or **Configure Branch Tax Rules** (the builder, in the branch's currency).
+- **Review** lists the default rules and each branch's, and **Finish** creates each branch's rules after its rooms — marking each one done as it goes, so a retry doesn't make it twice.
+- Drafts saved before this existed load as "use the brand defaults".
+- **Fixed on the way:** the Branch Setup form handed the whole branch draft to react-hook-form as its defaults, so every autosave wrote room types, buildings and rooms back as they were when the step opened. Harmless until something else on the same step changed the draft — the tax rules do — so the form now only ever reads and writes its own fields.
+
+### Taxes included in prices, shown everywhere a price is
+Quotes keep "Subtotal + Tax = Total"; where some tax was already inside the price, a line now says how much:
+- the staff rate preview and the public booking page ("Includes NGN … in taxes");
+- the POS basket, the cancellation pages (staff and guest), and catering on an event booking;
+- the bill's **Tax Breakdown** shows "(₦500.00 a charge)" for a fixed rule and ", included in prices" for an included one;
+- a POS receipt whose menu prices include tax labels the pre-tax figure **Before tax** instead of a "Subtotal" that wouldn't match the items.
+
+### Verified
+- **Checks:** `npx tsc --noEmit` clean; `eslint` clean on every changed file (the three warnings it prints are the existing React Compiler notes in the signup forms). `npm run build` wasn't run.
+- **Browser, 20/20**, against real Postgres:
+  - Property Config lists VAT 7.5% inclusive on all charges and the city tax ₦500.00 a charge on rooms, with two replaced VATs under retired rules;
+  - an empty rule says what's missing (name, then what it applies to); a 5% consumption tax on food is added;
+  - Change opens the city tax as it stands, saving 750 replaces it; Retire asks, Reinstate brings it back;
+  - the bill's breakdown reads "(7.5%, included in prices)" and "(₦500.00 a charge)";
+  - no sideways scroll at 390px;
+  - onboarding: the builder on Organization Structure holds Continue for a half-made rule; Branch Setup offers the brand's VAT for a draft saved before taxes existed; a branch-level ₦2,000 service charge on rooms survives an address edit after it; Review shows both; **Finish creates the branch with only its own service charge**;
+  - zero console errors.

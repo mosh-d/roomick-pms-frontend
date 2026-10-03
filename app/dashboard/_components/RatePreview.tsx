@@ -67,6 +67,9 @@ export function RatePreview({
             <span className="text-small font-semibold text-secondary">Total</span>
             <span className="text-body font-semibold text-secondary">{formatMoney(quoteQuery.data.totalWithTax, symbol)}</span>
           </div>
+          {Number(quoteQuery.data.taxIncluded) > 0 ? (
+            <p className="text-tiny text-secondary-light text-right">Includes {formatMoney(quoteQuery.data.taxIncluded, symbol)} tax</p>
+          ) : null}
         </>
       ) : null}
     </Card>

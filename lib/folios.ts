@@ -95,7 +95,12 @@ export interface FolioListRow {
 export interface TaxBreakdownRow {
   ruleId: string;
   ruleName: string;
+  type: 'percentage' | 'fixed';
   rate: string;
+  /** Fixed rules: the amount per charge. */
+  fixedAmount: string | null;
+  /** The tax was inside the prices rather than added on top. */
+  inclusive: boolean;
   taxableBase: string;
   taxCollected: string;
 }

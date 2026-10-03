@@ -6,7 +6,9 @@ import { Section } from '@/components/ui/Section';
 import { Button } from '@/components/ui/Button';
 import { apiFetch, ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
-import { useWizardStore, type BranchDraft, type RoomCardDraft, type RoomTypeDraft } from '@/lib/store/wizardStore';
+import { branchTaxSetup, useWizardStore, type BranchDraft, type RoomCardDraft, type RoomTypeDraft } from '@/lib/store/wizardStore';
+import type { TaxRuleDraft } from '@/components/tax/TaxRuleBuilder';
+import { describeTaxRuleDraft, toTaxRuleBody } from '@/lib/taxes';
 import { currencySymbolFor } from '@/lib/currencies';
 import { displayWithCommas } from '@/lib/numberFormat';
 
@@ -23,7 +25,8 @@ import { displayWithCommas } from '@/lib/numberFormat';
  * displays: for each branch — create the branch (if not already) → each
  * room type → each building → each floor → every not-yet-created room
  * card, grouped by (floor, room type, view) since `rooms/bulk` only takes
- * one `view` per call — then (first branch only) staff invites. Every
+ * one `view` per call → its tax rules (the brand defaults or its own) —
+ * then (first branch only) staff invites. Every
  * created id is written back onto its `localId`'d draft the moment it
  * succeeds, so a retry after a partial failure only creates what's still
  * missing, at any level of the tree, not just "restart this branch".
@@ -46,6 +49,7 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
   const [reviewIndex, setReviewIndex] = useState(0);
 
   const { owner, brandMode, branches, staffInvites, invitedStaff } = wizard;
+  const brandTaxRules = wizard.brandTaxRules ?? [];
 
   async function handleFinish() {
     if (!owner || !brandMode || branches.length === 0) return;
@@ -72,7 +76,7 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
       const workingBranches: BranchDraft[] = structuredClone(branches);
 
       for (let i = 0; i < workingBranches.length; i++) {
-        await finishBranch(workingBranches[i], brandId, accessToken ?? undefined, tenantId);
+        await finishBranch(workingBranches[i], brandId, brandTaxRules, accessToken ?? undefined, tenantId);
         wizard.patch({ branches: structuredClone(workingBranches) });
       }
 
@@ -106,11 +110,13 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
   const branch = branches[Math.min(reviewIndex, branches.length - 1)];
   const currencySymbol = currencySymbolFor(branch.currency);
   const roomCount = branch.rooms.length;
+  const branchTax = branchTaxSetup(branch, brandTaxRules);
 
   return (
     <div className="flex flex-col gap-4">
       <Section label="Organization" tone="accent">
         <Row label="Structure" value={brandMode === 'single' ? 'Single-Brand' : 'Multi-Brand'} />
+        <TaxRuleRows label="Default Tax Rules" rules={brandTaxRules} symbol="" />
       </Section>
 
       {branches.length > 1 ? (
@@ -142,6 +148,7 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
         {branch.category ? <Row label="Category" value={branch.category} /> : null}
         <Row label="Currency" value={branch.currency} />
         <Row label="Timezone" value={branch.timezone} />
+        <TaxRuleRows label={branchTax.useBrand ? 'Tax Rules (brand defaults)' : 'Branch Tax Rules'} rules={branchTax.effectiveRules} symbol={currencySymbol} />
       </Section>
 
       {branch.roomTypes.length > 0 ? (
@@ -223,7 +230,7 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
 }
 
 /** Mutates `branch` in place, writing real ids back onto it as each backend call succeeds. */
-async function finishBranch(branch: BranchDraft, brandId: string, accessToken: string | undefined, tenantId: string | undefined) {
+async function finishBranch(branch: BranchDraft, brandId: string, brandTaxRules: TaxRuleDraft[], accessToken: string | undefined, tenantId: string | undefined) {
   if (!branch.id) {
     const result = await apiFetch<{ id: string }>(`/brands/${brandId}/branches`, {
       method: 'POST',
@@ -297,6 +304,18 @@ async function finishBranch(branch: BranchDraft, brandId: string, accessToken: s
   }
 
   await createRooms(branch, branchId, accessToken, tenantId);
+
+  // The rules this branch takes — the brand's defaults, or its own. Each one
+  // is marked created the moment it is, so a retry skips it (the server
+  // refuses a second active tax with the same name anyway).
+  const tax = branchTaxSetup(branch, brandTaxRules);
+  const created = [...tax.createdLocalIds];
+  for (const rule of tax.effectiveRules) {
+    if (created.includes(rule.localId)) continue;
+    await apiFetch(`/branches/${branchId}/tax-rules`, { method: 'POST', accessToken, tenantId, body: toTaxRuleBody(rule) });
+    created.push(rule.localId);
+    branch.createdTaxRuleLocalIds = [...created];
+  }
 }
 
 /**
@@ -357,6 +376,22 @@ function formatApiError(error: ApiError): string {
     return `${error.message}: ${error.errors.join('; ')}`;
   }
   return error.message;
+}
+
+/** The reference's Review lists each tax with its type, rate and what it applies to. */
+function TaxRuleRows({ label, rules, symbol }: { label: string; rules: TaxRuleDraft[]; symbol: string }) {
+  if (rules.length === 0) return <Row label={label} value="None" />;
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-small text-accent-dark">{label}</span>
+      {rules.map((rule) => (
+        <div key={rule.localId} className="flex items-center justify-between gap-4 pl-4">
+          <span className="text-small font-semibold text-secondary">{rule.name}</span>
+          <span className="text-small text-secondary text-right">{describeTaxRuleDraft(rule, symbol)}</span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 /** Always rendered inside a `tone="accent"` Section (see this file's other usages) — the label uses `text-accent-dark`, not `text-secondary-light`, to stay in the same slate family as the card itself rather than mixing in secondary's purple hue. The value keeps `text-secondary` regardless of tone, matching Card.tsx's own documented convention: value text needs the contrast, not a tone-matched color. */

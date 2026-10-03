@@ -289,7 +289,10 @@ export interface CancellationQuote {
   pastCheckInTime: boolean;
   penaltyType: 'first_night' | 'full_stay' | 'flat_fee' | 'none';
   penaltyAmount: string;
+  /** Tax added on top of `penaltyAmount`. */
   penaltyTax: string;
+  /** Tax already inside `penaltyAmount`, for a branch with tax-inclusive rates. */
+  penaltyTaxIncluded: string;
   penaltyTotal: string;
   paidSoFar: string;
   refundDue: string;

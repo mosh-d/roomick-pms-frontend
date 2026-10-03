@@ -14,6 +14,7 @@ import { Table, type TableColumn } from '@/components/ui/Table';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { PropertyConfigIcon, HotelCheckInIcon, OverbookingIcon } from '@/components/ui/Icons';
 import { HubCard } from '../_components/HubCard';
+import { TaxRulesSection } from './_components/TaxRulesSection';
 import {
   useBrandsQuery,
   useUpdateBrandMutation,
@@ -764,6 +765,7 @@ export default function PropertyConfigPage() {
           <BookingEngineSection branch={branchQuery.data} auth={auth} />
           <NoShowPolicySection branch={branchQuery.data} auth={auth} />
           <CancellationPolicySection branch={branchQuery.data} auth={auth} />
+          <TaxRulesSection branchId={branchQuery.data.id} currency={branchQuery.data.currency} auth={auth} />
         </>
       ) : null}
 

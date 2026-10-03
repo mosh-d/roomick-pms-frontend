@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { Section } from '@/components/ui/Section';
 import { Button } from '@/components/ui/Button';
 import { RadioCard, type RadioCardOption } from '@/components/ui/RadioCard';
+import { TaxRuleBuilder, taxRuleListProblems } from '@/components/tax/TaxRuleBuilder';
 import { useWizardStore, type BrandMode } from '@/lib/store/wizardStore';
 
 const BRAND_MODE_OPTIONS: RadioCardOption<BrandMode>[] = [
@@ -28,13 +30,22 @@ const BRAND_MODE_OPTIONS: RadioCardOption<BrandMode>[] = [
  * one option array, so it's inlined here instead of kept as a whole extra
  * file. `BuildingsFloorsForm.tsx` and `page.tsx` already use `RadioCard`
  * this same direct way for their own choices.
+ *
+ * Below it, the reference's **Tax Rule Builder**: the brand's default tax
+ * rules, which every branch uses unless Branch Setup gives it its own.
+ * Optional — a property with no taxes to charge leaves it empty. Saved as a
+ * draft like everything else here; Finish creates the rules at each branch.
  */
 export function OrgStructureForm({ onNext }: { onNext: () => void }) {
   const brandMode = useWizardStore((state) => state.brandMode);
+  const brandTaxRules = useWizardStore((state) => state.brandTaxRules);
   const patch = useWizardStore((state) => state.patch);
+  const [attempted, setAttempted] = useState(false);
+  const taxRulesReady = taxRuleListProblems(brandTaxRules).every((problem) => problem === null);
 
   function handleContinue() {
-    if (!brandMode) return;
+    setAttempted(true);
+    if (!brandMode || !taxRulesReady) return;
     onNext();
   }
 
@@ -50,7 +61,16 @@ export function OrgStructureForm({ onNext }: { onNext: () => void }) {
         />
       </Section>
 
+      <Section label="Tax Rule Builder">
+        <p className="text-small text-secondary-light">
+          The taxes your branches charge — VAT, a service charge, a city tax. Each branch uses these unless you give it its own in Branch Setup, and you can
+          change them any time later in Property Config. Leave this empty if you don&apos;t charge any.
+        </p>
+        <TaxRuleBuilder idPrefix="brand-tax" rules={brandTaxRules} onChange={(rules) => patch({ brandTaxRules: rules })} showErrors={attempted} />
+      </Section>
+
       {!brandMode ? <p className="text-small text-secondary-light">Choose a structure to continue.</p> : null}
+      {attempted && !taxRulesReady ? <p className="text-small text-red-600">Finish or remove the tax rules marked above to continue.</p> : null}
 
       <Button type="button" onClick={handleContinue} disabled={!brandMode}>
         Continue

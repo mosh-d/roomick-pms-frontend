@@ -372,6 +372,12 @@ function OrderPanel({
           <dt>Total</dt>
           <dd>{quote ? total : '—'}</dd>
         </div>
+        {quote && Number(quote.taxIncluded) > 0 ? (
+          <div className="flex justify-between text-small text-secondary-light">
+            <dt>Includes tax of</dt>
+            <dd>{formatMoney(quote.taxIncluded, symbol)}</dd>
+          </div>
+        ) : null}
       </dl>
       {basket.length > 0 && quoteQuery.isError ? <p className="text-small text-red-600">{errorText(quoteQuery.error, "Couldn't price this order.")}</p> : null}
 
