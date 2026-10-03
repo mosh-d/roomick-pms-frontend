@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Section } from '@/components/ui/Section';
 import { Button } from '@/components/ui/Button';
-import { useAuthStore } from '@/lib/store/authStore';
+import { isMfaChallenge, useAuthStore } from '@/lib/store/authStore';
 import { useWizardStore } from '@/lib/store/wizardStore';
 import { ApiError } from '@/lib/api';
 
@@ -65,11 +65,16 @@ export function AutoLoginStep({
     // — `error` only gets set from the async .catch below, and cleared by the
     // Retry button's own click handler before it bumps retryKey, not here.
     login(email, password)
-      .then(() => {
-        if (!cancelled) {
-          patch({ loggedIn: true });
-          onSuccess();
+      .then((result) => {
+        if (cancelled) return;
+        // A brand-new account can't have two-step sign-in on yet, but if one
+        // ever does, there's no session to carry on with — say where to go.
+        if (isMfaChallenge(result)) {
+          setError('This account uses two-step sign-in. Log in from the Log in page to carry on.');
+          return;
         }
+        patch({ loggedIn: true });
+        onSuccess();
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');

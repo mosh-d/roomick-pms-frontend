@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useRequireAuth } from '@/lib/useRequireAuth';
@@ -23,6 +24,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/dashboard/loyalty': 'Loyalty & Marketing',
   '/dashboard/loyalty/campaigns': 'Email Campaigns',
   '/dashboard/integrations': 'Integrations & APIs',
+  '/dashboard/account': 'My Account',
   '/dashboard/integrations/marketplace': 'Integrations Marketplace',
   '/dashboard/system-admin': 'System Admin',
   '/dashboard/hq': 'Enterprise / HQ',
@@ -93,7 +95,7 @@ function pageTitleFor(pathname: string): string {
  * match, and every `/reservations/*` route otherwise matches that broader
  * prefix first.
  */
-type Group = 'Operations' | 'Management' | 'Admin';
+type Group = 'Operations' | 'Management' | 'Admin' | 'Account';
 const GROUP_PREFIXES: Array<{ prefix: string; group: Group }> = [
   { prefix: '/dashboard/alerts', group: 'Operations' },
   { prefix: '/dashboard/reservations/rate-plans', group: 'Management' },
@@ -121,6 +123,7 @@ const GROUP_PREFIXES: Array<{ prefix: string; group: Group }> = [
   { prefix: '/dashboard/security', group: 'Admin' },
   { prefix: '/dashboard/system-admin', group: 'Admin' },
   { prefix: '/dashboard/hq', group: 'Admin' },
+  { prefix: '/dashboard/account', group: 'Account' },
 ];
 
 function groupFor(pathname: string): Group {
@@ -246,7 +249,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
         <div className="flex items-center gap-4 shrink-0 text-small">
-          <span className="hidden sm:inline text-primary-dark/70">{user?.name}</span>
+          {/* Everyone's way to their own sign-in settings — two-step sign-in lives there. */}
+          <Link href="/dashboard/account" className="hidden sm:inline text-primary-dark/70 hover:text-primary-dark hover:underline" title="My Account">
+            {user?.name}
+          </Link>
           <button
             type="button"
             onClick={handleLogout}

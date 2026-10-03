@@ -28,6 +28,8 @@ export interface StaffMember {
   emailVerified: boolean;
   lastLoginAt: string | null;
   active: boolean;
+  /** Two-step sign-in is on — an owner can reset it here if their phone and recovery codes are lost. */
+  mfaEnabled: boolean;
   roles: Array<{ branchId: string | null; role: string; roleId: string }>;
   outletIds: string[];
 }

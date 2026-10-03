@@ -12,6 +12,18 @@ export interface AuthUser {
 
 type LoginResult = { accessToken: string; refreshToken: string; user: AuthUser };
 
+/**
+ * What a correct password gets when two-step sign-in is on: no session yet,
+ * just a five-minute ticket to send back with an authenticator code.
+ */
+export type MfaChallenge = { mfaRequired: true; challengeToken: string; expiresInSeconds: number };
+
+export type MfaLoginResult = LoginResult & { secondFactor: 'totp' | 'recovery'; recoveryCodesLeft: number };
+
+export function isMfaChallenge(result: LoginResult | MfaChallenge): result is MfaChallenge {
+  return 'mfaRequired' in result && result.mfaRequired === true;
+}
+
 interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
@@ -28,7 +40,10 @@ interface AuthState {
    */
   activeBranchId: string | null;
   setActiveBranchId: (branchId: string) => void;
-  login: (email: string, password: string) => Promise<LoginResult>;
+  /** Signs in, or — when two-step sign-in is on — returns the challenge and stores nothing yet. */
+  login: (email: string, password: string) => Promise<LoginResult | MfaChallenge>;
+  /** The second step: the ticket from `login` plus an authenticator or recovery code. */
+  verifyMfa: (challengeToken: string, code: string) => Promise<MfaLoginResult>;
   /**
    * Exchanges the stored refresh token for a fresh pair via `POST
    * /auth/refresh` (backend: `auth.controller.ts`) and writes it back to
@@ -71,9 +86,24 @@ export const useAuthStore = create<AuthState>()(
       activeBranchId: null,
       setActiveBranchId: (branchId) => set({ activeBranchId: branchId }),
       async login(email, password) {
-        const result = await apiFetch<LoginResult>('/auth/login', {
+        const result = await apiFetch<LoginResult | MfaChallenge>('/auth/login', {
           method: 'POST',
           body: { email, password },
+        });
+        // A challenge isn't a session: nothing is stored until the code is right.
+        if (isMfaChallenge(result)) return result;
+        set({
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          user: result.user,
+          activeBranchId: null,
+        });
+        return result;
+      },
+      async verifyMfa(challengeToken, code) {
+        const result = await apiFetch<MfaLoginResult>('/auth/mfa/verify', {
+          method: 'POST',
+          body: { challengeToken, code },
         });
         set({
           accessToken: result.accessToken,

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
@@ -321,6 +322,29 @@ function RenameRoleModal({
   );
 }
 
+/** Two-step sign-in is per person, so it's set up under My Account; this says where, and how an owner helps someone locked out. */
+function TwoStepSignInSection() {
+  return (
+    <Section label="Two-Step Sign-In">
+      <Card tone="secondary" className="flex flex-col gap-2">
+        <p className="text-small text-secondary">
+          Anyone can add a code from an authenticator app to their sign-in: click your name at the top right, then My Account. Owners and managers especially
+          should — their accounts can see guest data and change who has access.
+        </p>
+        <p className="text-small text-secondary">
+          Someone who has lost their phone signs in with one of their recovery codes. If those are gone too, an owner can reset their two-step sign-in from
+          Manager Dashboard → Staff Management.
+        </p>
+        <div>
+          <Link href="/dashboard/account" className="text-small font-semibold text-primary-text hover:underline">
+            Set up mine →
+          </Link>
+        </div>
+      </Card>
+    </Section>
+  );
+}
+
 function AuditDiff({ before, after }: { before: unknown; after: unknown }) {
   const [open, setOpen] = useState(false);
   if (before === null && after === null) return <span className="text-secondary-light">—</span>;
@@ -579,6 +603,7 @@ export default function SecurityRolesPage() {
       />
 
       <PermissionMatrixSection auth={auth} />
+      <TwoStepSignInSection />
       <AuditLogSection auth={auth} />
       <GdprSection auth={auth} />
     </Container>

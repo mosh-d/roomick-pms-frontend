@@ -2381,3 +2381,34 @@ Staff are given a custom role exactly as before, through Manager Dashboard → S
   - renamed (built-ins marked in the list), then deleted and gone from the list;
   - no sideways scroll at 390px with the matrix open;
   - zero console errors.
+
+## Phase 80 — Two-step sign-in: My Account, the code step at login, and owner resets (2026-10-03)
+
+### My Account (`/dashboard/account`) — new
+- Reached by **clicking your name** at the top right (it was plain text). Breadcrumb group "Account".
+- **Two-step sign-in, off:** one button, **Set Up Two-Step Sign-In**. It shows three steps, a **QR code drawn in the browser** from the setup link (new dependency: `qrcode`), the key in groups of four for typing in, and a code box. **Turn On** with the first code from the app.
+- **Recovery codes** appear once, in a grid, with **Download** (a `.txt`) and **Copy**. **I've Saved Them** stays disabled until one of those is used.
+- **On:** "On since …, N recovery codes left", a warning at three or fewer, **New Recovery Codes** (needs a code) and **Turn Off** (needs password and a code).
+- Arriving after a recovery-code sign-in (`?recoveryUsed=N`) shows how many are left and suggests a new set when running low.
+
+### Signing in
+- `authStore.login` now returns either a session or the challenge, and stores nothing for a challenge. `verifyMfa` completes it.
+- The login page's second step: a six-digit **Code** box (`one-time-code` autocomplete, numeric keypad on phones), **Use a recovery code instead**, and **Start again**. A wrong code shows the server's message ("4 more tries…"); an expired ticket goes back to the password step with its message.
+- The two signup paths that log in (resuming an existing account; the post-signup auto-login) now send an account with two-step sign-in on to the Log in page instead of treating the challenge as a session.
+
+### Elsewhere
+- **Manager Dashboard → Staff Management:** a **Two-Step** column (On/Off). Owners see **Reset** beside a colleague who has it on (never their own), with a message saying what happens next.
+- **Security & Roles:** a short **Two-Step Sign-In** section saying where it's set up and how an owner helps someone locked out.
+
+### Verified
+- **Checks:** `npx tsc --noEmit` and `eslint` clean on the changed files; the three warnings eslint prints are the existing React Compiler notes in the signup forms. `npm run build` wasn't run: the owner's `next dev` was running in the folder.
+- **Browser, 14/14**, against the owner's running servers and real Postgres:
+  - the header name opens My Account, showing Off;
+  - setup draws a real QR (a PNG data URL) beside a 32-character key;
+  - a code computed from that key turns it on, and ten recovery codes appear;
+  - "I've Saved Them" waits for the download, which really saves `roomick-recovery-codes.txt` with the codes in it;
+  - the page then reads "On since … 10 recovery codes left";
+  - signing out and back in asks for the code; a wrong one says "4 more tries"; the right one signs in;
+  - a recovery code signs in and My Account says "9 are left";
+  - Staff Management shows On with no Reset for your own row; Security & Roles shows the new section;
+  - no sideways scroll at 390px; zero console errors.

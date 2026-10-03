@@ -19,6 +19,7 @@ import { useAlertsQuery } from '@/lib/alerts';
 import { useRoomsQuery } from '@/lib/rooms';
 import { deriveRoomStatus } from '@/lib/deriveRoomStatus';
 import { useRolesQuery, useStaffQuery, useBulkInviteMutation, usePatchStaffMutation, type StaffMember } from '@/lib/staff';
+import { useResetStaffMfaMutation } from '@/lib/mfa';
 import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { ApiError } from '@/lib/api';
@@ -120,6 +121,10 @@ function StaffManagementSection({ branchId, auth }: { branchId: string; auth: { 
   const [inviteOpen, setInviteOpen] = useState(false);
   const staffQuery = useStaffQuery(branchId, auth);
   const patchStaffMutation = usePatchStaffMutation(branchId, auth);
+  const resetMfa = useResetStaffMfaMutation(auth);
+  const me = useAuthStore((s) => s.user);
+  const isOwner = me?.roles.some((r) => r.role === 'owner') ?? false;
+  const [mfaMessage, setMfaMessage] = useState<string | null>(null);
 
   const columns: TableColumn<StaffMember>[] = [
     { key: 'name', label: 'Name', render: (s) => s.name, sortValue: (s) => s.name },
@@ -145,6 +150,35 @@ function StaffManagementSection({ branchId, auth }: { branchId: string; auth: { 
       sortValue: (s) => s.lastLoginAt ?? '',
     },
     {
+      key: 'mfa',
+      label: 'Two-Step',
+      render: (s) =>
+        s.mfaEnabled ? (
+          <div className="flex items-center gap-2">
+            <span className="text-small text-green-700 font-semibold">On</span>
+            {isOwner && s.id !== me?.id ? (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={resetMfa.isPending}
+                onClick={() => {
+                  setMfaMessage(null);
+                  resetMfa.mutate(s.id, {
+                    onSuccess: () => setMfaMessage(`Two-step sign-in reset for ${s.name}. They sign in with their password and can set it up again from My Account.`),
+                    onError: (err) => setMfaMessage(err instanceof ApiError ? err.message : 'Couldn’t reset it.'),
+                  });
+                }}
+              >
+                Reset
+              </Button>
+            ) : null}
+          </div>
+        ) : (
+          <span className="text-small text-secondary/70">Off</span>
+        ),
+      sortValue: (s) => (s.mfaEnabled ? 1 : 0),
+    },
+    {
       key: 'active',
       label: 'Status',
       render: (s) => (
@@ -168,6 +202,11 @@ function StaffManagementSection({ branchId, auth }: { branchId: string; auth: { 
         ) : (
           <Card tone="secondary">
             <Table columns={columns} rows={staffQuery.data ?? []} emptyMessage="No staff at this branch yet." exportFileName="staff" />
+            {mfaMessage ? (
+              <p className="text-small text-secondary mt-2" id="staff-mfa-message">
+                {mfaMessage}
+              </p>
+            ) : null}
           </Card>
         )}
       </div>

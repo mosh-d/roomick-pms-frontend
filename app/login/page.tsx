@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ApiError } from '@/lib/api';
 import { loginSchema, type LoginFormValues } from '@/lib/schemas/auth';
-import { useAuthStore } from '@/lib/store/authStore';
+import { isMfaChallenge, useAuthStore } from '@/lib/store/authStore';
 import { useHasHydrated } from '@/lib/useHasHydrated';
 
 /**
@@ -38,6 +38,8 @@ export default function LoginPage() {
   const login = useAuthStore((state) => state.login);
   const user = useAuthStore((state) => state.user);
   const [formError, setFormError] = useState<string | null>(null);
+  // Set once the password is right on an account with two-step sign-in on.
+  const [challengeToken, setChallengeToken] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -51,7 +53,11 @@ export default function LoginPage() {
   async function onSubmit(values: LoginFormValues) {
     setFormError(null);
     try {
-      await login(values.email, values.password);
+      const result = await login(values.email, values.password);
+      if (isMfaChallenge(result)) {
+        setChallengeToken(result.challengeToken);
+        return;
+      }
       router.replace('/dashboard');
     } catch (error) {
       if (error instanceof ApiError && error.isCode('EMAIL_NOT_VERIFIED')) {
@@ -69,6 +75,18 @@ export default function LoginPage() {
   // Also covers the moment right after a successful login, before the
   // effect above has run — no point flashing the form again.
   if (!authHydrated || user) return null;
+
+  if (challengeToken) {
+    return (
+      <SecondStep
+        challengeToken={challengeToken}
+        onExpired={(message) => {
+          setChallengeToken(null);
+          setFormError(message);
+        }}
+      />
+    );
+  }
 
   return (
     <Container className="max-w-xl py-16">
@@ -100,6 +118,94 @@ export default function LoginPage() {
           Sign up
         </Link>
       </p>
+    </Container>
+  );
+}
+
+/**
+ * The code half of a two-step sign-in. A recovery code works here too, for
+ * when the phone isn't to hand; signing in with one goes to My Account
+ * afterwards, which says how many are left.
+ */
+function SecondStep({ challengeToken, onExpired }: { challengeToken: string; onExpired: (message: string) => void }) {
+  const router = useRouter();
+  const verifyMfa = useAuthStore((state) => state.verifyMfa);
+  const [code, setCode] = useState('');
+  const [useRecovery, setUseRecovery] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const ready = useRecovery ? code.replace(/[\s-]/g, '').length === 10 : /^\d{6}$/.test(code.replace(/\s/g, ''));
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!ready) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      const result = await verifyMfa(challengeToken, code);
+      router.replace(result.secondFactor === 'recovery' ? `/dashboard/account?recoveryUsed=${result.recoveryCodesLeft}` : '/dashboard');
+    } catch (err) {
+      if (err instanceof ApiError && err.isCode('TOKEN_INVALID')) {
+        onExpired(err.message);
+        return;
+      }
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
+      setCode('');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Container className="max-w-xl py-16">
+      <h1 className="font-display text-title font-bold text-secondary mb-2">Two-step sign-in</h1>
+      <p className="text-body text-secondary-light mb-8">
+        {useRecovery ? 'Enter one of the recovery codes you saved when you set this up. Each one works once.' : 'Enter the 6-digit code from your authenticator app.'}
+      </p>
+
+      <form onSubmit={submit} className="flex flex-col gap-4">
+        <Section label="Verification">
+          <Input
+            id="mfa-code"
+            label={useRecovery ? 'Recovery code' : 'Code'}
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            inputMode={useRecovery ? 'text' : 'numeric'}
+            autoComplete="one-time-code"
+            autoFocus
+            maxLength={useRecovery ? 11 : 7}
+            placeholder={useRecovery ? 'xxxxx-xxxxx' : '123456'}
+          />
+        </Section>
+
+        {error ? (
+          <p id="mfa-error" className="text-small text-red-600">
+            {error}
+          </p>
+        ) : null}
+
+        <Button type="submit" loading={submitting} disabled={!ready}>
+          Verify
+        </Button>
+      </form>
+
+      <div className="flex flex-wrap gap-4 mt-6 text-small">
+        <button
+          type="button"
+          className="text-primary-text font-semibold hover:underline"
+          onClick={() => {
+            setUseRecovery((current) => !current);
+            setCode('');
+            setError(null);
+          }}
+        >
+          {useRecovery ? 'Use my authenticator app instead' : 'Use a recovery code instead'}
+        </button>
+        <button type="button" className="text-secondary-light hover:underline" onClick={() => onExpired('')}>
+          Start again
+        </button>
+      </div>
     </Container>
   );
 }

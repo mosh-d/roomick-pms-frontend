@@ -13,7 +13,7 @@ import { registerSchema, type RegisterFormValues } from '@/lib/schemas/auth';
 import { COUNTRIES } from '@/lib/countries';
 import { callingCodeFor, displayFromE164, formatPhoneAsYouType, formatPhoneDisplay } from '@/lib/phone';
 import { useWizardStore, type OwnerAccountDraft } from '@/lib/store/wizardStore';
-import { useAuthStore } from '@/lib/store/authStore';
+import { isMfaChallenge, useAuthStore } from '@/lib/store/authStore';
 import { useAutosaveDraft } from '@/lib/useAutosaveDraft';
 import { resumeOnboardingDraft } from '@/lib/resumeOnboarding';
 
@@ -234,6 +234,12 @@ function RegisterFields({
     setResuming(true);
     try {
       const login = await authLogin(conflict.email, conflict.password);
+      // An account with two-step sign-in on needs its code, which this
+      // screen can't ask for — the Log in page can.
+      if (isMfaChallenge(login)) {
+        setFormError('This account uses two-step sign-in. Log in from the Log in page to carry on.');
+        return;
+      }
       const resumePatch = await resumeOnboardingDraft(login.accessToken, login.user);
       patch(resumePatch);
     } catch (error) {
