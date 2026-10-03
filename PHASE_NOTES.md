@@ -2352,3 +2352,32 @@ The listing page is keyed on the integration alone, not its on/off state: keying
   - the review email preview with its link, the last-run line, a saved delay change, and an http link refused with its reason;
   - no sideways scroll at 390px on the catalogue, an accounting listing with a journal table, and review requests;
   - zero console errors.
+
+## Phase 79 — Custom roles in the Roles & Permissions matrix (2026-09-24)
+
+The matrix on Security & Roles was a set of checkboxes that saved maps nothing enforced, with a note saying so. It's now the real thing: the backend enforces what's ticked for custom roles.
+
+### What changed on `/dashboard/security`
+- **The vocabulary comes from the API** (`GET /auth/permissions/catalogue`) instead of a hard-coded list of 9 modules — 17 areas with plain labels (Bills & Payments, Guest Messages…) and a description on hover.
+- **Built-in roles are shown as they really are**, marked "built-in" in the picker: their ticks are read off the routes by the backend and the checkboxes are disabled, with a line explaining their access is fixed and pointing to custom roles.
+- **New Custom Role** opens a modal: a name, and an optional starting point ("What front desk can do", etc.) copied from a built-in role's real coverage — a copy, not a link.
+- **A custom role** shows editable checkboxes; each tick saves at once and says it applies to everyone holding the role straight away. **Rename** and **Delete** appear only for custom roles; deleting one somebody still holds shows the backend's reason.
+- A footnote names what no custom role can be given (staff and invitations, roles and permissions, audit log and GDPR, system administration and backups, integrations, property-wide settings).
+- The old "not yet enforced" note is gone.
+
+### Files
+- `lib/staff.ts` — `Role.isSystem`, `PermissionCatalogue`, and hooks to read the catalogue and create, update and delete roles.
+- `app/dashboard/security/page.tsx` — the rewritten section and two small modals.
+
+Staff are given a custom role exactly as before, through Manager Dashboard → Staff, which already listed every role.
+
+### Verified
+- **Checks:** `npx tsc --noEmit` and `eslint` clean; `npm run build` passes.
+- **Browser, 12/12**, against real Postgres:
+  - no "not yet enforced" note, and the undelegatable footnote shown;
+  - front desk's "Reservations update" ticked and disabled, with the explanation, and no Rename/Delete;
+  - a custom role created from the front-desk starting point, selected, ticked and editable;
+  - ticking "Reports read" saving with the "applies straight away" message;
+  - renamed (built-ins marked in the list), then deleted and gone from the list;
+  - no sideways scroll at 390px with the matrix open;
+  - zero console errors.

@@ -8,9 +8,18 @@ import { Input } from '@/components/ui/Input';
 import { Select, type SelectOption } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { Table, type TableColumn } from '@/components/ui/Table';
+import { Modal } from '@/components/ui/Modal';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SecurityIcon } from '@/components/ui/Icons';
-import { useRolesQuery, useUpdateRolePermissionsMutation, type Role } from '@/lib/staff';
+import {
+  useCreateRoleMutation,
+  useDeleteRoleMutation,
+  usePermissionCatalogueQuery,
+  useRolesQuery,
+  useUpdateRoleMutation,
+  useUpdateRolePermissionsMutation,
+  type Role,
+} from '@/lib/staff';
 import { useAuditLogsQuery, type AuditLogRow } from '@/lib/auditLogs';
 import { useGdprRequestsQuery, useCreateGdprRequestMutation, useUpdateGdprStatusMutation, downloadGdprExport, type GdprRequestRow, type GdprType } from '@/lib/gdpr';
 import { useGuestSearchQuery, type GuestSummary } from '@/lib/guests';
@@ -19,58 +28,128 @@ import { useAuthStore } from '@/lib/store/authStore';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
-/**
- * A fixed, curated module × action list — there's no canonical list stored
- * anywhere backend-side (`Role.permissions` is a free-form `{module:
- * [actions]}` JSONB map, per roomick-pms-backend's own P1 decision), so
- * this names the app's actual real domains rather than inventing a bigger
- * abstract list. `RolesGuard` still enforces purely on role NAME today —
- * this matrix is real, persisted, audited data, but not yet load-bearing.
- */
-const PERMISSION_MODULES = ['reservations', 'folios', 'housekeeping', 'property', 'guests', 'reports', 'staff', 'taxes', 'alerts'] as const;
-const PERMISSION_ACTIONS = ['read', 'create', 'update', 'delete'] as const;
+function RoleLabel({ name, isSystem }: { name: string; isSystem: boolean }) {
+  return (
+    <span>
+      {name}
+      {isSystem ? <span className="text-tiny text-secondary-light"> · built-in</span> : null}
+    </span>
+  );
+}
 
+/**
+ * Roles and what each one may do. The six built-in roles are shown as they
+ * really are — read off the routes by the API, not editable, because their
+ * access is what the code says it is. A custom role is the opposite: it holds
+ * no name the routes know, so this matrix is the whole of its access, and the
+ * guard enforces exactly what's ticked here.
+ */
 function PermissionMatrixSection({ auth }: { auth: AuthOpts }) {
   const rolesQuery = useRolesQuery(auth);
+  const catalogueQuery = usePermissionCatalogueQuery(auth);
+  const updatePermissions = useUpdateRolePermissionsMutation(auth);
+  const updateRole = useUpdateRoleMutation(auth);
+  const deleteRole = useDeleteRoleMutation(auth);
+
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-  const updateMutation = useUpdateRolePermissionsMutation(auth);
+  const [creating, setCreating] = useState(false);
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
 
-  const roleOptions: SelectOption[] = (rolesQuery.data ?? []).map((r) => ({ value: r.id, label: r.name }));
-  const selectedRole: Role | undefined = (rolesQuery.data ?? []).find((r) => r.id === selectedRoleId);
-  const permissions = selectedRole?.permissions ?? {};
+  const roles = rolesQuery.data ?? [];
+  const catalogue = catalogueQuery.data;
+  const roleOptions: SelectOption[] = roles.map((r) => ({ value: r.id, label: r.isSystem ? `${r.name} (built-in)` : r.name }));
+  const selectedRole: Role | undefined = roles.find((r) => r.id === selectedRoleId);
+  const modules = catalogue?.modules ?? [];
+  const actions = catalogue?.actions ?? [];
 
-  function hasAction(module: string, action: string): boolean {
-    return (permissions[module] ?? []).includes(action);
-  }
+  // A built-in role's map is derived from the routes; a custom role's is its own.
+  const effective: Record<string, string[]> = selectedRole
+    ? selectedRole.isSystem
+      ? (catalogue?.systemRolePresets[selectedRole.name] ?? {})
+      : (selectedRole.permissions ?? {})
+    : {};
+  const editable = selectedRole !== undefined && !selectedRole.isSystem;
 
-  function toggle(module: string, action: string) {
-    if (!selectedRole) return;
-    setSaved(false);
-    const current = new Set(permissions[module] ?? []);
+  function toggle(moduleKey: string, action: string) {
+    if (!selectedRole || !editable) return;
+    setMessage(null);
+    const current = new Set(effective[moduleKey] ?? []);
     if (current.has(action)) current.delete(action);
     else current.add(action);
-    const next = { ...permissions, [module]: [...current] };
-    updateMutation.mutate({ roleId: selectedRole.id, permissions: next }, { onSuccess: () => setSaved(true) });
+    const next = { ...effective, [moduleKey]: [...current] };
+    updatePermissions.mutate(
+      { roleId: selectedRole.id, permissions: next },
+      {
+        onSuccess: () => setMessage({ kind: 'ok', text: 'Saved. It applies to everyone holding this role straight away.' }),
+        onError: (err) => setMessage({ kind: 'error', text: err instanceof ApiError ? err.message : 'Couldn’t save that.' }),
+      },
+    );
+  }
+
+  function remove() {
+    if (!selectedRole) return;
+    setMessage(null);
+    deleteRole.mutate(selectedRole.id, {
+      onSuccess: () => {
+        setSelectedRoleId(null);
+        setMessage({ kind: 'ok', text: `“${selectedRole.name}” deleted.` });
+      },
+      onError: (err) => setMessage({ kind: 'error', text: err instanceof ApiError ? err.message : 'Couldn’t delete that role.' }),
+    });
   }
 
   return (
-    <Section label="Role & Permission Matrix">
+    <Section label="Roles & Permissions">
       <div className="flex flex-col gap-3">
-        <p className="text-tiny text-secondary-light">
-          Stored and audited per role, but not yet enforced — routes are still gated by role name (Owner/Manager/Front Desk/etc.), not this map. Use it to document intended
-          access ahead of enforcement landing.
+        <p className="text-small text-secondary">
+          The six built-in roles cover the usual jobs. Create a custom role for anything else — a night auditor, a revenue manager — and tick exactly what it
+          may do. Staff are given a role per property under Manager Dashboard → Staff.
         </p>
-        <div className="max-w-xs">
-          <Select id="permission-matrix-role" label="Role" options={roleOptions} value={selectedRoleId} onChange={(v) => { setSelectedRoleId(v); setSaved(false); }} placeholder="Select a role to edit" />
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="w-64">
+            <Select
+              id="permission-matrix-role"
+              label="Role"
+              options={roleOptions}
+              value={selectedRoleId}
+              onChange={(v) => {
+                setSelectedRoleId(v);
+                setMessage(null);
+              }}
+              placeholder="Choose a role"
+            />
+          </div>
+          <Button type="button" variant="outline" className="mb-2" onClick={() => setCreating(true)}>
+            New Custom Role
+          </Button>
+          {editable && selectedRole ? (
+            <>
+              <Button type="button" size="sm" variant="outline" className="mb-2" onClick={() => setRenaming(selectedRole.name)}>
+                Rename
+              </Button>
+              <Button type="button" size="sm" variant="outline" className="mb-2" onClick={remove} loading={deleteRole.isPending}>
+                Delete
+              </Button>
+            </>
+          ) : null}
         </div>
+
         {selectedRole ? (
           <Card tone="secondary" className="overflow-x-auto">
-            <table className="w-full text-small">
+            <p className="text-small text-secondary pb-2">
+              <span className="font-semibold">
+                <RoleLabel name={selectedRole.name} isSystem={selectedRole.isSystem} />
+              </span>{' '}
+              {selectedRole.isSystem
+                ? '— what this role can do is fixed by the app. This is what it covers today; create a custom role to tailor access.'
+                : '— everything this role can do is ticked below. Nothing else is open to it.'}
+            </p>
+            <table className="w-full min-w-[34rem] text-small" id="permission-matrix">
               <thead>
                 <tr>
-                  <th className="text-left py-1.5 pr-4 font-semibold text-secondary">Module</th>
-                  {PERMISSION_ACTIONS.map((action) => (
+                  <th className="text-left py-1.5 pr-4 font-semibold text-secondary">Area</th>
+                  {actions.map((action) => (
                     <th key={action} className="text-center py-1.5 px-3 font-semibold text-secondary capitalize">
                       {action}
                     </th>
@@ -78,18 +157,20 @@ function PermissionMatrixSection({ auth }: { auth: AuthOpts }) {
                 </tr>
               </thead>
               <tbody>
-                {PERMISSION_MODULES.map((module) => (
-                  <tr key={module} className="border-t border-secondary-light/20">
-                    <td className="py-1.5 pr-4 capitalize">{module}</td>
-                    {PERMISSION_ACTIONS.map((action) => (
+                {modules.map((module) => (
+                  <tr key={module.key} className="border-t border-secondary-light/20">
+                    <td className="py-1.5 pr-4">
+                      <span title={module.description}>{module.label}</span>
+                    </td>
+                    {actions.map((action) => (
                       <td key={action} className="text-center py-1.5 px-3">
                         <input
                           type="checkbox"
-                          aria-label={`${module} ${action}`}
-                          checked={hasAction(module, action)}
-                          onChange={() => toggle(module, action)}
-                          disabled={updateMutation.isPending}
-                          className="size-4 accent-primary cursor-pointer"
+                          aria-label={`${module.label} ${action}`}
+                          checked={(effective[module.key] ?? []).includes(action)}
+                          onChange={() => toggle(module.key, action)}
+                          disabled={!editable || updatePermissions.isPending}
+                          className="size-4 accent-primary disabled:opacity-60 cursor-pointer disabled:cursor-default"
                         />
                       </td>
                     ))}
@@ -97,13 +178,146 @@ function PermissionMatrixSection({ auth }: { auth: AuthOpts }) {
                 ))}
               </tbody>
             </table>
-            {saved ? <p className="text-small text-green-700 mt-2">Saved.</p> : null}
+            {message ? (
+              <p id="role-message" className={`text-small mt-2 ${message.kind === 'error' ? 'text-red-600' : 'text-green-700'}`}>
+                {message.text}
+              </p>
+            ) : null}
           </Card>
         ) : (
-          <p className="text-small text-secondary-light">Select a role above to view or edit its permission map.</p>
+          <p className="text-small text-secondary-light">Choose a role to see what it can do.</p>
         )}
+
+        {catalogue ? (
+          <p className="text-tiny text-secondary-light" id="undelegatable">
+            No custom role can be given: {catalogue.undelegatable.join(', ').toLowerCase()}. Those stay with the owner and manager roles, so a role can never
+            widen its own access.
+          </p>
+        ) : null}
+        {message && !selectedRole ? (
+          <p id="role-message" className={`text-small ${message.kind === 'error' ? 'text-red-600' : 'text-green-700'}`}>
+            {message.text}
+          </p>
+        ) : null}
       </div>
+
+      {creating && catalogue ? (
+        <NewRoleModal
+          auth={auth}
+          presets={catalogue.systemRolePresets}
+          onClose={() => setCreating(false)}
+          onCreated={(role) => {
+            setCreating(false);
+            setSelectedRoleId(role.id);
+            setMessage({ kind: 'ok', text: `“${role.name}” created. Tick what it may do below.` });
+          }}
+        />
+      ) : null}
+
+      {renaming !== null && selectedRole ? (
+        <RenameRoleModal
+          initialName={renaming}
+          saving={updateRole.isPending}
+          onClose={() => setRenaming(null)}
+          onSave={(name) =>
+            updateRole.mutate(
+              { roleId: selectedRole.id, name },
+              {
+                onSuccess: () => {
+                  setRenaming(null);
+                  setMessage({ kind: 'ok', text: 'Renamed.' });
+                },
+                onError: (err) => setMessage({ kind: 'error', text: err instanceof ApiError ? err.message : 'Couldn’t rename it.' }),
+              },
+            )
+          }
+        />
+      ) : null}
     </Section>
+  );
+}
+
+function NewRoleModal({
+  auth,
+  presets,
+  onClose,
+  onCreated,
+}: {
+  auth: AuthOpts;
+  presets: Record<string, Record<string, string[]>>;
+  onClose: () => void;
+  onCreated: (role: Role) => void;
+}) {
+  const createRole = useCreateRoleMutation(auth);
+  const [name, setName] = useState('');
+  const [startFrom, setStartFrom] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const presetOptions: SelectOption[] = [
+    { value: '', label: 'Nothing — start empty' },
+    ...Object.keys(presets).map((role) => ({ value: role, label: `What ${role.replace(/_/g, ' ')} can do` })),
+  ];
+
+  function save() {
+    setError(null);
+    createRole.mutate(
+      { name: name.trim(), permissions: startFrom ? presets[startFrom] : {} },
+      { onSuccess: onCreated, onError: (err) => setError(err instanceof ApiError ? err.message : 'Couldn’t create the role.') },
+    );
+  }
+
+  return (
+    <Modal open onClose={onClose} title="New Custom Role">
+      <div className="flex flex-col gap-3">
+        <Input id="new-role-name" label="Name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder="Night Auditor" />
+        <Select
+          id="new-role-preset"
+          label="Start from"
+          options={presetOptions}
+          value={startFrom ?? ''}
+          onChange={(v) => setStartFrom(v || null)}
+          hint="A starting point you can then adjust — it doesn’t link the roles together."
+        />
+        {error ? <p className="text-small text-red-600">{error}</p> : null}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="button" onClick={save} loading={createRole.isPending} disabled={name.trim().length < 2}>
+            Create Role
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function RenameRoleModal({
+  initialName,
+  saving,
+  onClose,
+  onSave,
+}: {
+  initialName: string;
+  saving: boolean;
+  onClose: () => void;
+  onSave: (name: string) => void;
+}) {
+  const [name, setName] = useState(initialName);
+  return (
+    <Modal open onClose={onClose} title="Rename Role">
+      <div className="flex flex-col gap-3">
+        <Input id="rename-role-name" label="Name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} />
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="button" onClick={() => onSave(name.trim())} loading={saving} disabled={name.trim().length < 2 || name.trim() === initialName}>
+            Save
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
