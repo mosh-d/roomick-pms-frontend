@@ -82,6 +82,30 @@ export function useRevenueReportQuery(branchId: string | null, params: ReportPar
   });
 }
 
+/** Mirrors `ReportsService.getFinancial` (roomick-pms-backend/src/modules/reports/reports.service.ts). */
+export interface FinancialReport {
+  from: string;
+  to: string;
+  groupBy: ReportGroupBy;
+  currency: string;
+  summary: { revenue: string; tax: string; billed: string; moneyIn: string; moneyBack: string; net: string };
+  /** Every department with revenue in the range, by charge type (`room`, `fnb`, …). */
+  departments: string[];
+  periods: Array<{ period: string; departments: Record<string, string>; revenue: string; tax: string; moneyIn: string; moneyBack: string }>;
+  taxSummary: Array<{ ruleId: string; ruleName: string; type: 'percentage' | 'fixed'; rate: string; fixedAmount: string | null; inclusive: boolean; taxableBase: string; taxCollected: string }>;
+  /** Walk-in Point of Sale tax — stored per sale, not per rule. */
+  posTax: string;
+  paymentMethods: Array<{ method: string; moneyIn: string; moneyBack: string }>;
+}
+
+export function useFinancialReportQuery(branchId: string | null, params: ReportParams, auth: AuthOpts) {
+  return useQuery({
+    queryKey: ['reports', 'financial', branchId, params] as const,
+    queryFn: () => apiFetch<FinancialReport>(`/branches/${branchId}/reports/financial?${reportQueryString(params)}`, auth),
+    enabled: branchId !== null,
+  });
+}
+
 export type ReportType = 'occupancy' | 'adr' | 'revpar' | 'revenue';
 
 /** Path for `downloadFile` — mirrors this file's own query-hook URLs exactly, just `/pdf` appended (`ReportsController`'s own routes). */

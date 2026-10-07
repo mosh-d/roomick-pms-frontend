@@ -129,7 +129,10 @@ export const NAV_GROUPS: NavGroup[] = [
       {
         label: 'Reports & Analytics',
         href: '/dashboard/reports',
-        children: [{ label: 'Operational Reports', href: '/dashboard/reports/operational' }],
+        children: [
+          { label: 'Operational Reports', href: '/dashboard/reports/operational' },
+          { label: 'Financial Reports', href: '/dashboard/reports/financial' },
+        ],
       },
     ],
   },
