@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Container } from '@/components/ui/Container';
@@ -28,8 +29,8 @@ import { RedeemPointsCard } from './_components/RedeemPointsCard';
  * Deferred from the reference and named rather than faked: Print / Send
  * Email (the comms module is stubbed — `communication_log` rows only),
  * per-charge tax-rule pickers (rules already declare which charge types
- * they apply to, so the engine picks them), and Split Billing / Refunds
- * (their own pages, ref p34).
+ * they apply to, so the engine picks them), and Split Billing / Refunds &
+ * Corrections (their own pages, ref p34 — linked from the balance).
  */
 export default function GuestFolioPage() {
   const params = useParams<{ folioId: string }>();
@@ -164,6 +165,9 @@ export default function GuestFolioPage() {
                 {formatMoney(Math.abs(balance), symbol)}
               </p>
               <p className="text-tiny text-secondary-light mt-1">Full folio balance</p>
+              <Link href={`/dashboard/billing/refunds?folio=${folio.id}`} className="text-tiny text-secondary underline underline-offset-2 mt-2 inline-block">
+                {balance < 0 ? 'Refund the credit' : 'Correct a charge'}
+              </Link>
             </div>
           </Card>
         </div>

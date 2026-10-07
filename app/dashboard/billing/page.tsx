@@ -46,7 +46,7 @@ export default function BillingHubPage() {
           />
           <HubCard icon={<SplitBillingIcon className="size-5" />} title="Split Billing" description="Divide charges across multiple folios" href="/dashboard/split-billing" />
           <HubCard icon={<NightAuditIcon className="size-5" />} title="Night Audit" description="End-of-day rollover and reconciliation" href="/dashboard/night-audit" />
-          <HubCard icon={<RefundsIcon className="size-5" />} title="Refunds & Corrections" description="Process refunds with approval workflow" />
+          <HubCard icon={<RefundsIcon className="size-5" />} title="Refunds & Corrections" description="Process refunds with approval workflow" href="/dashboard/billing/refunds" />
         </div>
       </Section>
     </Container>

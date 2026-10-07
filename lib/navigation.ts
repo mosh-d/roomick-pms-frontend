@@ -75,6 +75,7 @@ export const NAV_GROUPS: NavGroup[] = [
           { label: 'Guest Folios', href: '/dashboard/billing/folios', detail: { prefix: '/dashboard/billing/', label: 'Folio' } },
           { label: 'Split Billing', href: '/dashboard/split-billing' },
           { label: 'Night Audit', href: '/dashboard/night-audit' },
+          { label: 'Refunds & Corrections', href: '/dashboard/billing/refunds' },
         ],
       },
       {
