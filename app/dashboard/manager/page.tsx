@@ -367,7 +367,7 @@ export default function ManagerDashboardPage() {
             <KpiCard label="Alerts Needing Attention" value={alertsQuery.data ? String(alertsQuery.data.total) : '—'} />
           </div>
           <p className="text-tiny text-secondary-light">
-            &quot;Alerts Needing Attention&quot; covers missed check-ins, overdue checkouts, and overdue balances — maintenance-specific alerts aren&apos;t tracked yet (no Maintenance module).
+            &quot;Alerts Needing Attention&quot; covers missed check-ins, overdue checkouts, overdue balances, and urgent maintenance — urgent work orders and rooms out of service.
           </p>
           <div>
             <p className="text-small font-semibold text-primary-dark/80 mb-2">Room Status</p>

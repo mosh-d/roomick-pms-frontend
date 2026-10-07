@@ -20,11 +20,24 @@ export interface OverdueCheckout extends AlertReservation {
   currency: string;
 }
 
-/** Mirrors `AlertsService.getAlerts`'s response (roomick-pms-backend/src/modules/alerts/alerts.service.ts). Computed live on every call — nothing persisted, no dismiss/ack state; a row disappears the moment the real reservation/folio it's derived from actually changes. */
+/** An unresolved work order that's urgent, or keeps a room out of service. */
+export interface MaintenanceAlert {
+  id: string;
+  title: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'open' | 'in_progress' | 'on_hold';
+  takesRoomOutOfService: boolean;
+  createdAt: string;
+  room: { number: string } | null;
+  assignedToUser: { name: string } | null;
+}
+
+/** Mirrors `AlertsService.getAlerts`'s response (roomick-pms-backend/src/modules/alerts/alerts.service.ts). Computed live on every call — nothing persisted, no dismiss/ack state; a row disappears the moment the real reservation/folio/work order it's derived from actually changes. */
 export interface Alerts {
   missedCheckIns: AlertReservation[];
   overdueCheckouts: OverdueCheckout[];
   overdueBalances: FolioListRow[];
+  maintenance: MaintenanceAlert[];
   total: number;
 }
 

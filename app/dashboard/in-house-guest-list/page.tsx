@@ -15,13 +15,14 @@ import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
 import { ExtendStayDialog, type ExtendStayTarget } from '../_components/ExtendStayDialog';
+import { GuestNameCell } from '../_components/GuestNameCell';
 
 /**
  * In-House Guest List (Roomick-UI.pdf page 18) — every currently
  * checked-in guest, with the reference's Folio Balance column and View
- * Folio action (both unblocked once Folios/Payments landed). Still not
- * built: "Group" and the VIP badge, which need `GuestProfile` fields this
- * pass deliberately excludes.
+ * Folio action (both unblocked once Folios/Payments landed), and the
+ * reference's VIP / group badge — the guest profile's VIP level, the group
+ * block the stay was booked into.
  *
  * Balances come from the branch folio list rather than a per-row fetch —
  * one request for the whole table instead of N.
@@ -57,8 +58,9 @@ export default function InHouseGuestListPage() {
   if (!activeBranchId) return null;
 
   const columns: TableColumn<ReservationSummary>[] = [
-    { key: 'guest', label: 'Name', render: (r) => r.guest.name, sortValue: (r) => r.guest.name },
+    { key: 'guest', label: 'Name', render: (r) => <GuestNameCell guest={r.guest} />, sortValue: (r) => r.guest.name },
     { key: 'room', label: 'Room', render: (r) => r.room?.number ?? '—', sortValue: (r) => r.room?.number ?? '' },
+    { key: 'group', label: 'Group', render: (r) => r.groupBlock?.name ?? '—', sortValue: (r) => r.groupBlock?.name ?? '' },
     { key: 'roomType', label: 'Room Type', render: (r) => r.roomType.name, sortValue: (r) => r.roomType.name },
     {
       key: 'checkInDate',

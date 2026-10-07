@@ -8,13 +8,13 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { AlertsIcon } from '@/components/ui/Icons';
-import { useAlertsQuery, type AlertReservation, type OverdueCheckout } from '@/lib/alerts';
+import { useAlertsQuery, type AlertReservation, type MaintenanceAlert, type OverdueCheckout } from '@/lib/alerts';
 import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
 import type { FolioListRow } from '@/lib/folios';
 
-type AlertTab = 'missedCheckIns' | 'overdueCheckouts' | 'overdueBalances';
+type AlertTab = 'missedCheckIns' | 'overdueCheckouts' | 'overdueBalances' | 'maintenance';
 
 /**
  * Alerts (ported from the in-house PMS's own `AlertsService`/Alerts page —
@@ -24,9 +24,9 @@ type AlertTab = 'missedCheckIns' | 'overdueCheckouts' | 'overdueBalances';
  * changes (the guest gets checked in, checked out, or pays down the
  * balance) — never by a staff member "clearing" the alert itself.
  *
- * Only three tabs, not the reference's four — Roomick's `ReservationStatus`
- * has no "pending payment hold" state, so there's no real equivalent of the
- * reference's fourth "Unconfirmed Hold" category to port.
+ * No "Unconfirmed Hold" tab — Roomick's `ReservationStatus` has no "pending
+ * payment hold" state to port. Maintenance instead: urgent work orders and
+ * rooms out of service, until the work order is resolved.
  */
 export default function AlertsPage() {
   const user = useAuthStore((s) => s.user);
@@ -44,11 +44,12 @@ export default function AlertsPage() {
     { value: 'missedCheckIns', label: 'Missed Check-Ins', count: alerts?.missedCheckIns.length ?? 0 },
     { value: 'overdueCheckouts', label: 'Overdue Checkouts', count: alerts?.overdueCheckouts.length ?? 0 },
     { value: 'overdueBalances', label: 'Overdue Balances', count: alerts?.overdueBalances.length ?? 0 },
+    { value: 'maintenance', label: 'Maintenance', count: alerts?.maintenance.length ?? 0 },
   ];
 
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-6">
-      <PageHeader icon={<AlertsIcon className="size-8" />} title="Alerts" subtitle="Missed check-ins, overdue checkouts, and overdue balances — live" />
+      <PageHeader icon={<AlertsIcon className="size-8" />} title="Alerts" subtitle="Missed check-ins, overdue checkouts, overdue balances and urgent maintenance — live" />
 
       <div className="inline-flex flex-wrap rounded-control border border-accent/30 p-1 gap-1 w-fit">
         {tabs.map((t) => (
@@ -98,6 +99,8 @@ export default function AlertsPage() {
           actionHref={() => '/dashboard/check-out'}
           footnote="These guests are still in-house, so what they owe shows here rather than under Overdue Balances, which is for guests who have left. Each night they stay, the night audit charges it as an overstay — check them out, or extend the stay from their reservation."
         />
+      ) : tab === 'maintenance' ? (
+        <MaintenanceTable rows={alerts.maintenance} />
       ) : (
         <OverdueBalancesTable rows={alerts.overdueBalances} />
       )}
@@ -183,6 +186,62 @@ function ReservationAlertsTable({
         </table>
       </Card>
       {footnote ? <p className="text-small text-primary-dark/70">{footnote}</p> : null}
+    </Section>
+  );
+}
+
+const PRIORITY_LABEL: Record<MaintenanceAlert['priority'], string> = { low: 'Low', medium: 'Medium', high: 'High', urgent: 'Urgent' };
+const STATUS_LABEL: Record<MaintenanceAlert['status'], string> = { open: 'Open', in_progress: 'In progress', on_hold: 'On hold' };
+
+function MaintenanceTable({ rows }: { rows: MaintenanceAlert[] }) {
+  if (rows.length === 0) {
+    return (
+      <Section label="All Clear">
+        <p className="text-body text-primary-dark/70">No urgent work orders, and no room out of service.</p>
+      </Section>
+    );
+  }
+
+  return (
+    <Section label={`${rows.length} to resolve`}>
+      <Card tone="secondary" className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="text-small font-bold text-secondary text-left">
+              <th className="py-2 pr-4">Work Order</th>
+              <th className="py-2 pr-4">Room</th>
+              <th className="py-2 pr-4">Priority</th>
+              <th className="py-2 pr-4">Status</th>
+              <th className="py-2 pr-4">Reported</th>
+              <th className="py-2 pr-4" />
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((w) => (
+              <tr key={w.id} className="border-t border-secondary/10 text-small text-secondary">
+                <td className="py-2 pr-4 font-semibold">
+                  {w.title}
+                  {w.takesRoomOutOfService ? <span className="block text-tiny font-normal text-red-700">Room out of service</span> : null}
+                </td>
+                <td className="py-2 pr-4">{w.room?.number ?? '—'}</td>
+                <td className={`py-2 pr-4 ${w.priority === 'urgent' ? 'font-semibold text-red-700' : ''}`}>{PRIORITY_LABEL[w.priority]}</td>
+                <td className="py-2 pr-4">
+                  {STATUS_LABEL[w.status]}
+                  {w.assignedToUser ? <span className="block text-tiny text-secondary-light">{w.assignedToUser.name}</span> : null}
+                </td>
+                <td className="py-2 pr-4">{new Date(w.createdAt).toLocaleDateString()}</td>
+                <td className="py-2 pr-4 text-right">
+                  <Link href="/dashboard/maintenance">
+                    <Button type="button" size="sm">
+                      Open Maintenance
+                    </Button>
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
     </Section>
   );
 }

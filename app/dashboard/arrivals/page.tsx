@@ -11,6 +11,7 @@ import { PlaneLandingIcon } from '@/components/ui/Icons';
 import { Table, type TableColumn } from '@/components/ui/Table';
 import { useArrivalsQuery, type ReservationSummary } from '@/lib/reservations';
 import { useAuthStore } from '@/lib/store/authStore';
+import { GuestNameCell } from '../_components/GuestNameCell';
 
 /**
  * Arrivals Dashboard (Roomick-UI.pdf page 11) — confirmed reservations
@@ -18,10 +19,10 @@ import { useAuthStore } from '@/lib/store/authStore';
  * room assignment rather than checking in inline: in this design a room is
  * only ever assigned AT check-in, so every arrival needs the picker.
  *
- * Reference columns not built: "Room" (always unassigned pre-check-in
- * here, so the column would be a wall of dashes — see PHASE_NOTES on the
- * assign-at-check-in decision), "Group" and the VIP badge (both need
- * `GuestProfile` fields this pass deliberately excludes).
+ * The VIP badge comes from the guest's profile, the Group from the group
+ * block the stay was booked into. Reference column not built: "Room"
+ * (always unassigned pre-check-in here, so the column would be a wall of
+ * dashes — see PHASE_NOTES on the assign-at-check-in decision).
  */
 export default function ArrivalsDashboardPage() {
   const router = useRouter();
@@ -49,8 +50,9 @@ export default function ArrivalsDashboardPage() {
   if (!activeBranchId) return null;
 
   const columns: TableColumn<ReservationSummary>[] = [
-    { key: 'guest', label: 'Name', render: (r) => r.guest.name, sortValue: (r) => r.guest.name },
+    { key: 'guest', label: 'Name', render: (r) => <GuestNameCell guest={r.guest} />, sortValue: (r) => r.guest.name },
     { key: 'confirmation', label: 'Confirmation #', render: (r) => r.confirmationNumber, sortValue: (r) => r.confirmationNumber },
+    { key: 'group', label: 'Group', render: (r) => r.groupBlock?.name ?? '—', sortValue: (r) => r.groupBlock?.name ?? '' },
     { key: 'roomType', label: 'Room Type', render: (r) => r.roomType.name, sortValue: (r) => r.roomType.name },
     { key: 'email', label: 'Email', render: (r) => r.guest.email ?? '—', sortValue: (r) => r.guest.email ?? '' },
     { key: 'phone', label: 'Phone No', render: (r) => r.guest.phone ?? '—', sortValue: (r) => r.guest.phone ?? '' },

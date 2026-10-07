@@ -39,7 +39,10 @@ export interface ReservationSummary {
   /** The company the stay is booked under — its contracted rate applies on every re-price. */
   corporateAccountId: string | null;
   corporateAccount: { id: string; name: string } | null;
-  guest: GuestSummary;
+  /** `vipLevel` (0–5) is for the VIP badge on Arrivals and the In-House list. */
+  guest: GuestSummary & { vipLevel?: number | null };
+  /** The group the stay was booked into, if any. */
+  groupBlock?: { id: string; name: string } | null;
   roomType: { id: string; name: string };
   room: { id: string; number: string } | null;
   /** The branch's ISO 4217 code — feed to `currencySymbolFor` for display. */

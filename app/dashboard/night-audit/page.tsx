@@ -226,7 +226,7 @@ export default function NightAuditPage() {
   );
 }
 
-/** A `null` result means the check's module isn't built — shown as untracked rather than a tick it hasn't earned. */
+/** A `null` result is a check the backend couldn't answer — shown as untracked rather than a tick it hasn't earned. Every check answers today. */
 function ChecklistRow({ item }: { item: PreflightCheck }) {
   return (
     <div className="flex items-start justify-between gap-3">
@@ -235,7 +235,7 @@ function ChecklistRow({ item }: { item: PreflightCheck }) {
         {/* `text-secondary/60`, not the bare `secondary-light` token — that
             pale lavender-gray read as too washed out for a detail line
             people actually need to read (a real in-house count, a real
-            "module not built yet" caveat), not decorative filler. A partial
+            count of urgent work orders), not decorative filler. A partial
             opacity of the dark `secondary` color gives a touch more visual
             weight while staying clearly secondary/muted — same mechanism
             `WizardShell.tsx`'s own `text-secondary/70` "active but muted"

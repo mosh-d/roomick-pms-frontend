@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { Card } from '@/components/ui/Card';
@@ -80,6 +81,9 @@ export default function EnterpriseHqPage() {
 }
 
 function PortfolioOverviewSection({ auth }: { auth: AuthOpts }) {
+  const router = useRouter();
+  const activeBranchId = useAuthStore((s) => s.activeBranchId);
+  const setActiveBranchId = useAuthStore((s) => s.setActiveBranchId);
   const portfolioQuery = usePortfolioQuery(auth);
   const portfolio = portfolioQuery.data;
 
@@ -110,6 +114,7 @@ function PortfolioOverviewSection({ auth }: { auth: AuthOpts }) {
                   <th className="py-2 pr-4">Occupancy Now</th>
                   <th className="py-2 pr-4">In-House</th>
                   <th className="py-2 pr-4">Outstanding Balance</th>
+                  <th className="py-2 pr-4" />
                 </tr>
               </thead>
               <tbody>
@@ -123,6 +128,24 @@ function PortfolioOverviewSection({ auth }: { auth: AuthOpts }) {
                     <td className="py-2 pr-4">{b.inHouseReservations}</td>
                     <td className="py-2 pr-4">
                       {b.currency} {b.outstandingBalance}
+                    </td>
+                    <td className="py-2 pr-4 text-right">
+                      {/* Straight into the branch's own Front Desk — the same switch the breadcrumb's property menu makes. */}
+                      {b.branchId === activeBranchId ? (
+                        <span className="text-tiny text-secondary-light">Working here</span>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setActiveBranchId(b.branchId);
+                            router.push('/dashboard');
+                          }}
+                        >
+                          Work Here
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}
