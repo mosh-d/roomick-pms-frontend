@@ -64,8 +64,9 @@ export function MultiSelectTagInput({
         setOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    // `click`, not `mousedown` — the same inline list, the same swallowed first click on the button below it (see Select.tsx).
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
   }, [open]);
 
   function labelFor(tagValue: string) {

@@ -99,8 +99,14 @@ export function Select({
         closeAndReset();
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    // On `click`, not `mousedown`: the list sits in the page's flow, so closing
+    // it moves everything below it up. Closing on mousedown meant a press on
+    // the button under an open list closed the list first, the button jumped
+    // away, and the click landed on whatever took its place — every form with
+    // a dropdown above its buttons needed two clicks. A click fires after the
+    // press and the release, at the button's own handler first, then here.
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
   }, [open]);
 
   function openFresh() {

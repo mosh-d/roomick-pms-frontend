@@ -2613,6 +2613,11 @@ The owner asked for the work that doesn't need their accounts to be finished. Th
 ### "Manage your booking"
 The page fills in the confirmation number from the link in the guest's email; they still type their email.
 
+### Follow-up the same day
+- **Change a role** from Staff Management: a Change button beside the role pills (only where the server would allow it) opens a modal with the roles the person asking may hand out — never Owner, Manager only for the owner — and changes the role at this branch (or across every branch, for someone the owner placed there). Live-verified for the owner and a manager.
+- **Dropdowns swallowed the first click below them.** `Select` and `MultiSelectTagInput` closed on `mousedown`; the inline list collapsing moved the button up before the click landed, so every form with a dropdown above its buttons needed two clicks. They close on `click` now.
+- **The default API address is `http://127.0.0.1:3000`**, not `localhost`: on Windows `localhost` resolves to IPv6 first, and another project's dev server bound on `::3000` answers instead of Roomick's IPv4 API — the browser then reports a CORS error that isn't one. `NEXT_PUBLIC_API_URL` still wins when set.
+
 ### My Account was closed to staff with chosen pages (fix)
 Page Access (Phase 84) treated My Account as a page a role has to be given, so anyone whose manager had chosen their pages was told "This page isn't open to you" on their own account — two-step sign-in setup and now passwords included. `pathOpens` lets every page outside the sidebar's groups open.
 

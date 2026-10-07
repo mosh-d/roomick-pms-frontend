@@ -120,6 +120,63 @@ function InviteStaffModal({ open, onClose, branchId, auth }: { open: boolean; on
   );
 }
 
+/** A different role for someone at this branch — within what the person asking may hand out. */
+function ChangeRoleModal({ member, branchId, onClose, auth }: { member: StaffMember | null; branchId: string; onClose: () => void; auth: AuthOpts }) {
+  const rolesQuery = useRolesQuery(auth);
+  const patchStaff = usePatchStaffMutation(branchId, auth);
+  const isOwner = useAuthStore((s) => s.user?.roles.some((r) => r.role === 'owner') ?? false);
+  // Their role here: the one at this branch, or — someone the owner placed across every branch — the one at every branch.
+  const here = member?.roles.find((r) => r.branchId === branchId) ?? member?.roles.find((r) => r.branchId === null) ?? null;
+  const [roleId, setRoleId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const chosen = roleId ?? here?.roleId ?? null;
+  const roleOptions: SelectOption[] = grantableRoles(rolesQuery.data ?? [], isOwner).map((r) => ({ value: r.id, label: roleLabel(r.name) }));
+
+  function close() {
+    setRoleId(null);
+    setError(null);
+    onClose();
+  }
+
+  if (!member || !here) return null;
+
+  return (
+    <Modal open onClose={close} title={`Change ${member.name}’s Role`}>
+      <p className="text-small text-surface">
+        {here.branchId === null ? 'This role applies at every branch.' : 'At this branch only — a role they hold elsewhere stays as it is.'} The change takes effect the next time
+        their page loads.
+      </p>
+      <Select id="change-role" label="Role" options={roleOptions} value={chosen} onChange={setRoleId} />
+      {isOwner ? null : <p className="text-tiny text-surface-muted">Only the owner can make someone a manager.</p>}
+      {error ? (
+        <p className="text-small text-red-600" id="change-role-error">
+          {error}
+        </p>
+      ) : null}
+      <div className="flex items-center gap-3">
+        <Button type="button" variant="outline" onClick={close}>
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          loading={patchStaff.isPending}
+          disabled={!chosen || chosen === here.roleId}
+          onClick={() => {
+            if (!chosen) return;
+            setError(null);
+            patchStaff.mutate(
+              { userId: member.id, roleId: chosen, ...(here.branchId === null ? {} : { branchId: here.branchId }) },
+              { onSuccess: close, onError: (err) => setError(errorText(err)) },
+            );
+          }}
+        >
+          Save Role
+        </Button>
+      </div>
+    </Modal>
+  );
+}
+
 /** A password-reset link for a colleague who's locked out — shown once, to hand over. */
 function ResetLinkModal({ member, onClose, auth }: { member: StaffMember | null; onClose: () => void; auth: AuthOpts }) {
   const resetLink = usePasswordResetLinkMutation(auth);
@@ -182,6 +239,7 @@ function ResetLinkModal({ member, onClose, auth }: { member: StaffMember | null;
 function StaffSection({ branchId, auth }: { branchId: string; auth: AuthOpts }) {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [resetFor, setResetFor] = useState<StaffMember | null>(null);
+  const [roleFor, setRoleFor] = useState<StaffMember | null>(null);
   const staffQuery = useStaffQuery(branchId, auth);
   const patchStaffMutation = usePatchStaffMutation(branchId, auth);
   const resetMfa = useResetStaffMfaMutation(auth);
@@ -197,12 +255,17 @@ function StaffSection({ branchId, auth }: { branchId: string; auth: AuthOpts }) 
       key: 'role',
       label: 'Role',
       render: (s) => (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           {s.roles.map((r) => (
             <span key={`${r.roleId}-${r.branchId ?? 'all'}`} className="inline-flex items-center rounded-pill bg-secondary-light/20 text-secondary px-2.5 py-0.5 text-tiny font-semibold">
               {roleLabel(r.role)}
             </span>
           ))}
+          {s.canChangeRole ? (
+            <Button size="sm" variant="outline" onClick={() => setRoleFor(s)} aria-label={`Change ${s.name}’s role`}>
+              Change
+            </Button>
+          ) : null}
         </div>
       ),
       sortValue: (s) => s.roles[0]?.role ?? '',
@@ -307,6 +370,7 @@ function StaffSection({ branchId, auth }: { branchId: string; auth: AuthOpts }) 
       </div>
       <InviteStaffModal open={inviteOpen} onClose={() => setInviteOpen(false)} branchId={branchId} auth={auth} />
       <ResetLinkModal member={resetFor} onClose={() => setResetFor(null)} auth={auth} />
+      <ChangeRoleModal member={roleFor} branchId={branchId} onClose={() => setRoleFor(null)} auth={auth} />
     </Section>
   );
 }

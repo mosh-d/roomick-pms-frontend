@@ -1,4 +1,7 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
+// 127.0.0.1, not localhost: on Windows `localhost` resolves to ::1 first, and another
+// project's dev server bound on IPv6 port 3000 answers instead of Roomick's API (which binds
+// IPv4) — the browser then reports a CORS error that has nothing to do with CORS.
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3000/api/v1';
 
 /**
  * Mirrors the backend's stable error codes exactly
