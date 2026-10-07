@@ -104,6 +104,21 @@ function threadKey(branchId: string, guestId: string) {
   return ['inbox-thread', branchId, guestId] as const;
 }
 
+/** Which channels actually reach a guest — email once the server has an SMTP provider, SMS not yet. */
+export interface CommsDelivery {
+  email: boolean;
+  sms: boolean;
+}
+
+export function useCommsDeliveryQuery(auth: AuthOpts) {
+  return useQuery({
+    queryKey: ['comms-delivery'] as const,
+    queryFn: () => apiFetch<CommsDelivery>('/comms/delivery', auth),
+    enabled: auth.tenantId !== undefined,
+    staleTime: 5 * 60_000,
+  });
+}
+
 /** A guest can write at any moment, so the inbox polls while it's open rather than asking staff to refresh. */
 const INBOX_POLL_MS = 30_000;
 

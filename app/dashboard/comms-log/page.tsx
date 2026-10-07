@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { CommsLogIcon, CommsChannelIcon } from '@/components/ui/Icons';
 import {
+  useCommsDeliveryQuery,
   useInboxQuery,
   useInboxReplyMutation,
   useInboxThreadQuery,
@@ -19,6 +20,7 @@ import {
   useReservationCommunicationsQuery,
   useSendCommunicationMutation,
   type CommsChannel,
+  type CommsDelivery,
   type CommunicationLogEntry,
   type DeliveryStatus,
   type InboxConversation,
@@ -61,12 +63,16 @@ const REPLY_CHANNEL_OPTIONS: SelectOption[] = [
   { value: 'sms', label: 'SMS' },
 ];
 
-/** Said plainly next to the reply box — only the portal actually reaches a guest until an email/SMS provider is connected. */
-const REPLY_CHANNEL_HINTS: Record<InboxReplyChannel, string> = {
-  in_app_chat: 'Appears on the guest’s Manage your booking page straight away.',
-  email: 'Recorded and queued. No email provider is connected yet, so it isn’t delivered to the guest.',
-  sms: 'Recorded only. No SMS provider is connected yet, so it won’t reach the guest.',
-};
+/** Said plainly next to the message box — whether this channel reaches the guest today, or is only recorded until a provider is connected. */
+function channelHint(channel: InboxReplyChannel, delivery: CommsDelivery | undefined): string {
+  if (channel === 'in_app_chat') return 'Appears on the guest’s Manage your booking page straight away.';
+  if (channel === 'email') {
+    return delivery?.email
+      ? 'Emailed to the guest within a minute.'
+      : 'Recorded and queued. No email provider is connected yet, so it isn’t delivered to the guest.';
+  }
+  return delivery?.sms ? 'Texted to the guest within a minute.' : 'Recorded only. No SMS provider is connected yet, so it won’t reach the guest.';
+}
 
 /**
  * Guest Communications Log (ref: MVP timeline Month 5). The reference route
@@ -246,6 +252,7 @@ function InboxThreadPanel({ branchId, guestId, auth }: { branchId: string; guest
   const threadQuery = useInboxThreadQuery(branchId, guestId, auth);
   const { mutate: markThreadRead } = useMarkThreadReadMutation(branchId, auth);
   const replyMutation = useInboxReplyMutation(branchId, auth);
+  const delivery = useCommsDeliveryQuery(auth).data;
   const [channel, setChannel] = useState<InboxReplyChannel>('in_app_chat');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
@@ -296,7 +303,7 @@ function InboxThreadPanel({ branchId, guestId, auth }: { branchId: string; guest
 
       <div className="flex flex-col gap-2 border-t border-secondary/20 pt-3">
         <Select id="reply-channel" label="Reply by" options={REPLY_CHANNEL_OPTIONS} value={channel} onChange={(value) => setChannel(value as InboxReplyChannel)} />
-        <p className="text-tiny text-surface-muted">{REPLY_CHANNEL_HINTS[channel]}</p>
+        <p className="text-tiny text-surface-muted">{channelHint(channel, delivery)}</p>
         {channel === 'email' ? <Input id="reply-subject" label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} /> : null}
         <Textarea id="reply-body" label="Reply" value={body} rows={3} maxLength={5000} onChange={(e) => { setBody(e.target.value); setSent(false); }} />
         {error ? <p className="text-small text-red-600">{error}</p> : null}
@@ -363,6 +370,7 @@ function SendMessageSection({ reservationId, guestName, auth }: { reservationId:
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const mutation = useSendCommunicationMutation(auth);
+  const delivery = useCommsDeliveryQuery(auth).data;
 
   async function send() {
     if (!channel || !body.trim()) return;
@@ -385,11 +393,12 @@ function SendMessageSection({ reservationId, guestName, auth }: { reservationId:
         <Select name="channel" label="Channel" options={CHANNEL_OPTIONS} value={channel} onChange={setChannel} />
         {channel === 'email' ? <Input name="subject" label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} /> : null}
       </div>
+      {channel === 'email' || channel === 'sms' ? <p className="text-tiny text-surface-muted max-w-xl">{channelHint(channel, delivery)}</p> : null}
       <div className="max-w-xl">
         <Textarea name="body" label="Message" value={body} onChange={(e) => setBody(e.target.value)} rows={4} />
       </div>
       {error ? <p className="text-small text-red-600">{error}</p> : null}
-      {sent ? <p className="text-small text-surface">Logged.</p> : null}
+      {sent ? <p className="text-small text-surface">{channel === 'email' && delivery?.email ? 'Queued — it’s emailed within a minute.' : 'Logged.'}</p> : null}
       <Button type="button" disabled={!body.trim()} loading={mutation.isPending} onClick={send} className="self-start">
         Send
       </Button>
