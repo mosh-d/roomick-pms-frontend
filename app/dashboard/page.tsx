@@ -82,7 +82,7 @@ export default function FrontDeskHubPage() {
             icon={<PlaneLandingIcon className="size-5" />}
             title="Arrivals Dashboard"
             description="Today's expected arrivals, status, room readiness"
-            stats={arrivalsQuery.data ? [`${arrivalsQuery.data.length} pending arrivals today`] : undefined}
+            stats={arrivalsQuery.data ? [`${arrivalsQuery.data.length} pending ${arrivalsQuery.data.length === 1 ? 'arrival' : 'arrivals'} today`] : undefined}
             href="/dashboard/arrivals"
           />
           <HubCard
@@ -118,7 +118,7 @@ export default function FrontDeskHubPage() {
             icon={<CityDepartureIcon className="size-5" />}
             title="Departures Dashboard"
             description="Today's expected departures"
-            stats={departuresQuery.data ? [`${departuresQuery.data.length} guests departing today`] : undefined}
+            stats={departuresQuery.data ? [`${departuresQuery.data.length} ${departuresQuery.data.length === 1 ? 'guest' : 'guests'} departing today`] : undefined}
             href="/dashboard/departures"
           />
           <HubCard
@@ -137,7 +137,7 @@ export default function FrontDeskHubPage() {
             icon={<ClipboardListIcon className="size-5" />}
             title="In-House Guest List"
             description="All currently checked-in guests"
-            stats={inHouseQuery.data ? [`${inHouseQuery.data.length} checked-in guests`] : undefined}
+            stats={inHouseQuery.data ? [`${inHouseQuery.data.length} checked-in ${inHouseQuery.data.length === 1 ? 'guest' : 'guests'}`] : undefined}
             href="/dashboard/in-house-guest-list"
           />
           <HubCard

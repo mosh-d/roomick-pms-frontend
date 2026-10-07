@@ -33,6 +33,7 @@ export default function HousekeepingHubPage() {
 
   const readyForCleaning = pendingTasksQuery.data?.filter((t) => !t.assigneeId).length;
   const readyForInspection = roomsQuery.data?.filter((r) => r.cleanlinessStatus === 'clean').length;
+  const assigned = myTasksQuery.data?.filter((t) => t.status !== 'done' && t.status !== 'skipped').length;
 
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-8">
@@ -44,28 +45,28 @@ export default function HousekeepingHubPage() {
             icon={<TaskBoardIcon className="size-5" />}
             title="Task Board"
             description="My assigned rooms + status actions"
-            stats={myTasksQuery.data ? [`${myTasksQuery.data.filter((t) => t.status !== 'done' && t.status !== 'skipped').length} assigned rooms`] : undefined}
+            stats={assigned !== undefined ? [`${assigned} assigned ${assigned === 1 ? 'room' : 'rooms'}`] : undefined}
             href="/dashboard/housekeeping/task-board"
           />
           <HubCard
             icon={<StaffAssignmentIcon className="size-5" />}
             title="Staff Assignment"
             description="Supervisor distributes rooms to housekeepers"
-            stats={readyForCleaning !== undefined ? [`${readyForCleaning} rooms ready for cleaning`] : undefined}
+            stats={readyForCleaning !== undefined ? [`${readyForCleaning} ${readyForCleaning === 1 ? 'room' : 'rooms'} ready for cleaning`] : undefined}
             href="/dashboard/housekeeping/staff-assignment"
           />
           <HubCard
             icon={<InspectionIcon className="size-5" />}
             title="Inspection Workflow"
             description="Supervisor approves cleaned rooms"
-            stats={readyForInspection !== undefined ? [`${readyForInspection} rooms ready for inspection`] : undefined}
+            stats={readyForInspection !== undefined ? [`${readyForInspection} ${readyForInspection === 1 ? 'room' : 'rooms'} ready for inspection`] : undefined}
             href="/dashboard/housekeeping/inspection-workflow"
           />
           <HubCard
             icon={<RoomBlockingIcon className="size-5" />}
             title="Room Blocking / OOO"
             description="Block rooms from inventory"
-            stats={blocksQuery.data ? [`${blocksQuery.data.length} blocked rooms`] : undefined}
+            stats={blocksQuery.data ? [`${blocksQuery.data.length} blocked ${blocksQuery.data.length === 1 ? 'room' : 'rooms'}`] : undefined}
             href="/dashboard/housekeeping/room-blocking"
           />
         </div>

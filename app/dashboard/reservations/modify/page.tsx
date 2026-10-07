@@ -203,7 +203,7 @@ export default function ModifyReservationPage() {
                 {selected.corporateAccount ? <Row label="Company" value={selected.corporateAccount.name} /> : null}
                 <Row label="Current Total" value={formatMoney(selected.confirmedRate, currencySymbolFor(selected.branch.currency))} />
                 {newRate ? (
-                  <Row label="New Total" value={`${formatMoney(newRate.total, currencySymbolFor(selected.branch.currency))} (${newRate.nights} nights)`} />
+                  <Row label="New Total" value={`${formatMoney(newRate.total, currencySymbolFor(selected.branch.currency))} (${newRate.nights} ${newRate.nights === 1 ? 'night' : 'nights'})`} />
                 ) : null}
               </Card>
             </div>

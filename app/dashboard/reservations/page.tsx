@@ -61,7 +61,7 @@ export default function ReservationsHubPage() {
             icon={<ModifyReservationIcon className="size-5" />}
             title="Modify Reservation"
             description="Date changes, room type changes"
-            stats={confirmedQuery.data ? [`${confirmedQuery.data.length} confirmed reservations`] : undefined}
+            stats={confirmedQuery.data ? [`${confirmedQuery.data.length} confirmed ${confirmedQuery.data.length === 1 ? 'reservation' : 'reservations'}`] : undefined}
             href="/dashboard/reservations/modify"
           />
           <HubCard
@@ -75,14 +75,14 @@ export default function ReservationsHubPage() {
             icon={<WaitlistIcon className="size-5" />}
             title="Waitlist Management"
             description="Future bookings, earliest availability"
-            stats={waitlistQuery.data ? [`${waitlistQuery.data.length} reservations on waitlist`] : undefined}
+            stats={waitlistQuery.data ? [`${waitlistQuery.data.length} ${waitlistQuery.data.length === 1 ? 'reservation' : 'reservations'} on waitlist`] : undefined}
             href="/dashboard/reservations/waitlist"
           />
           <HubCard
             icon={<RatePlanIcon className="size-5" />}
             title="Rate Plan Management"
             description="Base, seasonal, weekend, corporate, promo"
-            stats={ratePlansQuery.data ? [`${activeRatePlanCount} active rate plans`] : undefined}
+            stats={ratePlansQuery.data ? [`${activeRatePlanCount} active rate ${activeRatePlanCount === 1 ? 'plan' : 'plans'}`] : undefined}
             href="/dashboard/reservations/rate-plans"
           />
         </div>

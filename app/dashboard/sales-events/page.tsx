@@ -813,7 +813,7 @@ function EventSpacesSection({ branchId, auth }: { branchId: string; auth: AuthOp
                       </p>
                       {booking.setupStyle || booking.headcount ? (
                         <p className="text-tiny text-surface-muted">
-                          {[booking.setupStyle ? SETUP_STYLE_LABELS[booking.setupStyle] : null, booking.headcount ? `${booking.headcount} guests` : null]
+                          {[booking.setupStyle ? SETUP_STYLE_LABELS[booking.setupStyle] : null, booking.headcount ? `${booking.headcount} ${booking.headcount === 1 ? 'guest' : 'guests'}` : null]
                             .filter(Boolean)
                             .join(' · ')}
                         </p>
