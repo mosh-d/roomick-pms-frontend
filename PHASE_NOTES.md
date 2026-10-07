@@ -2556,3 +2556,22 @@ Hub cards said "1 rooms ready for cleaning", "1 guests departing today", "(1 nig
 ### Verified
 - **Checks:** `npx tsc --noEmit` clean; `eslint` clean on everything changed (the existing React Compiler note about `watch()` in the modify form aside).
 - **Browser**, against real Postgres: each page above had its own run during the work. For the last pieces: Integrations 12/12 — the how-to's address and account ID, a key made with two areas ticked and shown once, Edit Access, Revoke, a webhook's secret shown once, Send Test answered 200, the delivery log, switching off and on, no colour mismatches, no sideways scroll at 390px, no console errors; the phone pass and the two tap-through flows (4/4).
+
+## Phase 84 — Staff Management: the branch's staff, and which pages each staff role opens (2026-10-07)
+
+The owner asked for a staff management module where a branch manager sets which screens each staff role can open. The backend's notes for the same date cover the rules and the server side.
+
+### Staff Management (Manager Dashboard → Staff Management, `/dashboard/manager/staff`)
+- **Staff** — the list that used to sit on the Manager Dashboard (role, last sign-in, two-step sign-in with the owner's reset, deactivate/reactivate, Invite Staff), moved here; roles read "Front Desk", not `front_desk` (`roleLabel` in `lib/roles.ts`). The Manager Dashboard keeps a Staff Management card with the head count.
+- **Page Access** — pick a role (each says "default" or "set here"), and its pages are listed the way the sidebar groups them, each feature with an "All of …" box. A page the role can only look at says "view only". Save Pages, Undo Changes, Reset to Default; a warning if nothing is ticked. Below, the pages only owners and managers can use, named.
+
+### Everyone sees only their pages
+- `PageAccessProvider` (`_components/PageAccess.tsx`) asks `GET /branches/:id/my-pages` for the active branch — every page for an owner or the branch's manager — and re-asks every minute, so a manager's change reaches people already signed in.
+- **The sidebar** lists only the rows with a page the person opens; a row whose own page they can't open but one under it they can (an accountant's Integrations Marketplace) links straight to that one. **The breadcrumb's** dropdowns offer the same. **Hub cards** for pages they can't open aren't shown, and the Front Desk hub drops a whole section with nothing in it.
+- **`PageGate`** around every page: a page the person can't open says "This page isn’t open to you" with the way to their own pages; the dashboard's front page, for someone with no Front Desk pages, goes straight to their first page.
+- `lib/navigation.ts` marks the eight pure hubs (`hub: true` — they open when any page under them does) and gives the rules: `openNav`, `pathOpens`, `firstOpenHref`, and `breadcrumbTrail(pathname, canOpen)`.
+- If the answer can't be fetched, nothing is hidden — the server still refuses what a restricted role may not reach, so failing open costs a page that won't load, never data.
+
+### Verified
+- **Checks:** `npx tsc --noEmit` clean; `eslint` clean on everything changed.
+- **Browser, against real Postgres:** as a housekeeper limited to three pages — the menu shows Front Desk, Housekeeping and Maintenance only, the Front Desk hub just the Room Status Board, the breadcrumb dropdowns and the phone menu only her rows, and Operational Reports opened directly says it isn't open to her; as the manager — Housekeeper shows "set here", ticking Operational Reports and saving gives it to her, Reset to Default puts her back; the colour audit over every page (Staff Management included) finds nothing; no sideways scroll at 390px; no console errors.
