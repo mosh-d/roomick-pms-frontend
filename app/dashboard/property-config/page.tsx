@@ -5,6 +5,7 @@ import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 import { Select, type SelectOption } from '@/components/ui/Select';
 import { YesNoToggle } from '@/components/ui/YesNoToggle';
 import { Button } from '@/components/ui/Button';
@@ -23,6 +24,7 @@ import {
   useUpdateBranchMutation,
   useSetNoShowPolicyMutation,
   useSetCancellationPolicyMutation,
+  useSetGuestTermsMutation,
   DEFAULT_CANCELLATION_POLICY,
   type PenaltyType,
   useBookingEngineQuery,
@@ -344,6 +346,74 @@ function CancellationPolicySection({ branch, auth }: { branch: BranchDetail; aut
         <div>
           <Button type="button" onClick={save} disabled={updateMutation.isPending || !hoursValid || !feeValid}>
             {updateMutation.isPending ? 'Saving…' : 'Save Cancellation Policy'}
+          </Button>
+        </div>
+      </Card>
+    </Section>
+  );
+}
+
+/**
+ * The property's privacy notice and booking terms, in its own words. Both
+ * appear on the booking pages, and once either is set a guest booking online
+ * ticks to say they've read and accept them — the booking records when.
+ */
+function GuestTermsSection({ branch, auth }: { branch: BranchDetail; auth: AuthOpts }) {
+  const updateMutation = useSetGuestTermsMutation(branch.id, auth);
+  const [privacyNotice, setPrivacyNotice] = useState(branch.privacyNotice ?? '');
+  const [bookingTerms, setBookingTerms] = useState(branch.bookingTerms ?? '');
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const dirty = privacyNotice.trim() !== (branch.privacyNotice ?? '') || bookingTerms.trim() !== (branch.bookingTerms ?? '');
+
+  function save() {
+    setError(null);
+    updateMutation.mutate(
+      { privacyNotice: privacyNotice.trim() || null, bookingTerms: bookingTerms.trim() || null },
+      {
+        onSuccess: () => setSaved(true),
+        onError: (e) => setError(e instanceof ApiError ? e.message : 'Something went wrong. Please try again.'),
+      },
+    );
+  }
+
+  return (
+    <Section label="Privacy Notice & Booking Terms">
+      <Card tone="secondary" className="flex flex-col gap-3">
+        <p className="text-small text-surface">
+          Shown to guests on your booking pages. Once either is filled in, a guest booking online ticks a box to say they’ve read and accept them, and the
+          booking records when they did. Leave both empty to ask for nothing.
+        </p>
+        <Textarea
+          id="privacy-notice"
+          label="Privacy Notice"
+          rows={6}
+          maxLength={20000}
+          hint="What personal details you collect from guests, why, how long you keep them, and who to contact about them."
+          value={privacyNotice}
+          onChange={(e) => {
+            setPrivacyNotice(e.target.value);
+            setSaved(false);
+          }}
+        />
+        <Textarea
+          id="booking-terms"
+          label="Booking Terms"
+          rows={6}
+          maxLength={20000}
+          hint="Payment, deposits, house rules, age or ID requirements — anything a guest agrees to by booking. The cancellation policy above is shown separately."
+          value={bookingTerms}
+          onChange={(e) => {
+            setBookingTerms(e.target.value);
+            setSaved(false);
+          }}
+        />
+        <p className="text-tiny text-surface-muted">Every change is kept in the audit log, so you can always tell which words a guest accepted.</p>
+        {error ? <p className="text-small text-red-600">{error}</p> : null}
+        {saved ? <p className="text-small text-green-700">Saved — your booking pages show it now.</p> : null}
+        <div>
+          <Button type="button" onClick={save} disabled={updateMutation.isPending || !dirty}>
+            {updateMutation.isPending ? 'Saving…' : 'Save Notice & Terms'}
           </Button>
         </div>
       </Card>
@@ -766,6 +836,7 @@ export default function PropertyConfigPage() {
           <BookingEngineSection branch={branchQuery.data} auth={auth} />
           <NoShowPolicySection branch={branchQuery.data} auth={auth} />
           <CancellationPolicySection branch={branchQuery.data} auth={auth} />
+          <GuestTermsSection branch={branchQuery.data} auth={auth} />
           <TaxRulesSection branchId={branchQuery.data.id} currency={branchQuery.data.currency} auth={auth} />
         </>
       ) : null}

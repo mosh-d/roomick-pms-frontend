@@ -273,7 +273,8 @@ export function firstOpenHref(canOpen: CanOpen): string | null {
 export function pathOpens(pathname: string, canOpen: CanOpen): boolean {
   // `/dashboard/check-in?override=1` is the Check-In page.
   const found = find(pathname.split(/[?#]/)[0]);
-  if (!found) return true;
+  // My Account is found too — it has a crumb — but belongs to no group, so no Page Access line can close it.
+  if (!found || !found.group) return true;
   return pageOpens(last(found.pages), canOpen);
 }
 

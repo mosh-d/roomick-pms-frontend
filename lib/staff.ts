@@ -32,13 +32,43 @@ export interface StaffMember {
   mfaEnabled: boolean;
   roles: Array<{ branchId: string | null; role: string; roleId: string }>;
   outletIds: string[];
+  /** Whether you may change this person's role at this branch. */
+  canChangeRole: boolean;
+  /** Whether you may deactivate or reactivate their account, or make them a password-reset link. */
+  canManageAccount: boolean;
 }
 
 export interface InviteResult {
   email: string;
   inviteId: string;
   publicToken: string;
+  /** The page that accepts it — emailed when email is set up, and always here to hand over. */
+  link: string;
+  /** The invitation reached the person's inbox. */
+  emailed: boolean;
   expiresAt: string;
+}
+
+/** Mirrors `PendingInvite` (roomick-pms-backend/src/modules/users/users.service.ts). */
+export interface PendingInvite {
+  id: string;
+  email: string;
+  roleId: string;
+  role: string;
+  invitedBy: string | null;
+  createdAt: string;
+  expiresAt: string;
+  expired: boolean;
+  /** Null for an invitation you couldn't have made yourself — a manager never sees the link to a manager's invitation. */
+  link: string | null;
+}
+
+/**
+ * Which roles you can hand out — the server's rule: nobody makes anyone an
+ * owner, and only the owner makes someone a manager.
+ */
+export function grantableRoles(roles: Role[], youAreOwner: boolean): Role[] {
+  return roles.filter((role) => role.name !== 'owner' && (youAreOwner || role.name !== 'manager'));
 }
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
@@ -103,12 +133,40 @@ export function useStaffQuery(branchId: string | null, { accessToken, tenantId }
   });
 }
 
+/** Re-inviting the same email and role sends a new invitation in place of the old one — which is also how one is sent again. */
 export function useBulkInviteMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (invites: Array<{ email: string; roleId: string }>) =>
       apiFetch<InviteResult[]>(`/branches/${branchId}/staff/invite`, { method: 'POST', accessToken, tenantId, body: { invites } }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['staff', branchId] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['staff', branchId] });
+      void queryClient.invalidateQueries({ queryKey: ['staff-invites', branchId] });
+    },
+  });
+}
+
+export function useStaffInvitesQuery(branchId: string | null, { accessToken, tenantId }: AuthOpts) {
+  return useQuery({
+    queryKey: ['staff-invites', branchId ?? ''] as const,
+    queryFn: () => apiFetch<PendingInvite[]>(`/branches/${branchId}/staff/invites`, { accessToken, tenantId }),
+    enabled: branchId !== null,
+  });
+}
+
+export function useCancelInviteMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (inviteId: string) => apiFetch<{ cancelled: true }>(`/staff-invites/${inviteId}`, { method: 'DELETE', accessToken, tenantId }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['staff-invites', branchId] }),
+  });
+}
+
+/** A one-use link for a colleague who's locked out: emailed to them when email is set up, and returned to hand over either way. */
+export function usePasswordResetLinkMutation({ accessToken, tenantId }: AuthOpts) {
+  return useMutation({
+    mutationFn: (userId: string) =>
+      apiFetch<{ link: string; emailed: boolean; expiresAt: string }>(`/staff/${userId}/password-reset-link`, { method: 'POST', accessToken, tenantId }),
   });
 }
 

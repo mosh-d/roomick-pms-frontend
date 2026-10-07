@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import QRCode from 'qrcode';
 import { Container } from '@/components/ui/Container';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ApiError } from '@/lib/api';
+import { changePassword, newPasswordSchema } from '@/lib/account';
 import {
   useBeginMfaSetupMutation,
   useDisableMfaMutation,
@@ -27,8 +28,9 @@ type Message = { kind: 'ok' | 'error'; text: string } | null;
 const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ? err.message : fallback);
 
 /**
- * The signed-in person's own account: who they are, and their two-step
- * sign-in. Everyone can reach it — it's about the person, not the property.
+ * The signed-in person's own account: who they are, their password and
+ * their two-step sign-in. Everyone can reach it — it's about the person,
+ * not the property.
  */
 export default function AccountPage() {
   const user = useAuthStore((s) => s.user);
@@ -37,7 +39,7 @@ export default function AccountPage() {
 
   return (
     <Container className="max-w-3xl py-10 flex flex-col gap-8">
-      <PageHeader title="My Account" subtitle="Your sign-in details and two-step sign-in." />
+      <PageHeader title="My Account" subtitle="Your sign-in details, password and two-step sign-in." />
       <Section label="You">
         <Card className="flex flex-col gap-1 text-body text-surface">
           <p className="font-semibold">{user?.name}</p>
@@ -48,8 +50,76 @@ export default function AccountPage() {
       <Suspense fallback={null}>
         <RecoveryNotice />
       </Suspense>
+      <PasswordSection auth={auth} />
       <TwoStepSection auth={auth} />
     </Container>
+  );
+}
+
+/** Changing your own password. Every other browser signed in as you is signed out; this one carries on. */
+function PasswordSection({ auth }: { auth: AuthOpts }) {
+  const adoptSession = useAuthStore((s) => s.adoptSession);
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [errors, setErrors] = useState<{ next?: string; confirm?: string }>({});
+  const [message, setMessage] = useState<Message>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage(null);
+    const found: typeof errors = {};
+    const strength = newPasswordSchema.safeParse(next);
+    if (!strength.success) found.next = strength.error.issues[0]?.message;
+    if (confirm !== next) found.confirm = 'The two passwords don’t match';
+    setErrors(found);
+    if (!current || Object.keys(found).length > 0) return;
+
+    setSubmitting(true);
+    try {
+      const session = await changePassword({ currentPassword: current, newPassword: next }, auth);
+      adoptSession(session, { keepBranch: true });
+      setCurrent('');
+      setNext('');
+      setConfirm('');
+      setMessage({ kind: 'ok', text: 'Password changed. Anywhere else you were signed in has been signed out.' });
+    } catch (err) {
+      setMessage({ kind: 'error', text: errorText(err, 'Couldn’t change your password.') });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Section label="Password">
+      <Card>
+        <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
+          <Input id="current-password" label="Current password" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} />
+          <Input
+            id="new-password"
+            label="New password"
+            type="password"
+            autoComplete="new-password"
+            value={next}
+            onChange={(e) => setNext(e.target.value)}
+            error={errors.next}
+            hint="At least 8 characters, with an upper-case letter, a lower-case letter and a number."
+          />
+          <Input id="confirm-password" label="Type it again" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} error={errors.confirm} />
+          {message ? (
+            <p id="password-message" className={`text-small ${message.kind === 'error' ? 'text-red-600' : 'text-green-700'}`}>
+              {message.text}
+            </p>
+          ) : null}
+          <div>
+            <Button type="submit" loading={submitting} disabled={!current || !next || !confirm}>
+              Change Password
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </Section>
   );
 }
 

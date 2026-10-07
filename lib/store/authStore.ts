@@ -46,6 +46,12 @@ interface AuthState {
   /** The second step: the ticket from `login` plus an authenticator or recovery code. */
   verifyMfa: (challengeToken: string, code: string) => Promise<MfaLoginResult>;
   /**
+   * A session the API handed over some other way: accepting an invitation
+   * (a fresh sign-in), or changing your password (`keepBranch` — the same
+   * person carrying on with the same work, every other session now ended).
+   */
+  adoptSession: (result: LoginResult, options?: { keepBranch?: boolean }) => void;
+  /**
    * Exchanges the stored refresh token for a fresh pair via `POST
    * /auth/refresh` (backend: `auth.controller.ts`) and writes it back to
    * the store. Returns the new access token, or `null` if there's no
@@ -145,6 +151,20 @@ export const useAuthStore = create<AuthState>()(
         });
         startIdleClock();
         return result;
+      },
+      adoptSession(result, options) {
+        // Someone else signed in on this computer is signed out of their session properly, not just forgotten.
+        const previous = get().refreshToken;
+        if (!options?.keepBranch && previous && previous !== result.refreshToken) void revokeOnServer(previous);
+        set({
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          user: result.user,
+          ...(options?.keepBranch ? {} : { activeBranchId: null }),
+          sessionEnded: false,
+          signedOut: false,
+        });
+        startIdleClock();
       },
       async refreshAccessToken() {
         const { refreshToken } = get();

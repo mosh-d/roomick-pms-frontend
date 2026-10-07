@@ -7,11 +7,24 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select, type SelectOption } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { CopyButton } from '@/components/ui/CopyButton';
 import { Modal } from '@/components/ui/Modal';
 import { Table, type TableColumn } from '@/components/ui/Table';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { BackButton } from '@/components/ui/BackButton';
-import { useRolesQuery, useStaffQuery, useBulkInviteMutation, usePatchStaffMutation, type StaffMember } from '@/lib/staff';
+import {
+  grantableRoles,
+  useBulkInviteMutation,
+  useCancelInviteMutation,
+  usePasswordResetLinkMutation,
+  usePatchStaffMutation,
+  useRolesQuery,
+  useStaffInvitesQuery,
+  useStaffQuery,
+  type InviteResult,
+  type PendingInvite,
+  type StaffMember,
+} from '@/lib/staff';
 import { usePageAccessQuery, useResetRolePagesMutation, useSetRolePagesMutation, type PageAccessMatrix, type RolePageAccess } from '@/lib/pageAccess';
 import { useResetStaffMfaMutation } from '@/lib/mfa';
 import { useMyBranches } from '@/lib/dashboardBranches';
@@ -22,24 +35,47 @@ import { useAuthStore } from '@/lib/store/authStore';
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
 const errorText = (err: unknown) => (err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
+const when = (iso: string) => new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+/** A link to pass on: emailed already, or to copy and send yourself. */
+function LinkToHandOver({ id, emailed, email, link, emailedText, handOverText }: { id: string; emailed: boolean; email: string; link: string; emailedText: string; handOverText: string }) {
+  return (
+    <div className="flex flex-col gap-2" id={id}>
+      <p className="text-small text-surface">{emailed ? emailedText : handOverText}</p>
+      <div className="flex items-center gap-2">
+        <code className="flex-1 min-w-0 rounded-control border border-primary/30 surface-page bg-white px-3 py-2 text-tiny text-surface break-all">{link}</code>
+        <CopyButton value={link} label="Copy link" />
+      </div>
+      {emailed ? null : <p className="text-tiny text-surface-muted">Send it to {email} by message, or open it on their phone. Anyone with the link can use it, so send it only to them.</p>}
+    </div>
+  );
+}
 
 function InviteStaffModal({ open, onClose, branchId, auth }: { open: boolean; onClose: () => void; branchId: string; auth: AuthOpts }) {
   const [email, setEmail] = useState('');
   const [roleId, setRoleId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState<InviteResult | null>(null);
   const rolesQuery = useRolesQuery(auth);
   const inviteMutation = useBulkInviteMutation(branchId, auth);
+  const isOwner = useAuthStore((s) => s.user?.roles.some((r) => r.role === 'owner') ?? false);
 
-  const roleOptions: SelectOption[] = (rolesQuery.data ?? []).map((r) => ({ value: r.id, label: roleLabel(r.name) }));
+  const roleOptions: SelectOption[] = grantableRoles(rolesQuery.data ?? [], isOwner).map((r) => ({ value: r.id, label: roleLabel(r.name) }));
+
+  function close() {
+    setEmail('');
+    setRoleId(null);
+    setError(null);
+    setSent(null);
+    onClose();
+  }
 
   async function handleSubmit() {
     if (!email || !roleId) return;
     setError(null);
     try {
-      await inviteMutation.mutateAsync([{ email, roleId }]);
-      setEmail('');
-      setRoleId(null);
-      onClose();
+      const [result] = await inviteMutation.mutateAsync([{ email: email.trim().toLowerCase(), roleId }]);
+      setSent(result ?? null);
     } catch (err) {
       setError(errorText(err));
     }
@@ -47,12 +83,33 @@ function InviteStaffModal({ open, onClose, branchId, auth }: { open: boolean; on
 
   if (!open) return null;
 
+  if (sent) {
+    return (
+      <Modal open={open} onClose={close} title="Invitation Ready">
+        <LinkToHandOver
+          id="invite-link"
+          emailed={sent.emailed}
+          email={sent.email}
+          link={sent.link}
+          emailedText={`Invitation emailed to ${sent.email}. The link works for 72 hours — it’s here too in case it doesn’t arrive.`}
+          handOverText={`Email isn’t set up on this system yet, so send ${sent.email} this link yourself. It works for 72 hours.`}
+        />
+        <div className="flex items-center gap-3">
+          <Button type="button" onClick={close}>
+            Done
+          </Button>
+        </div>
+      </Modal>
+    );
+  }
+
   return (
-    <Modal open={open} onClose={onClose} title="Invite Staff">
+    <Modal open={open} onClose={close} title="Invite Staff">
       <Input id="invite-staff-email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} error={error ?? undefined} />
       <Select id="invite-staff-role" label="Role" options={roleOptions} value={roleId} onChange={setRoleId} placeholder="Select a role" />
+      {isOwner ? null : <p className="text-tiny text-surface-muted">Only the owner can invite a manager.</p>}
       <div className="flex items-center gap-3">
-        <Button type="button" variant="outline" onClick={onClose}>
+        <Button type="button" variant="outline" onClick={close}>
           Cancel
         </Button>
         <Button type="button" onClick={handleSubmit} disabled={inviteMutation.isPending || !email || !roleId}>
@@ -63,15 +120,75 @@ function InviteStaffModal({ open, onClose, branchId, auth }: { open: boolean; on
   );
 }
 
+/** A password-reset link for a colleague who's locked out — shown once, to hand over. */
+function ResetLinkModal({ member, onClose, auth }: { member: StaffMember | null; onClose: () => void; auth: AuthOpts }) {
+  const resetLink = usePasswordResetLinkMutation(auth);
+  const [error, setError] = useState<string | null>(null);
+
+  function close() {
+    resetLink.reset();
+    setError(null);
+    onClose();
+  }
+
+  if (!member) return null;
+
+  return (
+    <Modal open onClose={close} title="Password Reset Link">
+      {resetLink.data ? (
+        <LinkToHandOver
+          id="reset-link"
+          emailed={resetLink.data.emailed}
+          email={member.email}
+          link={resetLink.data.link}
+          emailedText={`Emailed to ${member.email}. The link works once, for 24 hours — it’s here too in case it doesn’t arrive.`}
+          handOverText={`Email isn’t set up on this system yet, so give ${member.name} this link yourself. It works once, for 24 hours.`}
+        />
+      ) : (
+        <p className="text-small text-surface">
+          For when {member.name} can’t sign in. The link lets them choose a new password, and signs them out everywhere they’re signed in. Their two-step
+          sign-in stays as it is.
+        </p>
+      )}
+      {error ? <p className="text-small text-red-600">{error}</p> : null}
+      <div className="flex items-center gap-3">
+        {resetLink.data ? (
+          <Button type="button" onClick={close}>
+            Done
+          </Button>
+        ) : (
+          <>
+            <Button type="button" variant="outline" onClick={close}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              loading={resetLink.isPending}
+              onClick={() => {
+                setError(null);
+                resetLink.mutate(member.id, { onError: (err) => setError(errorText(err)) });
+              }}
+            >
+              Make Link
+            </Button>
+          </>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 /** Who works at this branch: their role, last sign-in, two-step sign-in and whether they can still sign in. */
 function StaffSection({ branchId, auth }: { branchId: string; auth: AuthOpts }) {
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [resetFor, setResetFor] = useState<StaffMember | null>(null);
   const staffQuery = useStaffQuery(branchId, auth);
   const patchStaffMutation = usePatchStaffMutation(branchId, auth);
   const resetMfa = useResetStaffMfaMutation(auth);
   const me = useAuthStore((s) => s.user);
   const isOwner = me?.roles.some((r) => r.role === 'owner') ?? false;
   const [mfaMessage, setMfaMessage] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const columns: TableColumn<StaffMember>[] = [
     { key: 'name', label: 'Name', render: (s) => s.name, sortValue: (s) => s.name },
@@ -129,11 +246,38 @@ function StaffSection({ branchId, auth }: { branchId: string; auth: AuthOpts }) 
     {
       key: 'active',
       label: 'Status',
-      render: (s) => (
-        <Button size="sm" variant="outline" onClick={() => patchStaffMutation.mutate({ userId: s.id, active: !s.active })} disabled={patchStaffMutation.isPending}>
-          {s.active ? 'Active — Deactivate' : 'Inactive — Reactivate'}
-        </Button>
-      ),
+      render: (s) =>
+        s.canManageAccount ? (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setStatusError(null);
+              patchStaffMutation.mutate({ userId: s.id, active: !s.active }, { onError: (err) => setStatusError(errorText(err)) });
+            }}
+            disabled={patchStaffMutation.isPending}
+          >
+            {s.active ? 'Active — Deactivate' : 'Inactive — Reactivate'}
+          </Button>
+        ) : (
+          <span className="text-small text-surface" title={s.id === me?.id ? 'That’s you' : 'Only the owner can change this account'}>
+            {s.active ? 'Active' : 'Inactive'}
+          </span>
+        ),
+      sortValue: (s) => (s.active ? 1 : 0),
+      exportValue: (s) => (s.active ? 'Active' : 'Inactive'),
+    },
+    {
+      key: 'password',
+      label: 'Password',
+      render: (s) =>
+        s.canManageAccount && s.active ? (
+          <Button size="sm" variant="outline" onClick={() => setResetFor(s)}>
+            Reset Link
+          </Button>
+        ) : (
+          <span className="text-small text-surface-muted">—</span>
+        ),
     },
   ];
 
@@ -148,6 +292,11 @@ function StaffSection({ branchId, auth }: { branchId: string; auth: AuthOpts }) 
         {staffQuery.isLoading ? null : (
           <Card tone="secondary">
             <Table columns={columns} rows={staffQuery.data ?? []} emptyMessage="No staff at this branch yet." exportFileName="staff" />
+            {statusError ? (
+              <p className="text-small text-red-600 mt-2" id="staff-status-error">
+                {statusError}
+              </p>
+            ) : null}
             {mfaMessage ? (
               <p className="text-small text-surface mt-2" id="staff-mfa-message">
                 {mfaMessage}
@@ -157,6 +306,88 @@ function StaffSection({ branchId, auth }: { branchId: string; auth: AuthOpts }) 
         )}
       </div>
       <InviteStaffModal open={inviteOpen} onClose={() => setInviteOpen(false)} branchId={branchId} auth={auth} />
+      <ResetLinkModal member={resetFor} onClose={() => setResetFor(null)} auth={auth} />
+    </Section>
+  );
+}
+
+/** Invitations nobody has accepted yet: copy the link again, send a fresh one, or withdraw it. */
+function PendingInvitesSection({ branchId, auth }: { branchId: string; auth: AuthOpts }) {
+  const invitesQuery = useStaffInvitesQuery(branchId, auth);
+  const resend = useBulkInviteMutation(branchId, auth);
+  const cancel = useCancelInviteMutation(branchId, auth);
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const invites = invitesQuery.data ?? [];
+
+  if (invites.length === 0) return null;
+
+  const columns: TableColumn<PendingInvite>[] = [
+    { key: 'email', label: 'Email', render: (i) => i.email, sortValue: (i) => i.email },
+    { key: 'role', label: 'Role', render: (i) => roleLabel(i.role), sortValue: (i) => i.role, exportValue: (i) => roleLabel(i.role) },
+    { key: 'invitedBy', label: 'Invited By', render: (i) => i.invitedBy ?? '—', sortValue: (i) => i.invitedBy ?? '' },
+    {
+      key: 'expiresAt',
+      label: 'Link Works Until',
+      render: (i) => (i.expired ? <span className="text-small font-semibold text-red-600">Expired</span> : when(i.expiresAt)),
+      sortValue: (i) => i.expiresAt,
+      exportValue: (i) => (i.expired ? 'Expired' : when(i.expiresAt)),
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (i) =>
+        i.link ? (
+          <div className="flex flex-wrap gap-2">
+            {i.expired ? null : <CopyButton value={i.link} label="Copy Link" />}
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={resend.isPending}
+              onClick={() => {
+                setMessage(null);
+                resend.mutate([{ email: i.email, roleId: i.roleId }], {
+                  onSuccess: ([sent]) =>
+                    setMessage({
+                      kind: 'ok',
+                      text: sent?.emailed ? `A new invitation is on its way to ${i.email}.` : `New link made for ${i.email} — copy it from the list. The old one no longer works.`,
+                    }),
+                  onError: (err) => setMessage({ kind: 'error', text: errorText(err) }),
+                });
+              }}
+            >
+              Send Again
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={cancel.isPending}
+              onClick={() => {
+                setMessage(null);
+                cancel.mutate(i.id, {
+                  onSuccess: () => setMessage({ kind: 'ok', text: `Invitation for ${i.email} withdrawn — its link no longer works.` }),
+                  onError: (err) => setMessage({ kind: 'error', text: errorText(err) }),
+                });
+              }}
+            >
+              Withdraw
+            </Button>
+          </div>
+        ) : (
+          <span className="text-small text-surface-muted">Sent by the owner</span>
+        ),
+    },
+  ];
+
+  return (
+    <Section label="Pending Invitations">
+      <Card tone="secondary" className="flex flex-col gap-2">
+        <Table columns={columns} rows={invites} emptyMessage="No invitations waiting." exportFileName="pending-invitations" />
+        {message ? (
+          <p id="invite-message" className={`text-small ${message.kind === 'error' ? 'text-red-600' : 'text-green-700'}`}>
+            {message.text}
+          </p>
+        ) : null}
+      </Card>
     </Section>
   );
 }
@@ -396,6 +627,7 @@ export default function StaffManagementPage() {
       <BackButton fallbackHref="/dashboard/manager" />
       <PageHeader title="Staff Management" subtitle="Who works at this branch, and which pages each staff role opens." roles="Owner · Manager" />
       <StaffSection branchId={activeBranchId} auth={auth} />
+      <PendingInvitesSection branchId={activeBranchId} auth={auth} />
       <PageAccessSection branchId={activeBranchId} branchName={branchName} auth={auth} />
     </Container>
   );

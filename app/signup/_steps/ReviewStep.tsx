@@ -82,13 +82,13 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
 
       const firstBranchId = workingBranches[0]?.id;
       if (!wizard.staffInvitesSent && staffInvites.length > 0 && firstBranchId) {
-        await apiFetch(`/branches/${firstBranchId}/staff/invite`, {
+        const sent = await apiFetch<Array<{ email: string; link: string; emailed: boolean }>>(`/branches/${firstBranchId}/staff/invite`, {
           method: 'POST',
           accessToken: accessToken ?? undefined,
           tenantId,
           body: { invites: staffInvites },
         });
-        wizard.patch({ staffInvitesSent: true });
+        wizard.patch({ staffInvitesSent: true, sentInvites: sent.map(({ email, link, emailed }) => ({ email, link, emailed })) });
       }
 
       onFinish();

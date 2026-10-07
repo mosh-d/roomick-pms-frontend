@@ -64,3 +64,38 @@ export function useEraseGuestMutation({ accessToken, tenantId }: AuthOpts) {
 export function downloadGdprExport(requestId: string, auth: { accessToken?: string; tenantId?: string }) {
   return downloadFile(`/gdpr/data-requests/${requestId}/export`, `gdpr-export-${requestId}.json`, auth);
 }
+
+/** Mirrors `RetentionStatus` (roomick-pms-backend/src/modules/gdpr/retention.service.ts). */
+export interface RetentionStatus {
+  /** null = everything is kept (the default). */
+  months: number | null;
+  /** What's past that period now — removed at the next nightly run. */
+  due: { registrationCards: number; idDocuments: number };
+}
+
+/** The setting as saved, or — with `months` — what that period would remove, without changing anything. */
+export function useRetentionQuery({ accessToken, tenantId }: AuthOpts, months?: number) {
+  return useQuery({
+    queryKey: ['retention', tenantId ?? '', months ?? 'saved'] as const,
+    queryFn: () => apiFetch<RetentionStatus>(`/gdpr/retention${months === undefined ? '' : `?months=${months}`}`, { accessToken, tenantId }),
+    enabled: tenantId !== undefined,
+  });
+}
+
+export function useSetRetentionMutation({ accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (months: number | null) => apiFetch<RetentionStatus>('/gdpr/retention', { method: 'PUT', accessToken, tenantId, body: { months } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['retention'] }),
+  });
+}
+
+/** Removes what's past the period now, instead of waiting for the night. */
+export function useRunRetentionMutation({ accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<{ registrationCards: number; idDocuments: number; filesDeleted: number }>('/gdpr/retention/run', { method: 'POST', accessToken, tenantId }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['retention'] }),
+  });
+}

@@ -28,6 +28,9 @@ import {
   useCreateGdprRequestMutation,
   useUpdateGdprStatusMutation,
   useEraseGuestMutation,
+  useRetentionQuery,
+  useRunRetentionMutation,
+  useSetRetentionMutation,
   downloadGdprExport,
   type GdprRequestRow,
   type GdprType,
@@ -617,6 +620,157 @@ function GdprSection({ auth }: { auth: AuthOpts }) {
   );
 }
 
+const RETENTION_PRESETS: Array<{ months: number; label: string }> = [
+  { months: 6, label: '6 months' },
+  { months: 12, label: '1 year' },
+  { months: 24, label: '2 years' },
+  { months: 36, label: '3 years' },
+  { months: 60, label: '5 years' },
+  { months: 84, label: '7 years' },
+  { months: 120, label: '10 years' },
+];
+const KEEP_EVERYTHING = 'keep';
+
+function periodLabel(months: number): string {
+  return RETENTION_PRESETS.find((preset) => preset.months === months)?.label ?? `${months} months`;
+}
+
+function dueText(due: { registrationCards: number; idDocuments: number }): string {
+  const cards = `${due.registrationCards} registration card${due.registrationCards === 1 ? '' : 's'}`;
+  const ids = `${due.idDocuments} guest ID document${due.idDocuments === 1 ? '' : 's'}`;
+  return `${cards} and ${ids}`;
+}
+
+/**
+ * Document retention: how long registration cards and guests' ID documents
+ * are kept after a stay. Off until the owner picks a period; then whatever is
+ * older goes every night — the guest's details off the card, the ID document
+ * off the guest. Stays, bills and payments are never touched.
+ */
+function RetentionSection({ auth }: { auth: AuthOpts }) {
+  const saved = useRetentionQuery(auth);
+  const setRetention = useSetRetentionMutation(auth);
+  const runNow = useRunRetentionMutation(auth);
+  const [choice, setChoice] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+
+  const savedValue = saved.data ? (saved.data.months === null ? KEEP_EVERYTHING : String(saved.data.months)) : null;
+  const chosen = choice ?? savedValue;
+  const chosenMonths = chosen && chosen !== KEEP_EVERYTHING ? Number(chosen) : undefined;
+  const changed = chosen !== null && chosen !== savedValue;
+  const preview = useRetentionQuery(auth, changed ? chosenMonths : undefined);
+  const previewDue = changed && chosenMonths !== undefined ? preview.data?.due : undefined;
+  const previewCount = previewDue ? previewDue.registrationCards + previewDue.idDocuments : 0;
+
+  const savedMonths = saved.data?.months ?? null;
+  const options: SelectOption[] = [
+    { value: KEEP_EVERYTHING, label: 'Keep everything' },
+    ...RETENTION_PRESETS.map((preset) => ({ value: String(preset.months), label: preset.label })),
+    ...(savedMonths !== null && !RETENTION_PRESETS.some((preset) => preset.months === savedMonths) ? [{ value: String(savedMonths), label: `${savedMonths} months` }] : []),
+  ];
+
+  function save() {
+    setConfirming(false);
+    setMessage(null);
+    setRetention.mutate(chosenMonths ?? null, {
+      onSuccess: (result) => {
+        setChoice(null);
+        setMessage({
+          kind: 'ok',
+          text:
+            result.months === null
+              ? 'Saved — everything is kept.'
+              : `Saved — kept for ${periodLabel(result.months)} after a stay. Anything older is removed every night at 4:30.`,
+        });
+      },
+      onError: (err) => setMessage({ kind: 'error', text: err instanceof ApiError ? err.message : 'Something went wrong. Please try again.' }),
+    });
+  }
+
+  const dueNow = saved.data && !changed ? saved.data.due : undefined;
+  const dueCount = dueNow ? dueNow.registrationCards + dueNow.idDocuments : 0;
+
+  return (
+    <Section label="Document Retention">
+      <Card tone="secondary" className="flex flex-col gap-3 max-w-2xl">
+        <p className="text-small text-surface">
+          How long registration cards and guests’ ID documents are kept after a stay ends. Once the period has passed, the guest’s name, contact details and
+          signature come off the card and its stored PDF is deleted; their ID document and photo are removed too, unless they have another stay booked. Stays,
+          bills and payments are always kept.
+        </p>
+        <p className="text-small text-surface">Check how long the law where you operate requires you to keep guest registration records before choosing.</p>
+        {saved.isError ? <p className="text-small text-red-600">{saved.error instanceof ApiError ? saved.error.message : 'Couldn’t load the setting.'}</p> : null}
+        {chosen !== null ? (
+          <div className="max-w-xs">
+            <Select
+              id="retention-period"
+              label="Keep for"
+              options={options}
+              value={chosen}
+              onChange={(value) => {
+                setChoice(value);
+                setMessage(null);
+              }}
+            />
+          </div>
+        ) : null}
+        {previewDue ? (
+          <p className="text-small font-semibold text-surface" id="retention-preview">
+            {previewCount === 0 ? 'Nothing is older than that yet.' : `${dueText(previewDue)} are older than that — they’d be removed tonight.`}
+          </p>
+        ) : null}
+        {dueNow && dueCount > 0 ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-small text-surface" id="retention-due">
+              {dueText(dueNow)} are past the period and go tonight.
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              loading={runNow.isPending}
+              onClick={() => {
+                setMessage(null);
+                runNow.mutate(undefined, {
+                  onSuccess: (run) => setMessage({ kind: 'ok', text: `Removed now: ${dueText({ registrationCards: run.registrationCards, idDocuments: run.idDocuments })}.` }),
+                  onError: (err) => setMessage({ kind: 'error', text: err instanceof ApiError ? err.message : 'Something went wrong. Please try again.' }),
+                });
+              }}
+            >
+              Remove Now
+            </Button>
+          </div>
+        ) : null}
+        <p className="text-tiny text-surface-muted">Backups made before a removal still hold what was removed, for as long as backups are kept.</p>
+        {message ? (
+          <p id="retention-message" className={`text-small ${message.kind === 'error' ? 'text-red-600' : 'text-green-700'}`}>
+            {message.text}
+          </p>
+        ) : null}
+        <div>
+          <Button
+            type="button"
+            disabled={!changed || setRetention.isPending || (chosenMonths !== undefined && !preview.data)}
+            loading={setRetention.isPending}
+            onClick={() => (previewCount > 0 ? setConfirming(true) : save())}
+          >
+            Save Retention
+          </Button>
+        </div>
+      </Card>
+      <ConfirmDialog
+        open={confirming}
+        title="Start removing old documents?"
+        description={previewDue ? `${dueText(previewDue)} are older than ${chosenMonths ? periodLabel(chosenMonths) : 'that'} and will be removed tonight. This can’t be undone.` : ''}
+        confirmLabel="Save and Remove"
+        onCancel={() => setConfirming(false)}
+        onConfirm={save}
+      />
+    </Section>
+  );
+}
+
 /**
  * Security & Roles (pms-frontend-structure-2.html's own `page-security`) —
  * second of the 11 Management/Admin gaps. Turned out to need more real
@@ -646,6 +800,7 @@ export default function SecurityRolesPage() {
       <TwoStepSignInSection />
       <AuditLogSection auth={auth} />
       <GdprSection auth={auth} />
+      <RetentionSection auth={auth} />
     </Container>
   );
 }

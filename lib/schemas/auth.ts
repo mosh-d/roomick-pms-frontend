@@ -39,13 +39,6 @@ export const registerSchema = z.object({
 
 export type RegisterFormValues = z.infer<typeof registerSchema>;
 
-/** Mirrors verify-email.dto.ts — `token` is a JWT (class-validator's @IsJWT()), not a 6-digit OTP. */
-export const verifyEmailSchema = z.object({
-  token: z.string().min(1, 'Required'),
-});
-
-export type VerifyEmailFormValues = z.infer<typeof verifyEmailSchema>;
-
 /** Mirrors login.dto.ts's LoginDto — plain email+password, no subdomain (see that DTO's own comment: email is globally unique now, so it alone resolves the account). */
 export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email('Enter a valid email').max(320),

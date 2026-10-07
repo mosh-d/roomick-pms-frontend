@@ -262,6 +262,8 @@ function BookingFlow({
           childGuests={Number(children || '0')}
           promoCode={promoCode}
           onPromoCodeChange={setPromoCode}
+          privacyNotice={property.privacyNotice}
+          bookingTerms={property.bookingTerms}
           onBooked={onBooked}
         />
       ) : null}
@@ -380,6 +382,16 @@ function RoomTypeCard({
   );
 }
 
+/** A property's own text, folded away until the guest opens it — kept exactly as written, line breaks included. */
+function TermsText({ id, title, text }: { id: string; title: string; text: string }) {
+  return (
+    <details id={id} className="rounded-card border border-secondary/20 px-3 py-2">
+      <summary className="cursor-pointer text-small font-semibold text-surface">{title}</summary>
+      <p className="mt-2 max-h-64 overflow-y-auto whitespace-pre-line break-words text-small text-surface">{text}</p>
+    </details>
+  );
+}
+
 function GuestDetailsSection({
   slug,
   roomTypeId,
@@ -391,6 +403,8 @@ function GuestDetailsSection({
   childGuests,
   promoCode,
   onPromoCodeChange,
+  privacyNotice,
+  bookingTerms,
   onBooked,
 }: {
   slug: string;
@@ -401,6 +415,8 @@ function GuestDetailsSection({
   childGuests: number;
   promoCode: string;
   onPromoCodeChange: (value: string) => void;
+  privacyNotice: string | null;
+  bookingTerms: string | null;
   onBooked: (confirmation: PublicBookingConfirmation) => void;
 }) {
   const [appliedPromo, setAppliedPromo] = useState('');
@@ -413,9 +429,12 @@ function GuestDetailsSection({
   const [specialRequests, setSpecialRequests] = useState('');
   // Unticked by default: consent to marketing has to be something the guest does, not something they fail to undo.
   const [marketingOptIn, setMarketingOptIn] = useState(false);
+  // Only asked when the property has published terms or a privacy notice; then booking needs it.
+  const termsRequired = Boolean(privacyNotice || bookingTerms);
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = guestName.trim().length > 0 && guestEmail.trim().length > 0;
+  const canSubmit = guestName.trim().length > 0 && guestEmail.trim().length > 0 && (!termsRequired || acceptTerms);
 
   async function submit() {
     if (!canSubmit) return;
@@ -433,6 +452,7 @@ function GuestDetailsSection({
         specialRequests: specialRequests.trim() || undefined,
         promoCode: appliedPromo.trim() || undefined,
         marketingOptIn: marketingOptIn || undefined,
+        acceptTerms: termsRequired ? acceptTerms : undefined,
       });
       onBooked(confirmation);
     } catch (err) {
@@ -452,6 +472,16 @@ function GuestDetailsSection({
         <input id="marketing-opt-in" type="checkbox" checked={marketingOptIn} onChange={(e) => setMarketingOptIn(e.target.checked)} className="size-4 mt-0.5 accent-secondary" />
         Email me offers and news from this property. I can unsubscribe at any time.
       </label>
+      {termsRequired ? (
+        <div className="flex flex-col gap-2" id="guest-terms">
+          {bookingTerms ? <TermsText id="booking-terms-text" title="Booking terms" text={bookingTerms} /> : null}
+          {privacyNotice ? <TermsText id="privacy-notice-text" title="Privacy notice" text={privacyNotice} /> : null}
+          <label className="flex items-start gap-2 text-small text-surface cursor-pointer">
+            <input id="accept-terms" type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} className="size-4 mt-0.5 accent-secondary" />
+            I’ve read and accept the {[bookingTerms ? 'booking terms' : null, privacyNotice ? 'privacy notice' : null].filter(Boolean).join(' and ')}.
+          </label>
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="w-48">

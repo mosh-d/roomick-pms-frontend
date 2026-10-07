@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { Card } from '@/components/ui/Card';
@@ -89,15 +89,28 @@ const STATUS_LABELS: Record<string, string> = {
  * cancel within the property's cancellation policy. Changing dates or room
  * still goes through the property — it means re-pricing the stay, which is its
  * own pass.
+ *
+ * The "Manage your booking" link in a guest's emails fills in the
+ * confirmation number (`?confirmation=`); the email is still theirs to type,
+ * so the link alone opens nothing.
  */
 export default function ManageBookingPage() {
+  return (
+    <Suspense fallback={null}>
+      <ManageBooking />
+    </Suspense>
+  );
+}
+
+function ManageBooking() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
+  const linkedConfirmation = useSearchParams().get('confirmation') ?? '';
 
   const propertyQuery = usePublicPropertyQuery(slug);
   const lookupMutation = useBookingLookupMutation(slug);
 
-  const [confirmationNumber, setConfirmationNumber] = useState('');
+  const [confirmationNumber, setConfirmationNumber] = useState(linkedConfirmation);
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [booking, setBooking] = useState<PublicBookingDetail | null>(null);

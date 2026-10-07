@@ -35,6 +35,13 @@ export interface InvitedStaff {
   roleName: string;
 }
 
+/** An invitation Finish sent: its link, and whether it reached the person's inbox — the ones that didn't are handed over from the last screen. */
+export interface SentInvite {
+  email: string;
+  link: string;
+  emailed: boolean;
+}
+
 // `localId` (client-generated, `crypto.randomUUID()`) is what the sidebar
 // tree, React `key`s, and cross-references between drafts (a room card
 // pointing at "this floor" / "this room type") use before a node has a real
@@ -116,7 +123,10 @@ export interface WizardData {
   // which is exactly the "stuck" bug this store exists to fix.
   owner: OwnerAccountDraft | null;
   accountCreated: boolean;
+  /** Only while no email provider is set up — the confirmation is then done on the page itself. */
   verificationToken: string | null;
+  /** The confirmation link went to the owner's inbox. */
+  verificationEmailed: boolean;
   emailVerified: boolean;
   loggedIn: boolean;
   // Live autosave target for the Owner Account form *before* it's
@@ -152,6 +162,7 @@ export interface WizardData {
   brandId: string | null;
   invitedStaff: InvitedStaff[];
   staffInvitesSent: boolean;
+  sentInvites: SentInvite[];
 }
 
 const initialData: WizardData = {
@@ -161,6 +172,7 @@ const initialData: WizardData = {
   accountCreated: false,
   registerDraft: null,
   verificationToken: null,
+  verificationEmailed: false,
   emailVerified: false,
   loggedIn: false,
   brandMode: null,
@@ -173,6 +185,7 @@ const initialData: WizardData = {
   brandId: null,
   invitedStaff: [],
   staffInvitesSent: false,
+  sentInvites: [],
 };
 
 interface WizardState extends WizardData {

@@ -6,6 +6,7 @@ import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { RadioCard } from '@/components/ui/RadioCard';
 import { Button } from '@/components/ui/Button';
+import { CopyButton } from '@/components/ui/CopyButton';
 import { RegisterForm } from './_steps/RegisterForm';
 import { VerifyEmailForm } from './_steps/VerifyEmailForm';
 import { AutoLoginStep } from './_steps/AutoLoginStep';
@@ -287,10 +288,12 @@ function CompleteStep() {
   const router = useRouter();
   const owner = useWizardStore((state) => state.owner);
   const branches = useWizardStore((state) => state.branches);
+  const sentInvites = useWizardStore((state) => state.sentInvites);
   const resetWizard = useWizardStore((state) => state.reset);
   const clearAuth = useAuthStore((state) => state.clear);
 
   const roomCount = branches.reduce((sum, b) => sum + b.rooms.length, 0);
+  const toHandOver = sentInvites.filter((invite) => !invite.emailed);
 
   return (
     <Section label="Setup complete">
@@ -300,6 +303,21 @@ function CompleteStep() {
         {branches.reduce((sum, b) => sum + b.roomTypes.length, 0) === 1 ? '' : 's'}, and {roomCount} room
         {roomCount === 1 ? '' : 's'} are all set up.
       </p>
+      {sentInvites.length > 0 ? (
+        <div className="flex flex-col gap-2" id="signup-invites">
+          <p className="text-small text-surface">
+            {toHandOver.length === 0
+              ? `Your staff invitations went by email (${sentInvites.length}). Each link works for 72 hours.`
+              : 'Send each person their invitation link — by message, or open it on their phone. Each works for 72 hours. You’ll find them again under Manager → Staff Management.'}
+          </p>
+          {toHandOver.map((invite) => (
+            <div key={invite.email} className="flex flex-wrap items-center gap-2">
+              <span className="text-small font-semibold text-surface min-w-0 break-all">{invite.email}</span>
+              <CopyButton value={invite.link} label="Copy link" />
+            </div>
+          ))}
+        </div>
+      ) : null}
       <Button type="button" onClick={() => router.push('/dashboard')} className="self-start">
         Go to dashboard
       </Button>

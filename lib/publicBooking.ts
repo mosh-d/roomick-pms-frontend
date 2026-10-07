@@ -25,6 +25,9 @@ export interface PublicProperty {
   brandName: string;
   /** Generated server-side from the same policy the charge is computed from, so the words can't disagree with the charge. */
   cancellationPolicy: { summary: string; freeCancellationHours: number; allowOnlineCancellation: boolean };
+  /** The property's own words; null when it has none. A booking needs them accepted when either is set. */
+  privacyNotice: string | null;
+  bookingTerms: string | null;
 }
 
 export interface PublicRoomType {
@@ -87,6 +90,8 @@ export interface PublicBookingRequest {
   promoCode?: string;
   /** The guest ticked "email me offers". Unticked is not a withdrawal — only the unsubscribe link withdraws. */
   marketingOptIn?: boolean;
+  /** The guest ticked "I accept the booking terms and privacy notice" — required when the property has published either. */
+  acceptTerms?: boolean;
 }
 
 export function usePublicPropertyQuery(slug: string) {

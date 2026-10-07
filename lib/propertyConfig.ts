@@ -28,6 +28,9 @@ export interface BranchDetail {
   /** NULL until an owner saves one — the backend then applies `DEFAULT_CANCELLATION_POLICY`. */
   cancellationPolicy: CancellationPolicySettings | null;
   regCardTemplate: unknown;
+  /** Shown on the booking pages; when either is set, a guest booking online has to accept them. */
+  privacyNotice: string | null;
+  bookingTerms: string | null;
 }
 
 export type PenaltyType = 'first_night' | 'full_stay' | 'flat_fee' | 'none';
@@ -140,6 +143,16 @@ export function useSetCancellationPolicyMutation(branchId: string, { accessToken
   return useMutation({
     mutationFn: (body: { freeCancellationHours: number; lateCancellationPenalty: PenaltyType; flatFeeAmount?: number; allowOnlineCancellation: boolean }) =>
       apiFetch<BranchDetail>(`/branches/${branchId}/policies/cancellation`, { method: 'PATCH', accessToken, tenantId, body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: branchDetailQueryKey(branchId) }),
+  });
+}
+
+/** Blank clears one — the booking pages then show nothing for it. */
+export function useSetGuestTermsMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { privacyNotice: string | null; bookingTerms: string | null }) =>
+      apiFetch<BranchDetail>(`/branches/${branchId}/policies/guest-terms`, { method: 'PATCH', accessToken, tenantId, body }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: branchDetailQueryKey(branchId) }),
   });
 }

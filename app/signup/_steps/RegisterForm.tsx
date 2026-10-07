@@ -175,7 +175,7 @@ function RegisterFields({
     setFormError(null);
     setConflict(null);
     try {
-      const result = await apiFetch<{ tenantId: string; userId: string; subdomain: string; verificationToken: string }>(
+      const result = await apiFetch<{ tenantId: string; userId: string; subdomain: string; verificationToken: string | null; emailed: boolean }>(
         '/auth/register',
         {
           method: 'POST',
@@ -201,6 +201,7 @@ function RegisterFields({
         },
         accountCreated: true,
         verificationToken: result.verificationToken,
+        verificationEmailed: result.emailed,
         registerDraft: null,
       });
       onNext({ email: values.email, password: values.password });

@@ -73,11 +73,17 @@ export function AutoLoginStep({
           setError('This account uses two-step sign-in. Log in from the Log in page to carry on.');
           return;
         }
-        patch({ loggedIn: true });
+        // Signing in at all proves the email was confirmed.
+        patch({ loggedIn: true, emailVerified: true });
         onSuccess();
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
+        if (cancelled) return;
+        if (err instanceof ApiError && err.isCode('EMAIL_NOT_VERIFIED')) {
+          setError('Your email isn’t confirmed yet. Open the link in the email we sent you, then choose Retry.');
+          return;
+        }
+        setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
       });
     return () => {
       cancelled = true;
