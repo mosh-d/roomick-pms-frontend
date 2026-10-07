@@ -2575,3 +2575,47 @@ The owner asked for a staff management module where a branch manager sets which 
 ### Verified
 - **Checks:** `npx tsc --noEmit` clean; `eslint` clean on everything changed.
 - **Browser, against real Postgres:** as a housekeeper limited to three pages — the menu shows Front Desk, Housekeeping and Maintenance only, the Front Desk hub just the Room Status Board, the breadcrumb dropdowns and the phone menu only her rows, and Operational Reports opened directly says it isn't open to her; as the manager — Housekeeper shows "set here", ticking Operational Reports and saving gives it to her, Reset to Default puts her back; the colour audit over every page (Staff Management included) finds nothing; no sideways scroll at 390px; no console errors.
+
+## Phase 85 — Getting into accounts: invitations, passwords, email confirmation, privacy notice and booking terms, document retention (2026-10-07)
+
+The owner asked for the work that doesn't need their accounts to be finished. The backend's notes for the same date cover the rules and the server side, including the two security holes closed.
+
+### New public pages
+- **`/accept-invite?token=`** — says who the invitation is for, where and as what. Someone new chooses their name, a phone (optional) and a password, and is signed straight in; someone with an account here gives its password, then signs in (the sign-in page says the invitation is accepted). A used, withdrawn or expired invitation says so. A note when someone else is signed in on that computer.
+- **`/forgot-password`** — "Check your inbox", or, with no email set up, "Ask your manager for a link".
+- **`/reset-password?token=`** — new password twice; then the sign-in page says it's changed. A dead link says so, with the way to a new one.
+- **`/verify-email?token=`** — confirms, then points back to the sign-up tab or to Log in.
+
+### Sign-in
+- "Forgot your password?" under Log in.
+- An unconfirmed email gets "Confirm your email first" with **Send the link again** — a fresh email, or, with no email set up, confirming there and then and carrying on signing in.
+- Notices when arriving from a reset, an accepted invitation or a confirmed email — read from the search params: after a client-side redirect the address bar can still show the previous page while the new one first renders.
+
+### Sign-up
+- Confirming the email has two modes: no email provider — "Confirm my email" on the page (no raw token field any more); email — "We've sent a confirmation link", **I've confirmed it — continue** and **Send it again**; carrying on before confirming says so, with Retry.
+- The finish screen lists staff invitations whose email didn't go, each with Copy link.
+
+### Staff Management
+- Inviting shows the result: "Invitation emailed", or the link with Copy and a line on handing it over. The role list offers what the person may hand out — never Owner, and Manager only for the owner.
+- **Pending Invitations** — email, role, who invited, when the link stops working (or Expired); Copy Link, Send Again, Withdraw.
+- **Password → Reset Link** for someone who can't sign in: makes a 24-hour link, emailed when email is set up, shown to hand over either way.
+- Deactivate/Reactivate and Reset Link appear only where the server would allow them; otherwise the status is plain text.
+
+### My Account
+**Password** — current, new, again. Every other browser signed in as you is signed out; this one carries on (`authStore.adoptSession`, keeping the branch picked).
+
+### Property Config
+**Privacy Notice & Booking Terms**, per property. The booking page shows each, folded away until opened, and once either is set the guest ticks "I've read and accept…" before Confirm Booking works.
+
+### Security & Roles
+**Document Retention** — Keep everything, or 6 months to 10 years. Choosing a period previews what it would remove; saving asks first when that's anything; then what's due shows with **Remove Now**.
+
+### "Manage your booking"
+The page fills in the confirmation number from the link in the guest's email; they still type their email.
+
+### My Account was closed to staff with chosen pages (fix)
+Page Access (Phase 84) treated My Account as a page a role has to be given, so anyone whose manager had chosen their pages was told "This page isn't open to you" on their own account — two-step sign-in setup and now passwords included. `pathOpens` lets every page outside the sidebar's groups open.
+
+### Verified
+- **Checks:** `npx tsc --noEmit` clean; `eslint` 0 errors (6 warnings, all the existing react-hook-form `watch()` ones); `next build` passes.
+- **Browser, against real Postgres:** every flow above with no email provider and again with email through a local SMTP server — 62/62 and 23/23; the colour audit over every page plus the new public ones finds nothing; no sideways scroll at 390px on any page touched; no console errors.
