@@ -14,8 +14,8 @@ export type SelectOption = { value: string; label: string };
  * the unselected state too, not just added when selected, so picking an
  * option doesn't shift the row's box size by the border's own width.
  */
-export const SELECTED_OPTION_CLASSES = 'border border-secondary bg-secondary-light/20 text-secondary font-semibold';
-export const UNSELECTED_OPTION_CLASSES = 'border border-transparent hover:bg-secondary-light/30';
+export const SELECTED_OPTION_CLASSES = 'border border-surface bg-surface-muted/15 text-surface font-semibold';
+export const UNSELECTED_OPTION_CLASSES = 'border border-transparent hover:bg-surface-muted/10';
 
 /**
  * A hand-rolled listbox, not a native <select> — the reference product's
@@ -153,9 +153,9 @@ export function Select({
   return (
     <div
       ref={containerRef}
-      className={`flex flex-col gap-1 rounded-control px-3 -mx-3 py-2 transition-colors ${open ? 'bg-secondary-light/15' : ''}`}
+      className={`flex flex-col gap-1 rounded-control px-3 -mx-3 py-2 transition-colors ${open ? 'bg-surface-muted/10' : ''}`}
     >
-      <label htmlFor={fieldId} className={labelHidden ? 'sr-only' : 'text-small font-semibold text-secondary'}>
+      <label htmlFor={fieldId} className={labelHidden ? 'sr-only' : 'text-small font-semibold text-surface'}>
         {label}
       </label>
       <div className="relative flex items-center">
@@ -196,7 +196,7 @@ export function Select({
           }}
           onKeyDown={handleKeyDown}
           className={`w-full bg-transparent border-0 border-b pb-1 pr-6 text-body ${FIELD_PLACEHOLDER_CLASS} focus:outline-none cursor-pointer disabled:opacity-50 disabled:pointer-events-none disabled:cursor-default ${
-            error ? 'border-red-600' : open ? 'border-secondary' : FIELD_UNDERLINE_CLASS
+            error ? 'border-red-600' : open ? 'border-surface' : FIELD_UNDERLINE_CLASS
           }`}
         />
         <ChevronDownIcon
@@ -207,7 +207,7 @@ export function Select({
       {open ? (
         <ul id={listboxId} role="listbox" aria-labelledby={fieldId} className="mt-1 flex flex-col gap-1 max-h-64 overflow-auto">
           {filteredOptions.length === 0 ? (
-            <li className="px-3 py-2 text-body text-secondary-light">No matches</li>
+            <li className="px-3 py-2 text-body text-surface-muted">No matches</li>
           ) : (
             filteredOptions.map((option, index) => {
               const isSelected = option.value === value;
@@ -225,7 +225,7 @@ export function Select({
                     inputRef.current?.focus();
                   }}
                   className={`flex items-center justify-between gap-2 rounded-control px-3 py-2 text-body cursor-pointer ${
-                    isSelected ? SELECTED_OPTION_CLASSES : isActive ? 'border border-transparent bg-secondary-light/30' : UNSELECTED_OPTION_CLASSES
+                    isSelected ? SELECTED_OPTION_CLASSES : isActive ? 'border border-transparent bg-surface-muted/10' : UNSELECTED_OPTION_CLASSES
                   }`}
                 >
                   {option.label}

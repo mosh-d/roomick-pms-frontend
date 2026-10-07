@@ -39,9 +39,9 @@ export default function AccountPage() {
     <Container className="max-w-3xl py-10 flex flex-col gap-8">
       <PageHeader title="My Account" subtitle="Your sign-in details and two-step sign-in." />
       <Section label="You">
-        <Card className="flex flex-col gap-1 text-body text-secondary">
+        <Card className="flex flex-col gap-1 text-body text-surface">
           <p className="font-semibold">{user?.name}</p>
-          <p className="text-small text-secondary/80">{user?.email}</p>
+          <p className="text-small text-surface/80">{user?.email}</p>
         </Card>
       </Section>
       {/* useSearchParams needs a Suspense boundary under the App Router. */}
@@ -61,10 +61,10 @@ function RecoveryNotice() {
   const count = Number(left);
   return (
     <Card tone="accent" className="flex flex-col gap-1">
-      <p className="text-small font-semibold text-primary-dark" id="recovery-used-notice">
+      <p className="text-small font-semibold text-surface" id="recovery-used-notice">
         You signed in with a recovery code. {count} {count === 1 ? 'is' : 'are'} left.
       </p>
-      <p className="text-small text-primary-dark/80">
+      <p className="text-small text-surface/80">
         {count <= 3 ? 'That’s running low — make a new set below and keep it somewhere safe. ' : ''}If your phone is lost, set two-step sign-in up again on your new phone.
       </p>
     </Card>
@@ -78,14 +78,14 @@ function TwoStepSection({ auth }: { auth: AuthOpts }) {
   return (
     <Section label="Two-step sign-in">
       <Card className="flex flex-col gap-4">
-        <p className="text-small text-secondary">
+        <p className="text-small text-surface">
           After your password, Roomick also asks for a code from an authenticator app on your phone — Google Authenticator, Microsoft Authenticator, 1Password or
           any other. Someone who learns your password still can’t get in.
         </p>
         {status.isError ? (
           <p className="text-small text-red-600">{errorText(status.error, 'Couldn’t load your sign-in settings.')}</p>
         ) : !status.data ? (
-          <p className="text-small text-secondary">Loading…</p>
+          <p className="text-small text-surface">Loading…</p>
         ) : codes ? (
           <RecoveryCodes codes={codes} onDone={() => setCodes(null)} />
         ) : status.data.enabled ? (
@@ -143,7 +143,7 @@ function SetupPanel({ auth, onEnabled }: { auth: AuthOpts; onEnabled: (codes: st
   if (!setup) {
     return (
       <div className="flex flex-col gap-2">
-        <p className="text-small text-secondary" id="mfa-state">
+        <p className="text-small text-surface" id="mfa-state">
           <span className="font-semibold">Off.</span> Signing in needs only your password.
         </p>
         <div>
@@ -158,7 +158,7 @@ function SetupPanel({ auth, onEnabled }: { auth: AuthOpts; onEnabled: (codes: st
 
   return (
     <div className="flex flex-col gap-4">
-      <ol className="list-decimal pl-5 text-small text-secondary flex flex-col gap-1">
+      <ol className="list-decimal pl-5 text-small text-surface flex flex-col gap-1">
         <li>Open your authenticator app and add an account.</li>
         <li>Scan this code — or type the key below if you can’t scan.</li>
         <li>Enter the six-digit code the app shows to finish.</li>
@@ -171,8 +171,8 @@ function SetupPanel({ auth, onEnabled }: { auth: AuthOpts; onEnabled: (codes: st
           <div className="size-52 rounded-control border border-secondary/20 bg-secondary/5" aria-hidden="true" />
         )}
         <div className="flex flex-col gap-1 min-w-0">
-          <p className="text-tiny text-secondary/70">Key (time-based)</p>
-          <code className="text-small font-mono tracking-wider break-all text-secondary" id="mfa-secret">
+          <p className="text-tiny text-surface/70">Key (time-based)</p>
+          <code className="text-small font-mono tracking-wider break-all text-surface" id="mfa-secret">
             {setup.secret.match(/.{1,4}/g)?.join(' ')}
           </code>
         </div>
@@ -234,7 +234,7 @@ function EnabledPanel({ status, auth, onNewCodes }: { status: MfaStatus; auth: A
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-small text-secondary" id="mfa-state">
+      <p className="text-small text-surface" id="mfa-state">
         <span className="font-semibold text-green-700">On</span>
         {since ? ` since ${since}` : ''}. {status.recoveryCodesLeft} recovery {status.recoveryCodesLeft === 1 ? 'code' : 'codes'} left.
       </p>
@@ -251,7 +251,7 @@ function EnabledPanel({ status, auth, onNewCodes }: { status: MfaStatus; auth: A
         </div>
       ) : (
         <div className="flex flex-col gap-3 border-t border-secondary/20 pt-3">
-          <p className="text-small text-secondary">
+          <p className="text-small text-surface">
             {action === 'codes'
               ? 'Enter a code from your app. Your old recovery codes stop working as soon as the new ones are made.'
               : 'Enter your password and a code from your app (or a recovery code) to turn two-step sign-in off.'}
@@ -307,7 +307,7 @@ function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () => void 
       <p className="text-small font-semibold text-green-700" id="mfa-state">
         Two-step sign-in is on.
       </p>
-      <p className="text-small text-secondary">
+      <p className="text-small text-surface">
         Save these recovery codes somewhere safe — not on your phone. If you lose your phone, each one gets you in once. They won’t be shown again.
       </p>
       <ul className="grid grid-cols-2 gap-x-6 gap-y-1 rounded-control border border-secondary/20 bg-secondary/5 p-4 font-mono text-small text-secondary w-fit" id="recovery-codes">
@@ -332,7 +332,7 @@ function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () => void 
           I’ve Saved Them
         </Button>
       </div>
-      {!saved ? <p className="text-tiny text-secondary/70">Download or copy them first.</p> : null}
+      {!saved ? <p className="text-tiny text-surface/70">Download or copy them first.</p> : null}
     </div>
   );
 }

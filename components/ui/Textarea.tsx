@@ -20,8 +20,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   const errorId = error ? `${fieldId}-error` : undefined;
 
   return (
-    <div className="flex flex-col gap-1 rounded-control px-3 -mx-3 py-2 transition-colors focus-within:bg-secondary-light/15">
-      <label htmlFor={fieldId} className="text-small font-semibold text-secondary">
+    <div className="flex flex-col gap-1 rounded-control px-3 -mx-3 py-2 transition-colors focus-within:bg-surface-muted/10">
+      <label htmlFor={fieldId} className="text-small font-semibold text-surface">
         {label}
       </label>
       <textarea

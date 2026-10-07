@@ -32,13 +32,13 @@ export function EntryCard({
   return (
     <div className={`rounded-card border p-4 flex flex-col gap-4 ${CARD_TONE_CLASSES[tone]} ${className}`}>
       <div className="flex items-center justify-between gap-2">
-        <h4 className="text-body font-bold text-secondary">{title}</h4>
+        <h4 className="text-body font-bold text-surface">{title}</h4>
         {onRemove ? (
           <button
             type="button"
             onClick={onRemove}
             aria-label={`Remove ${title}`}
-            className="text-secondary-light hover:text-secondary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+            className="text-surface-muted hover:text-surface cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
           >
             <XIcon />
           </button>

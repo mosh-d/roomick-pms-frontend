@@ -117,16 +117,16 @@ export default function OverbookingManagementPage() {
       <Section label="Configuration">
         <ConfigForm branchId={activeBranchId} roomTypeOptions={(roomTypesQuery.data ?? []).map((rt) => ({ value: rt.id, label: rt.name }))} auth={auth} />
         {configsQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading…</p>
+          <p className="text-body text-surface-muted">Loading…</p>
         ) : (configsQuery.data ?? []).length === 0 ? (
-          <p className="text-body text-primary-dark/70">No overbooking config yet — every room type hard-blocks at physical capacity.</p>
+          <p className="text-body text-surface-muted">No overbooking config yet — every room type hard-blocks at physical capacity.</p>
         ) : (
           <div className="flex flex-col gap-3">
             {(configsQuery.data ?? []).map((config) => (
               <Card key={config.id} tone="secondary" className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-body font-semibold text-secondary">{config.roomTypeId ? (roomTypeNameById.get(config.roomTypeId) ?? 'Unknown Room Type') : 'All Room Types'}</p>
-                  <p className="text-small text-secondary-light">
+                  <p className="text-body font-semibold text-surface">{config.roomTypeId ? (roomTypeNameById.get(config.roomTypeId) ?? 'Unknown Room Type') : 'All Room Types'}</p>
+                  <p className="text-small text-surface-muted">
                     {config.globalEnabled ? `Enabled — up to ${config.maxOverbookPct ?? 0}% over capacity` : 'Disabled — hard block at capacity'}
                     {config.alertAtPct ? `, alert at ${config.alertAtPct}%` : ''}
                   </p>
@@ -148,9 +148,9 @@ export default function OverbookingManagementPage() {
         </div>
 
         {exposureQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading…</p>
+          <p className="text-body text-surface-muted">Loading…</p>
         ) : exposureRoomTypes.length === 0 ? (
-          <p className="text-body text-primary-dark/70">No room types are set up at this branch yet.</p>
+          <p className="text-body text-surface-muted">No room types are set up at this branch yet.</p>
         ) : (
           <Card tone="secondary" className="overflow-x-auto">
             <table className="border-collapse">
@@ -158,7 +158,7 @@ export default function OverbookingManagementPage() {
                 <tr>
                   <th className="sticky left-0 bg-secondary/5 text-small font-bold text-secondary text-left py-2 pr-4 pl-1 whitespace-nowrap">Room Type</th>
                   {exposureDates.map((date) => (
-                    <th key={date} className="text-tiny font-semibold text-secondary-light text-center py-2 px-1 whitespace-nowrap">
+                    <th key={date} className="text-tiny font-semibold text-surface-muted text-center py-2 px-1 whitespace-nowrap">
                       {new Date(date).getDate()}
                     </th>
                   ))}
@@ -187,11 +187,11 @@ export default function OverbookingManagementPage() {
       </Section>
 
       <Section label="Walk a Reservation">
-        {walkResult ? <p className="text-small text-primary-dark">{walkResult}</p> : null}
+        {walkResult ? <p className="text-small text-surface">{walkResult}</p> : null}
         {confirmedQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading…</p>
+          <p className="text-body text-surface-muted">Loading…</p>
         ) : reservationOptions.length === 0 ? (
-          <p className="text-body text-primary-dark/70">No confirmed reservations to walk right now.</p>
+          <p className="text-body text-surface-muted">No confirmed reservations to walk right now.</p>
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
@@ -263,7 +263,7 @@ function ConfigForm({
         <Input name="validTo" label="Valid To" type="date" min={validFrom || undefined} value={validTo} onChange={(e) => setValidTo(e.target.value)} />
       </div>
       {error ? <p className="text-small text-red-600">{error}</p> : null}
-      {saved ? <p className="text-small text-primary-dark">Saved.</p> : null}
+      {saved ? <p className="text-small text-surface">Saved.</p> : null}
       <Button type="button" loading={mutation.isPending} onClick={save} className="self-start">
         Save Config
       </Button>

@@ -66,11 +66,11 @@ function CheckInFlowIndex() {
 
       <Section label="Select Guest">
         {arrivalsQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading today&apos;s arrivals…</p>
+          <p className="text-body text-surface-muted">Loading today&apos;s arrivals…</p>
         ) : arrivalsQuery.isError ? (
           <p className="text-body text-red-600">Could not load arrivals. Please try refreshing.</p>
         ) : options.length === 0 ? (
-          <p className="text-body text-primary-dark/70">
+          <p className="text-body text-surface-muted">
             No one is due to arrive today. Walk-In Booking handles a guest with no existing reservation.
           </p>
         ) : (
@@ -113,8 +113,8 @@ function CheckInFlowIndex() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-small text-secondary-light">{label}</span>
-      <span className="text-body font-semibold text-secondary">{value}</span>
+      <span className="text-small text-surface-muted">{label}</span>
+      <span className="text-body font-semibold text-surface">{value}</span>
     </div>
   );
 }

@@ -58,7 +58,7 @@ export function RoomDetailPanel({
   if (!room) {
     return (
       <Card tone="secondary">
-        <p className="text-body text-secondary-light">Select a room to see its details.</p>
+        <p className="text-body text-surface-muted">Select a room to see its details.</p>
       </Card>
     );
   }
@@ -86,19 +86,19 @@ export function RoomDetailPanel({
         <DetailRow label="Room Type" value={room.roomType.name} />
         {room.view ? <DetailRow label="View" value={room.view} /> : null}
         <div className="flex items-center justify-between gap-2">
-          <span className="text-small font-semibold text-secondary">Status</span>
+          <span className="text-small font-semibold text-surface">Status</span>
           <StatusTag value={status} />
         </div>
         {room.notes ? (
           <div className="flex flex-col gap-1 pt-2 border-t border-secondary/20">
-            <span className="text-small font-semibold text-secondary">Notes</span>
-            <p className="text-small text-secondary-light">{room.notes}</p>
+            <span className="text-small font-semibold text-surface">Notes</span>
+            <p className="text-small text-surface-muted">{room.notes}</p>
           </div>
         ) : null}
       </Card>
 
       <Card tone="secondary" className="flex flex-col gap-3">
-        <h3 className="text-small font-bold text-secondary-light">Housekeeping</h3>
+        <h3 className="text-small font-bold text-surface-muted">Housekeeping</h3>
         <div className="flex flex-wrap gap-2">
           {nextCleanlinessStates.map((next) => (
             <Button
@@ -115,7 +115,7 @@ export function RoomDetailPanel({
 
         {supervisor ? (
           <>
-            <h3 className="text-small font-bold text-secondary-light pt-2 border-t border-secondary/20">
+            <h3 className="text-small font-bold text-surface-muted pt-2 border-t border-secondary/20">
               Occupancy Correction
             </h3>
             <div className="flex flex-wrap gap-2">
@@ -137,7 +137,7 @@ export function RoomDetailPanel({
               </Button>
             </div>
 
-            <h3 className="text-small font-bold text-secondary-light pt-2 border-t border-secondary/20">Hold</h3>
+            <h3 className="text-small font-bold text-surface-muted pt-2 border-t border-secondary/20">Hold</h3>
             <div className="flex flex-wrap gap-2">
               {room.heldStatus ? (
                 <Button
@@ -181,8 +181,8 @@ export function RoomDetailPanel({
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="text-small font-semibold text-secondary">{label}</span>
-      <span className="text-small text-secondary-light">{value}</span>
+      <span className="text-small font-semibold text-surface">{label}</span>
+      <span className="text-small text-surface-muted">{value}</span>
     </div>
   );
 }

@@ -108,7 +108,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   if (branchesQuery.isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-body text-primary-dark/70">Loading your properties…</p>
+        <p className="text-body text-surface-muted">Loading your properties…</p>
       </div>
     );
   }
@@ -124,7 +124,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   if (branches && branches.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-body text-primary-dark/70">No properties are set up on this account yet.</p>
+        <p className="text-body text-surface-muted">No properties are set up on this account yet.</p>
       </div>
     );
   }
@@ -151,11 +151,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             type="button"
             onClick={() => setMobileNavOpen(true)}
             aria-label="Open navigation menu"
-            className="md:hidden shrink-0 rounded-control border border-primary/30 p-2 text-primary-dark hover:bg-primary-light/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="md:hidden shrink-0 rounded-control border border-primary/30 p-2 text-surface hover:bg-primary-light/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <MenuIcon className="size-5" />
           </button>
-          <Link href="/dashboard" className="font-display text-header font-bold text-primary-text shrink-0">
+          <Link href="/dashboard" className="font-display text-header font-bold text-surface-accent shrink-0">
             Roomick
           </Link>
           {/* The trail is wide-screen only (see Breadcrumbs) — below `lg` the bar keeps just the logo. */}
@@ -166,13 +166,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
         <div className="flex items-center gap-4 shrink-0 text-small">
           {/* Everyone's way to their own sign-in settings — two-step sign-in lives there. */}
-          <Link href="/dashboard/account" className="hidden sm:inline text-primary-dark/70 hover:text-primary-dark hover:underline" title="My Account">
+          <Link href="/dashboard/account" className="hidden sm:inline text-surface-muted hover:text-surface hover:underline" title="My Account">
             {user?.name}
           </Link>
           <button
             type="button"
             onClick={handleLogout}
-            className="font-semibold text-primary-dark border border-primary/40 rounded-control px-4 py-2 hover:bg-primary-light/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="font-semibold text-surface border border-primary/40 rounded-control px-4 py-2 hover:bg-primary-light/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             Log out
           </button>

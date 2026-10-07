@@ -71,11 +71,11 @@ export default function AvailabilityCalendarPage() {
       </div>
 
       {calendarQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading availability…</p>
+        <p className="text-body text-surface-muted">Loading availability…</p>
       ) : calendarQuery.isError ? (
         <p className="text-body text-red-600">Could not load the availability calendar. Please try refreshing.</p>
       ) : roomTypes.length === 0 ? (
-        <p className="text-body text-primary-dark/70">No room types are set up at this branch yet.</p>
+        <p className="text-body text-surface-muted">No room types are set up at this branch yet.</p>
       ) : (
         <Card tone="secondary" className="overflow-x-auto">
           <table className="border-collapse">
@@ -83,7 +83,7 @@ export default function AvailabilityCalendarPage() {
               <tr>
                 <th className="sticky left-0 bg-secondary/5 text-small font-bold text-secondary text-left py-2 pr-4 pl-1 whitespace-nowrap">Room Type</th>
                 {dates.map((date) => (
-                  <th key={date} className="text-tiny font-semibold text-secondary-light text-center py-2 px-1 whitespace-nowrap">
+                  <th key={date} className="text-tiny font-semibold text-surface-muted text-center py-2 px-1 whitespace-nowrap">
                     {new Date(date).getDate()}
                   </th>
                 ))}

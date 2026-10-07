@@ -65,7 +65,7 @@ function ProgramSection({ auth }: { auth: AuthOpts }) {
       ) : programQuery.data ? (
         <ProgramForm key={programQuery.data.updatedAt ?? 'suggested'} program={programQuery.data} auth={auth} />
       ) : (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       )}
     </Section>
   );
@@ -121,9 +121,9 @@ function ProgramForm({ program, auth }: { program: LoyaltyProgram; auth: AuthOpt
   return (
     <Card tone="accent" className="flex flex-col gap-4">
       {!program.configured ? (
-        <p className="text-small text-primary-dark">Not set up yet — these are suggested figures. Nothing is earned until you save and switch the programme on.</p>
+        <p className="text-small text-surface">Not set up yet — these are suggested figures. Nothing is earned until you save and switch the programme on.</p>
       ) : null}
-      <label className="flex items-center gap-2 text-body font-semibold text-secondary cursor-pointer">
+      <label className="flex items-center gap-2 text-body font-semibold text-surface cursor-pointer">
         <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="size-4 accent-secondary" />
         Programme on — guests earn at check-out and can redeem on their bill
       </label>
@@ -158,19 +158,19 @@ function ProgramForm({ program, auth }: { program: LoyaltyProgram; auth: AuthOpt
         />
       </div>
       {Number.isFinite(back) && back > 0 ? (
-        <p className="text-small text-secondary-light">
+        <p className="text-small text-surface-muted">
           A guest gets back about {currency} {back.toFixed(2)} for every {currency} 100 they spend ({back.toFixed(2)}%).
         </p>
       ) : null}
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-small font-semibold text-secondary">Tiers</p>
+          <p className="text-small font-semibold text-surface">Tiers</p>
           <Button type="button" size="sm" variant="outline" onClick={() => setTiers((current) => [...current, { name: '', threshold: '', benefits: [] }])} disabled={tiers.length >= 10}>
             Add a Tier
           </Button>
         </div>
-        <p className="text-tiny text-secondary-light">A member holds the highest tier their lifetime points reach. Spending points never costs them a tier.</p>
+        <p className="text-tiny text-surface-muted">A member holds the highest tier their lifetime points reach. Spending points never costs them a tier.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {tiers.map((tier, index) => (
             <Card key={index} tone="secondary" className="flex flex-col gap-2">
@@ -179,9 +179,9 @@ function ProgramForm({ program, auth }: { program: LoyaltyProgram; auth: AuthOpt
                 <Input id={`loyalty-tier-${index}-threshold`} label="From (points)" type="number" min={0} value={tier.threshold} onChange={(e) => setTier(index, { threshold: e.target.value })} />
               </div>
               <fieldset className="flex flex-wrap gap-x-4 gap-y-1">
-                <legend className="text-tiny font-semibold text-secondary">Benefits</legend>
+                <legend className="text-tiny font-semibold text-surface">Benefits</legend>
                 {LOYALTY_BENEFITS.map((benefit) => (
-                  <label key={benefit} className="flex items-center gap-1.5 text-small text-secondary cursor-pointer">
+                  <label key={benefit} className="flex items-center gap-1.5 text-small text-surface cursor-pointer">
                     <input type="checkbox" checked={tier.benefits.includes(benefit)} onChange={() => toggleBenefit(index, benefit)} className="size-4 accent-secondary" />
                     {BENEFIT_LABELS[benefit]}
                   </label>
@@ -230,29 +230,29 @@ function MembersSection({ auth }: { auth: AuthOpts }) {
   return (
     <Section label="Loyalty Members">
       {summaryQuery.isLoading || !summary ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : (
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap gap-4">
             <Card tone="accent" className="flex-1 min-w-40">
-              <p className="text-tiny text-primary-dark/70">Total Members</p>
-              <p className="text-header font-bold text-primary-dark">{summary.totalMembers}</p>
+              <p className="text-tiny text-surface-muted">Total Members</p>
+              <p className="text-header font-bold text-surface">{summary.totalMembers}</p>
             </Card>
             <Card tone="accent" className="flex-1 min-w-40">
-              <p className="text-tiny text-primary-dark/70">Points Outstanding</p>
-              <p className="text-header font-bold text-primary-dark">{summary.totalPointsIssued.toLocaleString()}</p>
+              <p className="text-tiny text-surface-muted">Points Outstanding</p>
+              <p className="text-header font-bold text-surface">{summary.totalPointsIssued.toLocaleString()}</p>
             </Card>
             {summary.byTier.map((t) => (
               <Card key={t.tier} tone="accent" className="flex-1 min-w-40">
-                <p className="text-tiny text-primary-dark/70">{t.tier}</p>
-                <p className="text-header font-bold text-primary-dark">{t.memberCount}</p>
-                <p className="text-tiny text-primary-dark/60">{t.totalPoints.toLocaleString()} pts</p>
+                <p className="text-tiny text-surface-muted">{t.tier}</p>
+                <p className="text-header font-bold text-surface">{t.memberCount}</p>
+                <p className="text-tiny text-surface-muted">{t.totalPoints.toLocaleString()} pts</p>
               </Card>
             ))}
           </div>
 
           {summary.members.length === 0 ? (
-            <p className="text-body text-primary-dark/70">No members yet — guests join when they check out while the programme is on, or from their profile.</p>
+            <p className="text-body text-surface-muted">No members yet — guests join when they check out while the programme is on, or from their profile.</p>
           ) : (
             <Card tone="secondary">
               <Table columns={columns} rows={summary.members} emptyMessage="No loyalty members yet." exportFileName="loyalty-members" />

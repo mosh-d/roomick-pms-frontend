@@ -124,11 +124,11 @@ function RestrictionsSection({ branchId, auth }: { branchId: string; auth: AuthO
         <Input id="restriction-max-los" label="Max LOS (nights, optional)" type="number" min={1} value={maxLOS} onChange={(e) => setMaxLOS(e.target.value)} />
       </div>
       <div className="flex flex-wrap gap-4">
-        <label className="flex items-center gap-2 text-small text-secondary">
+        <label className="flex items-center gap-2 text-small text-surface">
           <input type="checkbox" checked={closedToArrival} onChange={(e) => setClosedToArrival(e.target.checked)} />
           Closed to arrival
         </label>
-        <label className="flex items-center gap-2 text-small text-secondary">
+        <label className="flex items-center gap-2 text-small text-surface">
           <input type="checkbox" checked={stopSell} onChange={(e) => setStopSell(e.target.checked)} />
           Stop-sell (no bookings at all)
         </label>
@@ -141,14 +141,14 @@ function RestrictionsSection({ branchId, auth }: { branchId: string; auth: AuthO
       </div>
 
       {restrictionsQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : (restrictionsQuery.data ?? []).length === 0 ? (
-        <p className="text-body text-primary-dark/70">No restrictions configured — every booking is currently unrestricted.</p>
+        <p className="text-body text-surface-muted">No restrictions configured — every booking is currently unrestricted.</p>
       ) : (
         <Card tone="secondary" className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="text-small font-bold text-secondary text-left">
+              <tr className="text-small font-bold text-surface text-left">
                 <th className="py-2 pr-4">Room Type</th>
                 <th className="py-2 pr-4">Dates</th>
                 <th className="py-2 pr-4">Min LOS</th>
@@ -160,7 +160,7 @@ function RestrictionsSection({ branchId, auth }: { branchId: string; auth: AuthO
             </thead>
             <tbody>
               {(restrictionsQuery.data ?? []).map((r) => (
-                <tr key={r.id} className="border-t border-secondary/10 text-small text-secondary">
+                <tr key={r.id} className="border-t border-secondary/10 text-small text-surface">
                   <td className="py-2 pr-4">{r.roomTypeId ? (r.roomTypeName ?? roomTypeNameById.get(r.roomTypeId) ?? 'Unknown') : 'All room types'}</td>
                   <td className="py-2 pr-4">
                     {new Date(r.startDate).toLocaleDateString()} – {new Date(r.endDate).toLocaleDateString()}
@@ -189,16 +189,16 @@ function DemandForecastSection({ branchId, auth }: { branchId: string; auth: Aut
 
   return (
     <Section label="Demand Forecast">
-      <p className="text-small text-primary-dark/70">
+      <p className="text-small text-surface-muted">
         Same-weekday historical occupancy average over the trailing 8 weeks, projected forward — not a predictive model. A blank forecast means there isn&rsquo;t enough history for that weekday yet.
       </p>
       {forecastQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : (
         <Card tone="secondary" className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="text-small font-bold text-secondary text-left">
+              <tr className="text-small font-bold text-surface text-left">
                 <th className="py-2 pr-4">Date</th>
                 <th className="py-2 pr-4">Day</th>
                 <th className="py-2 pr-4">Forecast Occupancy</th>
@@ -207,7 +207,7 @@ function DemandForecastSection({ branchId, auth }: { branchId: string; auth: Aut
             </thead>
             <tbody>
               {(forecastQuery.data ?? []).map((day) => (
-                <tr key={day.date} className="border-t border-secondary/10 text-small text-secondary">
+                <tr key={day.date} className="border-t border-secondary/10 text-small text-surface">
                   <td className="py-2 pr-4">{new Date(`${day.date}T00:00:00.000Z`).toLocaleDateString()}</td>
                   <td className="py-2 pr-4">{day.dayOfWeek}</td>
                   <td className="py-2 pr-4">{day.forecastOccupancyPct !== null ? `${day.forecastOccupancyPct}%` : '—'}</td>
@@ -247,21 +247,21 @@ function RateRecommendationsSection({ branchId, auth }: { branchId: string; auth
 
   return (
     <Section label="Rate Recommendations">
-      <p className="text-small text-primary-dark/70">Fixed-threshold, rule-based suggestions off the demand forecast above — not AI. Approving one creates a real seasonal rate plan for that date.</p>
+      <p className="text-small text-surface-muted">Fixed-threshold, rule-based suggestions off the demand forecast above — not AI. Approving one creates a real seasonal rate plan for that date.</p>
       <div className="max-w-xs">
         <Select id="rate-recommendations-room-type" label="Room Type" options={roomTypeOptions} value={roomTypeId} onChange={setRoomTypeId} placeholder="Choose a room type" />
       </div>
       {error ? <p className="text-small text-red-600">{error}</p> : null}
 
       {!roomTypeId ? (
-        <p className="text-body text-primary-dark/70">Choose a room type to see rate recommendations.</p>
+        <p className="text-body text-surface-muted">Choose a room type to see rate recommendations.</p>
       ) : recommendationsQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : (
         <Card tone="secondary" className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="text-small font-bold text-secondary text-left">
+              <tr className="text-small font-bold text-surface text-left">
                 <th className="py-2 pr-4">Date</th>
                 <th className="py-2 pr-4">Day</th>
                 <th className="py-2 pr-4">Current Rate</th>
@@ -272,7 +272,7 @@ function RateRecommendationsSection({ branchId, auth }: { branchId: string; auth
             </thead>
             <tbody>
               {(recommendationsQuery.data ?? []).map((rec) => (
-                <tr key={rec.date} className="border-t border-secondary/10 text-small text-secondary align-top">
+                <tr key={rec.date} className="border-t border-secondary/10 text-small text-surface align-top">
                   <td className="py-2 pr-4">{new Date(`${rec.date}T00:00:00.000Z`).toLocaleDateString()}</td>
                   <td className="py-2 pr-4">{rec.dayOfWeek}</td>
                   <td className="py-2 pr-4">{rec.currentBaseRate}</td>
@@ -391,21 +391,21 @@ function CompSetSection({ branchId, auth }: { branchId: string; auth: AuthOpts }
 
   return (
     <Section label="Comp Set Analysis">
-      <p className="text-small text-primary-dark/70">
+      <p className="text-small text-surface-muted">
         Competitor rates are entered by hand — no rate-shopping feed is connected. Our rate is what the booking engine quotes for a one-night stay; a night is
         flagged when it&rsquo;s more than {analysis?.thresholdPct ?? 10}% from the comp set&rsquo;s median.
       </p>
 
       <Card tone="accent" className="flex flex-col gap-3">
-        <p className="text-small font-semibold text-primary-dark">Competitors</p>
+        <p className="text-small font-semibold text-surface">Competitors</p>
         {competitorsQuery.isSuccess && competitors.length === 0 ? (
-          <p className="text-small text-primary-dark/70">None yet — add the hotels you price yourself against.</p>
+          <p className="text-small text-surface-muted">None yet — add the hotels you price yourself against.</p>
         ) : (
           <ul className="flex flex-wrap gap-2">
             {competitors.map((c) => (
               <li
                 key={c.id}
-                className={`flex items-center gap-2 rounded-pill border border-secondary/20 px-3 py-1 text-small ${c.isActive ? 'text-secondary' : 'text-secondary-light line-through'}`}
+                className={`flex items-center gap-2 rounded-pill border border-secondary/20 px-3 py-1 text-small ${c.isActive ? 'text-surface' : 'text-surface-muted line-through'}`}
               >
                 {c.name}
                 <button
@@ -444,7 +444,7 @@ function CompSetSection({ branchId, auth }: { branchId: string; auth: AuthOpts }
 
       {activeCompetitors.length > 0 && roomTypeId ? (
         <Card tone="accent" className="flex flex-col gap-3">
-          <p className="text-small font-semibold text-primary-dark">
+          <p className="text-small font-semibold text-surface">
             Enter a competitor&rsquo;s nightly rate for their room closest to our {analysis?.roomTypeName ?? 'room type'}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2">
@@ -480,16 +480,16 @@ function CompSetSection({ branchId, auth }: { branchId: string; auth: AuthOpts }
       ) : null}
 
       {!roomTypeId ? (
-        <p className="text-body text-primary-dark/70">Add a room type to compare rates.</p>
+        <p className="text-body text-surface-muted">Add a room type to compare rates.</p>
       ) : compSetQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : compSetQuery.isError ? (
         <p className="text-small text-red-600">{compSetQuery.error instanceof ApiError ? compSetQuery.error.message : 'Couldn’t load the comp set.'}</p>
       ) : analysis ? (
         <Card tone="secondary" className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="text-small font-bold text-secondary text-left">
+              <tr className="text-small font-bold text-surface text-left">
                 <th className="py-2 pr-4">Night</th>
                 <th className="py-2 pr-4">Our Rate</th>
                 {analysis.competitors.map((c) => (
@@ -503,7 +503,7 @@ function CompSetSection({ branchId, auth }: { branchId: string; auth: AuthOpts }
             </thead>
             <tbody>
               {analysis.days.map((d) => (
-                <tr key={d.date} className="border-t border-secondary/10 text-small text-secondary">
+                <tr key={d.date} className="border-t border-secondary/10 text-small text-surface">
                   <td className="py-2 pr-4 whitespace-nowrap">{formatNight(d.date)}</td>
                   <td className="py-2 pr-4 whitespace-nowrap font-semibold">{formatMoney(d.ourRate, symbol)}</td>
                   {d.competitorRates.map((r) => (

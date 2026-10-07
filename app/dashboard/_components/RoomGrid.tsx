@@ -24,17 +24,17 @@ export function RoomGrid({
   if (buildings.length === 0) {
     return (
       <Card tone="secondary">
-        <p className="text-body text-secondary-light">No rooms match the current filters.</p>
+        <p className="text-body text-surface-muted">No rooms match the current filters.</p>
       </Card>
     );
   }
 
   return (
     <Card tone="secondary" className="flex flex-col gap-4">
-      <h2 className="text-body font-bold text-secondary text-center">Building(s)</h2>
+      <h2 className="text-body font-bold text-surface text-center">Building(s)</h2>
       {buildings.map((building) => (
         <Card key={building.buildingId} tone="secondary" className="flex flex-col gap-2">
-          <h3 className="text-small font-bold text-secondary-light">{building.buildingName}</h3>
+          <h3 className="text-small font-bold text-surface-muted">{building.buildingName}</h3>
           <div className="flex flex-col">
             {building.floors.map((floor, index) => (
               <div
@@ -43,7 +43,7 @@ export function RoomGrid({
                   index > 0 ? 'border-t border-secondary/20' : ''
                 }`}
               >
-                <span className="w-28 shrink-0 text-small font-semibold text-secondary">{floor.floorLabel}</span>
+                <span className="w-28 shrink-0 text-small font-semibold text-surface">{floor.floorLabel}</span>
                 <div className="flex flex-wrap gap-2">
                   {floor.rooms.map((room) => (
                     <RoomCell key={room.id} room={room} selected={room.id === selectedRoomId} onSelect={onSelectRoom} />

@@ -153,7 +153,7 @@ function CheckInFlow() {
       <PageHeader icon={<HotelCheckInIcon className="size-8" />} title="Check-In Flow" subtitle="Check a guest in" />
 
       {reservationQuery.isLoading || roomsQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : reservationQuery.isError || !reservation ? (
         <p className="text-body text-red-600">Could not load this reservation.</p>
       ) : reservation.status !== 'confirmed' ? (
@@ -181,7 +181,7 @@ function CheckInFlow() {
 
           <Section label="Room Selection">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-small text-primary-dark/70">
+              <p className="text-small text-surface-muted">
                 {overrideMode
                   ? `Manual override — any free room. Another type than ${reservation.roomType.name}, or a room still being cleaned, needs a reason.`
                   : `Ready ${reservation.roomType.name} rooms.`}
@@ -203,7 +203,7 @@ function CheckInFlow() {
               <>
                 <RoomPicker rooms={roomsQuery.data ?? []} initialTypeId={reservation.roomType.id} selectedRoomId={overrideRoom?.id ?? null} onSelect={setOverrideRoom} />
                 {overrideRoom ? (
-                  <p className="text-small text-primary-dark">
+                  <p className="text-small text-surface">
                     Room {overrideRoom.number} — {overrideRoom.roomType.name}
                     {overrideRoom.roomType.id !== reservation.roomType.id ? ` (booked: ${reservation.roomType.name}; the guest keeps the booked rate)` : ''}
                     {isReady(overrideRoom) ? '' : ` — ${overrideRoom.cleanlinessStatus.replace('_', ' ')}, not ready yet`}
@@ -221,14 +221,14 @@ function CheckInFlow() {
                 ) : null}
               </>
             ) : buildings.length === 0 ? (
-              <p className="text-body text-primary-dark/70">No ready rooms of this type — nothing vacant and clean/inspected right now. Use the manual room override to choose another.</p>
+              <p className="text-body text-surface-muted">No ready rooms of this type — nothing vacant and clean/inspected right now. Use the manual room override to choose another.</p>
             ) : (
               <RoomGrid buildings={buildings} selectedRoomId={selectedRoomId} onSelectRoom={setSelectedRoomId} />
             )}
           </Section>
 
           <Section label="ID Capture">
-            <p className="text-small text-secondary-light">Optional — can be captured later from the guest&apos;s profile. Never blocks check-in.</p>
+            <p className="text-small text-surface-muted">Optional — can be captured later from the guest&apos;s profile. Never blocks check-in.</p>
             <div className="flex flex-wrap gap-4">
               <div className="w-48">
                 <Select id="idDocType" name="idDocType" label="ID Type" options={ID_DOC_TYPE_OPTIONS} value={idDocType} onChange={setIdDocType} placeholder="Select type" />
@@ -268,7 +268,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
       <span className="text-small text-accent-dark">{label}</span>
-      <span className="text-body font-semibold text-primary-dark">{value}</span>
+      <span className="text-body font-semibold text-surface">{value}</span>
     </div>
   );
 }

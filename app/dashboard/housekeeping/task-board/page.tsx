@@ -96,20 +96,20 @@ export default function TaskBoardPage() {
 
       <Section label="Dirty Rooms">
         {pendingQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading tasks…</p>
+          <p className="text-body text-surface-muted">Loading tasks…</p>
         ) : dirtyRooms.length === 0 ? (
-          <p className="text-body text-primary-dark/70">No dirty rooms waiting right now.</p>
+          <p className="text-body text-surface-muted">No dirty rooms waiting right now.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {dirtyRooms.map((task) => (
               <Card key={task.id} tone="secondary" className="flex flex-col gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-body font-bold text-secondary">Room {task.room.number}</span>
+                  <span className="text-body font-bold text-surface">Room {task.room.number}</span>
                   {task.priority === 1 ? (
                     <span className="rounded-pill bg-red-100 px-2 py-0.5 text-tiny font-semibold text-red-700">Urgent</span>
                   ) : null}
                 </div>
-                <p className="text-small text-secondary-light border-b border-secondary/20 pb-2">Clean a room or report an issue</p>
+                <p className="text-small text-surface-muted border-b border-secondary/20 pb-2">Clean a room or report an issue</p>
                 <div className="flex gap-2">
                   <Button size="sm" loading={startMutation.isPending} onClick={() => handleStart(task.id)}>
                     Start Cleaning
@@ -126,15 +126,15 @@ export default function TaskBoardPage() {
 
       <Section label="In Progress">
         {inProgressQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading tasks…</p>
+          <p className="text-body text-surface-muted">Loading tasks…</p>
         ) : myInProgress.length === 0 ? (
-          <p className="text-body text-primary-dark/70">Nothing in progress right now.</p>
+          <p className="text-body text-surface-muted">Nothing in progress right now.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {myInProgress.map((task) => (
               <Card key={task.id} tone="secondary" className="flex flex-col gap-3">
-                <span className="text-body font-bold text-secondary">Room {task.room.number}</span>
-                <p className="text-small text-secondary-light border-b border-secondary/20 pb-2">Currently cleaning</p>
+                <span className="text-body font-bold text-surface">Room {task.room.number}</span>
+                <p className="text-small text-surface-muted border-b border-secondary/20 pb-2">Currently cleaning</p>
                 <div className="flex gap-2">
                   <Button size="sm" loading={completeMutation.isPending} onClick={() => handleComplete(task.id)}>
                     Complete

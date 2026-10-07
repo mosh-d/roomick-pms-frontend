@@ -155,7 +155,7 @@ export default function TransferChargesPage() {
       {error ? <p className="text-small text-red-600">{error}</p> : null}
       {notice ? (
         <Card tone="secondary">
-          <p className="text-small text-secondary">{notice}</p>
+          <p className="text-small text-surface">{notice}</p>
         </Card>
       ) : null}
 
@@ -163,8 +163,8 @@ export default function TransferChargesPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           <div className="flex flex-col gap-3">
             <div>
-              <h3 className="text-body font-bold text-primary-dark">From</h3>
-              <p className="text-small text-primary-dark/70">The bill the charges are on now</p>
+              <h3 className="text-body font-bold text-surface">From</h3>
+              <p className="text-small text-surface-muted">The bill the charges are on now</p>
             </div>
             <SearchInput label="Search bills to move charges from" placeholder="Guest, room or confirmation #" value={sourceSearch} onChange={setSourceSearch} />
             <Select id="source-folio" name="sourceFolio" label="Source bill" options={sourceOptions} value={sourceFolioId} onChange={pickSource} />
@@ -173,11 +173,11 @@ export default function TransferChargesPage() {
 
           <div className="flex flex-col gap-3">
             <div>
-              <h3 className="text-body font-bold text-primary-dark">To</h3>
-              <p className="text-small text-primary-dark/70">Any open bill at this property</p>
+              <h3 className="text-body font-bold text-surface">To</h3>
+              <p className="text-small text-surface-muted">Any open bill at this property</p>
             </div>
             {!sourceFolioId ? (
-              <p className="text-small text-primary-dark/70">Pick the bill to move charges from first.</p>
+              <p className="text-small text-surface-muted">Pick the bill to move charges from first.</p>
             ) : (
               <>
                 <SearchInput label="Search bills to move charges to" placeholder="Guest, room or confirmation #" value={targetSearch} onChange={setTargetSearch} />
@@ -197,11 +197,11 @@ export default function TransferChargesPage() {
       {source ? (
         <Section label="Charges">
           {items.length === 0 ? (
-            <p className="text-body text-primary-dark/70">Nothing has been charged to this bill.</p>
+            <p className="text-body text-surface-muted">Nothing has been charged to this bill.</p>
           ) : (
             <>
               <div className="flex flex-wrap items-center gap-4">
-                <label className="flex items-center gap-2 text-small font-semibold text-primary-dark cursor-pointer">
+                <label className="flex items-center gap-2 text-small font-semibold text-surface cursor-pointer">
                   <input type="checkbox" className="size-4 accent-primary cursor-pointer" checked={moveAll} onChange={(e) => setMoveAll(e.target.checked)} />
                   Move everything on this bill
                 </label>
@@ -211,7 +211,7 @@ export default function TransferChargesPage() {
                   </Button>
                 ) : null}
               </div>
-              <p className="text-small text-primary-dark/70 max-w-2xl">
+              <p className="text-small text-surface-muted max-w-2xl">
                 A charge&apos;s tax and any correction to it go with it, so neither bill is left carrying part of a charge it doesn&apos;t have. Payments stay on
                 the bill they were paid to.
               </p>
@@ -220,10 +220,10 @@ export default function TransferChargesPage() {
                   <thead>
                     <tr className="border-b border-primary/25">
                       <th className="pb-2 pr-4 w-10" />
-                      <th className="text-small font-bold text-primary-dark pb-2 pr-4">Service Date</th>
-                      <th className="text-small font-bold text-primary-dark pb-2 pr-4">Description</th>
-                      <th className="text-small font-bold text-primary-dark pb-2 pr-4">Type</th>
-                      <th className="text-small font-bold text-primary-dark pb-2 text-right">Amount</th>
+                      <th className="text-small font-bold text-surface pb-2 pr-4">Service Date</th>
+                      <th className="text-small font-bold text-surface pb-2 pr-4">Description</th>
+                      <th className="text-small font-bold text-surface pb-2 pr-4">Type</th>
+                      <th className="text-small font-bold text-surface pb-2 text-right">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -241,17 +241,17 @@ export default function TransferChargesPage() {
                               className={`size-4 accent-primary ${locked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
                             />
                           </td>
-                          <td className="text-small text-primary-dark py-3 pr-4 whitespace-nowrap">{li.serviceDate ? new Date(li.serviceDate).toLocaleDateString() : '—'}</td>
-                          <td className={`text-small py-3 pr-4 ${li.chargeType === 'tax' || li.chargeType === 'correction' ? 'text-primary-dark/70' : 'text-primary-dark'}`}>
+                          <td className="text-small text-surface py-3 pr-4 whitespace-nowrap">{li.serviceDate ? new Date(li.serviceDate).toLocaleDateString() : '—'}</td>
+                          <td className={`text-small py-3 pr-4 ${li.chargeType === 'tax' || li.chargeType === 'correction' ? 'text-surface-muted' : 'text-surface'}`}>
                             {li.description}
-                            {!moveAll && isAttached(li) ? <span className="block text-tiny text-primary-dark/60">Moves with its charge</span> : null}
+                            {!moveAll && isAttached(li) ? <span className="block text-tiny text-surface-muted">Moves with its charge</span> : null}
                           </td>
                           <td className="py-3 pr-4">
                             <span className="inline-flex rounded-pill bg-primary/15 px-2 py-0.5 text-tiny font-semibold text-primary-dark capitalize">
                               {li.chargeType === 'fnb' ? 'FnB' : li.chargeType}
                             </span>
                           </td>
-                          <td className="text-small text-primary-dark py-3 text-right whitespace-nowrap font-semibold">{formatMoney(li.amount, symbol)}</td>
+                          <td className="text-small text-surface py-3 text-right whitespace-nowrap font-semibold">{formatMoney(li.amount, symbol)}</td>
                         </tr>
                       );
                     })}
@@ -261,12 +261,12 @@ export default function TransferChargesPage() {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start pt-2">
                 <Card tone="secondary" className="flex flex-col gap-2">
-                  <h3 className="text-body font-bold text-secondary">Preview</h3>
+                  <h3 className="text-body font-bold text-surface">Preview</h3>
                   <Row label="Lines moving" value={String(moving.length)} />
                   <Row label="Amount moving" value={formatMoney(movingTotal, symbol)} />
                   {sourceRow ? <Row label="From bill after" value={formatMoney(Number(sourceRow.balanceDue) - movingTotal, symbol)} /> : null}
                   {targetRow ? <Row label="To bill after" value={formatMoney(Number(targetRow.balanceDue) + movingTotal, symbol)} /> : null}
-                  <p className="text-tiny text-secondary-light pt-1 border-t border-secondary/20">
+                  <p className="text-tiny text-surface-muted pt-1 border-t border-secondary/20">
                     Nothing is created or destroyed — the two bills together owe the same before and after.
                   </p>
                 </Card>
@@ -298,8 +298,8 @@ function BalanceCard({ title, amount, after, symbol }: { title: string; amount: 
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-small text-secondary-light">{label}</span>
-      <span className="text-small font-semibold text-secondary">{value}</span>
+      <span className="text-small text-surface-muted">{label}</span>
+      <span className="text-small font-semibold text-surface">{value}</span>
     </div>
   );
 }

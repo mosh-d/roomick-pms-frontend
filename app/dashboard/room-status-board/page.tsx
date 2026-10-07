@@ -74,7 +74,7 @@ export default function RoomStatusBoardPage() {
       <RoomStatusFilters value={filters} onChange={setFilters} buildingOptions={buildingOptions} roomTypeOptions={roomTypeOptions} />
 
       {roomsQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading rooms…</p>
+        <p className="text-body text-surface-muted">Loading rooms…</p>
       ) : roomsQuery.isError ? (
         <p className="text-body text-red-600">Could not load rooms. Please try refreshing.</p>
       ) : (

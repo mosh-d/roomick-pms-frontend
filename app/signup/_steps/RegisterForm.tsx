@@ -107,7 +107,7 @@ function AlreadyRegistered({
         <Input label="Group / Hotel Name" value={owner.groupName} readOnly />
       </Section>
 
-      <p className="text-small text-secondary-light">Your account already exists — nothing to re-submit here.</p>
+      <p className="text-small text-surface-muted">Your account already exists — nothing to re-submit here.</p>
 
       <Button type="button" onClick={onNext}>
         Continue
@@ -253,7 +253,7 @@ function RegisterFields({
     <>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         {isDemo ? (
-          <p className="text-small text-secondary-light">
+          <p className="text-small text-surface-muted">
             Demo mode — this organization auto-deletes 30 days from creation, or you can delete it yourself at any
             time from account settings.
           </p>
@@ -339,7 +339,7 @@ function RegisterFields({
 
         {conflict ? (
           <div className="flex flex-col gap-2 rounded-control bg-secondary-light/15 px-3 py-2">
-            <p className="text-small text-secondary">
+            <p className="text-small text-surface">
               An account already exists with these details — if that&apos;s you, log in and continue setting it up
               instead of creating a new one.
             </p>
@@ -354,9 +354,9 @@ function RegisterFields({
         </Button>
       </form>
 
-      <p className="text-small text-secondary-light mt-4">
+      <p className="text-small text-surface-muted mt-4">
         Already have an account?{' '}
-        <Link href="/login" className="text-primary-text font-semibold hover:underline">
+        <Link href="/login" className="text-surface-accent font-semibold hover:underline">
           Log in
         </Link>
       </p>

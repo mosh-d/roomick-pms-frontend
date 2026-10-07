@@ -125,7 +125,7 @@ function CampaignsSection({ auth, branchId }: { auth: AuthOpts; branchId: string
         </Button>
       </div>
       {!branchId ? (
-        <p className="text-small text-secondary">Choose a property first — a campaign is sent from one property.</p>
+        <p className="text-small text-surface">Choose a property first — a campaign is sent from one property.</p>
       ) : campaigns.isError ? (
         <p className="text-small text-red-600">{errorText(campaigns.error, 'Couldn’t load campaigns.')}</p>
       ) : (
@@ -212,7 +212,7 @@ function NewCampaignModal({ auth, branchId, onClose }: { auth: AuthOpts; branchI
           hint="Leave blank to use the template’s own subject."
         />
 
-        <label className="flex items-center gap-2 text-small text-secondary cursor-pointer">
+        <label className="flex items-center gap-2 text-small text-surface cursor-pointer">
           <input id="campaign-ab" type="checkbox" checked={abTest} onChange={(e) => setAbTest(e.target.checked)} className="size-4 accent-secondary" />
           A/B test — send a second template to part of the audience and compare
         </label>
@@ -239,7 +239,7 @@ function NewCampaignModal({ auth, branchId, onClose }: { auth: AuthOpts; branchI
           </div>
         ) : null}
 
-        <label className="flex items-center gap-2 text-small text-secondary cursor-pointer">
+        <label className="flex items-center gap-2 text-small text-surface cursor-pointer">
           <input id="campaign-schedule" type="checkbox" checked={schedule} onChange={(e) => setSchedule(e.target.checked)} className="size-4 accent-secondary" />
           Schedule it — otherwise it stays a draft until you send it
         </label>
@@ -276,7 +276,7 @@ function SegmentsSection({ auth }: { auth: AuthOpts }) {
   return (
     <Section label="Audiences">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-small text-secondary max-w-2xl">
+        <p className="text-small text-surface max-w-2xl">
           Rules are checked against live guest data every time an audience is used. Only guests who opted in and have an email address are ever sent anything.
         </p>
         <Button type="button" variant="outline" onClick={() => setEditing('new')}>
@@ -284,13 +284,13 @@ function SegmentsSection({ auth }: { auth: AuthOpts }) {
         </Button>
       </div>
       {error ? <p className="text-small text-red-600">{error}</p> : null}
-      {segments.data?.length === 0 ? <p className="text-small text-secondary">No audiences yet.</p> : null}
+      {segments.data?.length === 0 ? <p className="text-small text-surface">No audiences yet.</p> : null}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {(segments.data ?? []).map((segment) => (
           <Card key={segment.id} className="flex flex-col gap-2">
-            <p className="text-body font-semibold text-secondary">{segment.name}</p>
-            {segment.description ? <p className="text-small text-secondary/80">{segment.description}</p> : null}
-            <ul className="list-disc pl-5 text-small text-secondary">
+            <p className="text-body font-semibold text-surface">{segment.name}</p>
+            {segment.description ? <p className="text-small text-surface/80">{segment.description}</p> : null}
+            <ul className="list-disc pl-5 text-small text-surface">
               {segment.rules.map((rule) => (
                 <li key={rule}>{rule}</li>
               ))}
@@ -386,7 +386,7 @@ function SegmentModal({ auth, segment, onClose }: { auth: AuthOpts; segment: Seg
         <Input id="segment-name" label="Name" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} placeholder="Lapsed guests — no stay in 6 months" />
         <Input id="segment-description" label="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={300} />
 
-        <p className="text-small font-semibold text-secondary pt-1">Stays and spend</p>
+        <p className="text-small font-semibold text-surface pt-1">Stays and spend</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
           <Input id="segment-min-stays" label="Completed stays, at least" type="number" min={0} value={minStays} onChange={(e) => setMinStays(e.target.value)} />
           <Input id="segment-min-spend" label="Has spent at least" type="number" min={0} value={minTotalSpend} onChange={(e) => setMinTotalSpend(e.target.value)} hint="Payments across all their bills." />
@@ -402,7 +402,7 @@ function SegmentModal({ auth, segment, onClose }: { auth: AuthOpts; segment: Seg
           />
         </div>
 
-        <p className="text-small font-semibold text-secondary pt-1">Guest</p>
+        <p className="text-small font-semibold text-surface pt-1">Guest</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
           <Select id="segment-vip" label="VIP level" options={VIP_OPTIONS} value={vipLevelMin} onChange={setVipLevelMin} />
           <MultiSelectTagInput id="segment-tiers" label="Loyalty tier (any of)" options={tierOptions} value={loyaltyTiers} onChange={setLoyaltyTiers} />
@@ -424,7 +424,7 @@ function SegmentModal({ auth, segment, onClose }: { auth: AuthOpts; segment: Seg
             Check Audience
           </Button>
           {result ? (
-            <p className="text-small text-secondary" id="segment-preview-result">
+            <p className="text-small text-surface" id="segment-preview-result">
               {result.tooLarge ? (
                 `${result.matching.toLocaleString()} guests match — too many to check. Add a rule to narrow it.`
               ) : (
@@ -437,7 +437,7 @@ function SegmentModal({ auth, segment, onClose }: { auth: AuthOpts; segment: Seg
           ) : null}
         </div>
         {result && result.sample.length > 0 ? (
-          <ul className="text-small text-secondary/80 pl-5 list-disc">
+          <ul className="text-small text-surface/80 pl-5 list-disc">
             {result.sample.map((guest) => (
               <li key={guest.id}>
                 {guest.name} {guest.email ? `— ${guest.email}` : ''}
@@ -473,19 +473,19 @@ function TemplatesSection({ auth }: { auth: AuthOpts }) {
   return (
     <Section label="Templates">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-small text-secondary max-w-2xl">Write the message as plain text. Links are tracked and an unsubscribe link is always added.</p>
+        <p className="text-small text-surface max-w-2xl">Write the message as plain text. Links are tracked and an unsubscribe link is always added.</p>
         <Button type="button" variant="outline" onClick={() => setEditing('new')}>
           New Template
         </Button>
       </div>
       {error ? <p className="text-small text-red-600">{error}</p> : null}
-      {templates.data?.length === 0 ? <p className="text-small text-secondary">No templates yet.</p> : null}
+      {templates.data?.length === 0 ? <p className="text-small text-surface">No templates yet.</p> : null}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {(templates.data ?? []).map((template) => (
           <Card key={template.id} className="flex flex-col gap-2">
-            <p className="text-body font-semibold text-secondary">{template.name}</p>
-            {template.subject ? <p className="text-small text-secondary">Subject: {template.subject}</p> : null}
-            <p className="text-small text-secondary/80 line-clamp-3 whitespace-pre-wrap">{template.body}</p>
+            <p className="text-body font-semibold text-surface">{template.name}</p>
+            {template.subject ? <p className="text-small text-surface">Subject: {template.subject}</p> : null}
+            <p className="text-small text-surface/80 line-clamp-3 whitespace-pre-wrap">{template.body}</p>
             <div className="flex gap-2">
               <Button type="button" size="sm" variant="outline" onClick={() => setEditing(template)}>
                 Edit
@@ -573,7 +573,7 @@ function TemplateModal({ auth, template, onClose }: { auth: AuthOpts; template: 
               type="button"
               title={field.label}
               onClick={() => insertField(field.token)}
-              className="rounded-full border border-secondary/30 px-2.5 py-0.5 text-tiny text-secondary hover:bg-secondary/10"
+              className="rounded-full border border-secondary/30 px-2.5 py-0.5 text-tiny text-surface hover:bg-secondary/10"
             >
               {`{{${field.token}}}`}
             </button>
@@ -587,7 +587,7 @@ function TemplateModal({ auth, template, onClose }: { auth: AuthOpts; template: 
         </div>
         {preview.data ? (
           <div className="flex flex-col gap-1">
-            <p className="text-small text-secondary">
+            <p className="text-small text-surface">
               <span className="font-semibold">Subject:</span> {preview.data.subject || '(none — the campaign name is used)'}
             </p>
             {/* A sandboxed frame with no permissions at all: it renders the real HTML part, and nothing in it can run. */}

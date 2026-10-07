@@ -113,9 +113,9 @@ export default function CommsLogPage() {
         <SearchInput value={search} onChange={setSearch} placeholder="Confirmation number or guest name" label="Search reservations" />
         {search.trim() ? (
           searchQuery.isLoading ? (
-            <p className="text-body text-primary-dark/70">Searching…</p>
+            <p className="text-body text-surface-muted">Searching…</p>
           ) : (searchQuery.data ?? []).length === 0 ? (
-            <p className="text-body text-primary-dark/70">No matching reservations.</p>
+            <p className="text-body text-surface-muted">No matching reservations.</p>
           ) : (
             <div className="flex flex-col gap-2">
               {(searchQuery.data ?? []).map((r) => (
@@ -127,8 +127,8 @@ export default function CommsLogPage() {
                     r.id === selectedReservationId ? 'border-primary bg-primary-light/20' : 'border-accent/30 hover:bg-accent/5'
                   }`}
                 >
-                  <p className="text-body font-semibold text-primary-dark">{r.guest.name}</p>
-                  <p className="text-small text-primary-dark/70">
+                  <p className="text-body font-semibold text-surface">{r.guest.name}</p>
+                  <p className="text-small text-surface-muted">
                     {r.confirmationNumber} — {r.roomType.name}, {r.checkInDate} to {r.checkOutDate}
                   </p>
                 </button>
@@ -144,9 +144,9 @@ export default function CommsLogPage() {
 
           <Section label="Timeline">
             {commsQuery.isLoading ? (
-              <p className="text-body text-primary-dark/70">Loading…</p>
+              <p className="text-body text-surface-muted">Loading…</p>
             ) : (commsQuery.data ?? []).length === 0 ? (
-              <p className="text-body text-primary-dark/70">No communications logged for this reservation yet.</p>
+              <p className="text-body text-surface-muted">No communications logged for this reservation yet.</p>
             ) : (
               <div className="flex flex-col gap-3">
                 {(commsQuery.data ?? []).map((entry) => (
@@ -177,7 +177,7 @@ function GuestInboxSection({ branchId, auth }: { branchId: string; auth: AuthOpt
   return (
     <Section label="Guest Messages">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-small text-primary-dark/70 max-w-xl">
+        <p className="text-small text-surface-muted max-w-xl">
           Messages and requests guests send from Manage your booking, threaded with everything the property has sent them.
         </p>
         <div className="flex gap-2" role="group" aria-label="Show">
@@ -191,9 +191,9 @@ function GuestInboxSection({ branchId, auth }: { branchId: string; auth: AuthOpt
       </div>
 
       {inboxQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading messages…</p>
+        <p className="text-body text-surface-muted">Loading messages…</p>
       ) : conversations.length === 0 ? (
-        <p className="text-body text-primary-dark/70">{filter === 'unread' ? 'No unread guest messages.' : 'No guest has sent a message yet.'}</p>
+        <p className="text-body text-surface-muted">{filter === 'unread' ? 'No unread guest messages.' : 'No guest has sent a message yet.'}</p>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 items-start">
           <ul className="flex flex-col gap-2" aria-label="Conversations">
@@ -206,7 +206,7 @@ function GuestInboxSection({ branchId, auth }: { branchId: string; auth: AuthOpt
           {guestId ? (
             <InboxThreadPanel key={guestId} branchId={branchId} guestId={guestId} auth={auth} />
           ) : (
-            <p className="text-small text-primary-dark/70">Pick a conversation to read and reply.</p>
+            <p className="text-small text-surface-muted">Pick a conversation to read and reply.</p>
           )}
         </div>
       )}
@@ -226,15 +226,15 @@ function ConversationButton({ conversation, selected, onSelect }: { conversation
       }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <p className={`text-body text-primary-dark ${unreadCount > 0 ? 'font-bold' : 'font-semibold'}`}>{guest.name}</p>
+        <p className={`text-body text-surface ${unreadCount > 0 ? 'font-bold' : 'font-semibold'}`}>{guest.name}</p>
         {unreadCount > 0 ? (
           <span className="inline-flex items-center rounded-pill bg-primary px-2 py-0.5 text-tiny font-semibold text-white whitespace-nowrap">{unreadCount} new</span>
         ) : null}
       </div>
-      <p className="text-tiny text-primary-dark/70">
+      <p className="text-tiny text-surface-muted">
         {reservation ? `${reservation.confirmationNumber} · ${reservation.status.replace('_', ' ')}` : 'No booking'} · {new Date(lastMessage.sentAt).toLocaleString()}
       </p>
-      <p className="text-small text-primary-dark/80 truncate">
+      <p className="text-small text-surface/80 truncate">
         {lastMessage.direction === 'inbound' ? '' : 'You: '}
         {lastMessage.preview}
       </p>
@@ -275,14 +275,14 @@ function InboxThreadPanel({ branchId, guestId, auth }: { branchId: string; guest
   }
 
   if (threadQuery.isLoading || !thread) {
-    return <p className="text-body text-primary-dark/70">Loading conversation…</p>;
+    return <p className="text-body text-surface-muted">Loading conversation…</p>;
   }
 
   return (
     <Card tone="secondary" className="flex flex-col gap-3">
       <div>
-        <p className="text-body font-bold text-secondary">{thread.guest.name}</p>
-        <p className="text-tiny text-secondary-light">
+        <p className="text-body font-bold text-surface">{thread.guest.name}</p>
+        <p className="text-tiny text-surface-muted">
           {[thread.guest.email, thread.guest.phone].filter(Boolean).join(' · ') || 'No contact details'}
           {thread.reservations.length > 0 ? ` · ${thread.reservations.map((r) => `${r.confirmationNumber} (${r.status.replace('_', ' ')})`).join(', ')}` : ''}
         </p>
@@ -296,11 +296,11 @@ function InboxThreadPanel({ branchId, guestId, auth }: { branchId: string; guest
 
       <div className="flex flex-col gap-2 border-t border-secondary/20 pt-3">
         <Select id="reply-channel" label="Reply by" options={REPLY_CHANNEL_OPTIONS} value={channel} onChange={(value) => setChannel(value as InboxReplyChannel)} />
-        <p className="text-tiny text-secondary-light">{REPLY_CHANNEL_HINTS[channel]}</p>
+        <p className="text-tiny text-surface-muted">{REPLY_CHANNEL_HINTS[channel]}</p>
         {channel === 'email' ? <Input id="reply-subject" label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} /> : null}
         <Textarea id="reply-body" label="Reply" value={body} rows={3} maxLength={5000} onChange={(e) => { setBody(e.target.value); setSent(false); }} />
         {error ? <p className="text-small text-red-600">{error}</p> : null}
-        {sent ? <p className="text-small text-secondary">Reply sent.</p> : null}
+        {sent ? <p className="text-small text-surface">Reply sent.</p> : null}
         <Button type="button" disabled={!body.trim()} loading={replyMutation.isPending} onClick={sendReply} className="self-start">
           Send reply
         </Button>
@@ -314,14 +314,14 @@ function ThreadMessage({ message }: { message: CommunicationLogEntry }) {
   const who = fromGuest ? 'Guest' : message.sentBy ? 'Staff' : `Automated · ${TRIGGER_LABELS[message.trigger] ?? message.trigger}`;
   return (
     <li className={`rounded-control p-3 ${fromGuest ? 'bg-accent/15 mr-8' : 'bg-white/60 ml-8 border border-secondary/10'}`}>
-      <p className="flex flex-wrap items-center gap-1 text-tiny text-secondary-light">
+      <p className="flex flex-wrap items-center gap-1 text-tiny text-surface-muted">
         <CommsChannelIcon channel={message.channel} className="size-3" />
         <span>
           {who} · {CHANNEL_LABELS[message.channel]} · {new Date(message.sentAt).toLocaleString()}
         </span>
       </p>
-      {message.subject ? <p className="text-small font-semibold text-secondary">{message.subject}</p> : null}
-      <p className="text-small text-secondary whitespace-pre-wrap wrap-break-word">{message.body}</p>
+      {message.subject ? <p className="text-small font-semibold text-surface">{message.subject}</p> : null}
+      <p className="text-small text-surface whitespace-pre-wrap wrap-break-word">{message.body}</p>
     </li>
   );
 }
@@ -332,12 +332,12 @@ function TimelineEntry({ entry }: { entry: CommunicationLogEntry }) {
     <Card tone="secondary" className="flex flex-col gap-2">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <span className="text-secondary mt-0.5">
+          <span className="text-surface mt-0.5">
             <CommsChannelIcon channel={entry.channel} className="size-4" />
           </span>
           <div>
-            <p className="text-body font-semibold text-secondary">{entry.subject ?? TRIGGER_LABELS[entry.trigger] ?? entry.trigger}</p>
-            <p className="text-tiny text-secondary-light">
+            <p className="text-body font-semibold text-surface">{entry.subject ?? TRIGGER_LABELS[entry.trigger] ?? entry.trigger}</p>
+            <p className="text-tiny text-surface-muted">
               {TRIGGER_LABELS[entry.trigger] ?? entry.trigger} · {new Date(entry.sentAt).toLocaleString()} ·{' '}
               {entry.direction === 'inbound' ? 'From guest' : entry.sentBy ? 'Manual' : 'Automated'}
             </p>
@@ -346,7 +346,7 @@ function TimelineEntry({ entry }: { entry: CommunicationLogEntry }) {
         <span className={`inline-flex items-center rounded-pill px-2 py-0.5 text-tiny font-semibold whitespace-nowrap ${DELIVERY_TONE[entry.deliveryStatus]}`}>{entry.deliveryStatus}</span>
       </div>
       {expanded ? (
-        <p className="text-small text-secondary whitespace-pre-wrap">{entry.body}</p>
+        <p className="text-small text-surface whitespace-pre-wrap">{entry.body}</p>
       ) : (
         <button type="button" onClick={() => setExpanded(true)} className="text-small text-primary text-left cursor-pointer hover:underline self-start">
           Expand message
@@ -380,7 +380,7 @@ function SendMessageSection({ reservationId, guestName, auth }: { reservationId:
 
   return (
     <Section label="Send Manual Message">
-      {guestName ? <p className="text-small text-primary-dark/70">To {guestName}</p> : null}
+      {guestName ? <p className="text-small text-surface-muted">To {guestName}</p> : null}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 max-w-xl">
         <Select name="channel" label="Channel" options={CHANNEL_OPTIONS} value={channel} onChange={setChannel} />
         {channel === 'email' ? <Input name="subject" label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} /> : null}
@@ -389,7 +389,7 @@ function SendMessageSection({ reservationId, guestName, auth }: { reservationId:
         <Textarea name="body" label="Message" value={body} onChange={(e) => setBody(e.target.value)} rows={4} />
       </div>
       {error ? <p className="text-small text-red-600">{error}</p> : null}
-      {sent ? <p className="text-small text-primary-dark">Logged.</p> : null}
+      {sent ? <p className="text-small text-surface">Logged.</p> : null}
       <Button type="button" disabled={!body.trim()} loading={mutation.isPending} onClick={send} className="self-start">
         Send
       </Button>

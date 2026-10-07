@@ -38,10 +38,14 @@ export type CardTone = 'primary' | 'secondary' | 'accent';
 // hand-copying it. Hand-copying is how the old BrandRadioCard (and later,
 // FeatureCard.tsx) drifted out of sync with Card's own tone colors; sharing
 // the constant makes that class of drift impossible.
+// Each tone also names its surface (`surface-*`, app/globals.css): the text
+// inside takes that surface's colour family — `text-surface`/`text-surface-
+// muted`, and anything that just inherits. A gold box gets bronze text, a
+// violet-tinted card violet text; text never crosses families.
 export const CARD_TONE_CLASSES: Record<CardTone, string> = {
-  primary: 'bg-primary-light/5 border-primary/40',
-  secondary: 'bg-secondary/5 border-secondary/20',
-  accent: 'bg-accent-dark/10 border-accent-dark/20',
+  primary: 'bg-primary-light/5 border-primary/40 surface-primary',
+  secondary: 'bg-secondary/5 border-secondary/20 surface-secondary',
+  accent: 'bg-accent-dark/10 border-accent-dark/20 surface-accent',
 };
 
 /**
@@ -56,10 +60,11 @@ export const CARD_TONE_CLASSES: Record<CardTone, string> = {
  * own 10% base). That's the entire visual-hierarchy mechanism: how many
  * Cards you're inside of, not a token you have to pick.
  *
- * Text placed directly on a Card should use `text-secondary` (the app's
- * default dark body-text color), not `text-secondary-light` — see the
- * TONE_CLASSES comment above for why the lighter text color loses contrast
- * as nesting compounds.
+ * Text placed directly on a Card uses `text-surface` (or just inherits) —
+ * the card's own family: violet in a secondary card, bronze in a gold or
+ * slate one. Muted text is `text-surface-muted`; see the TONE_CLASSES
+ * comment above for why muted text is kept for secondary detail lines only
+ * (its contrast drops as nesting compounds).
  */
 export function Card({
   tone = 'secondary',

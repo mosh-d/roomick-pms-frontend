@@ -158,7 +158,7 @@ function GroupBlocksSection({ branchId, auth }: { branchId: string; auth: AuthOp
 
   return (
     <Section label="Group Block Creation">
-      <p className="text-small text-primary-dark/70">
+      <p className="text-small text-surface-muted">
         A block holds its rooms for the group&rsquo;s nights until the end of the cut-off date. After that, any rooms not yet booked go back on sale by themselves.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
@@ -189,9 +189,9 @@ function GroupBlocksSection({ branchId, auth }: { branchId: string; auth: AuthOp
       </div>
 
       {blocksQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : (blocksQuery.data ?? []).length === 0 ? (
-        <p className="text-body text-primary-dark/70">No group blocks yet.</p>
+        <p className="text-body text-surface-muted">No group blocks yet.</p>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {(blocksQuery.data ?? []).map((block) => (
@@ -239,17 +239,17 @@ function GroupBlockCard({
     <Card tone="secondary" className="flex flex-col gap-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-body font-semibold text-secondary">{block.name}</p>
-          <p className="text-small text-secondary-light">
+          <p className="text-body font-semibold text-surface">{block.name}</p>
+          <p className="text-small text-surface-muted">
             {block.roomTypeName} · {formatMoney(block.blockRate)}/night
             {block.arrivalDate && block.departureDate ? ` · ${formatDay(block.arrivalDate)} – ${formatDay(block.departureDate)}` : ''}
           </p>
-          {contact ? <p className="text-tiny text-secondary-light">Contact: {contact}</p> : null}
+          {contact ? <p className="text-tiny text-surface-muted">Contact: {contact}</p> : null}
         </div>
         <HoldStatus block={block} />
       </div>
       <div>
-        <div className="flex justify-between text-tiny text-secondary">
+        <div className="flex justify-between text-tiny text-surface">
           <span>Pickup</span>
           <span>
             {block.pickup} of {block.blockSize} rooms booked
@@ -265,7 +265,7 @@ function GroupBlockCard({
         >
           <div className="h-2 rounded-pill bg-primary" style={{ width: `${pickupPct}%` }} />
         </div>
-        <p className="mt-1 text-tiny text-secondary-light">Cut-off {formatDay(block.cutoffDate)}</p>
+        <p className="mt-1 text-tiny text-surface-muted">Cut-off {formatDay(block.cutoffDate)}</p>
       </div>
       {block.status === 'active' ? (
         <div className="flex flex-wrap gap-2">
@@ -300,7 +300,7 @@ function ReleaseBlockModal({ block, branchId, auth, onClose }: { block: GroupBlo
 
   return (
     <Modal open onClose={onClose} title={`Release "${block.name}"?`}>
-      <p className="text-body text-secondary">
+      <p className="text-body text-surface">
         It stops taking bookings
         {block.roomsHeld > 0 ? ` and its ${block.roomsHeld} held room${block.roomsHeld === 1 ? '' : 's'} go back on sale` : ''}. The {block.pickup} room
         {block.pickup === 1 ? '' : 's'} already booked stay booked.
@@ -349,7 +349,7 @@ function BookIntoBlockModal({ block, branchId, auth, onClose }: { block: GroupBl
     <Modal open onClose={onClose} title={`Book Into "${block.name}"`}>
       {confirmation ? (
         <div className="flex flex-col gap-3">
-          <p className="text-body text-primary-dark">
+          <p className="text-body text-surface">
             Booked — confirmation <span className="font-semibold">{confirmation}</span> at {formatMoney(block.blockRate)}/night.
           </p>
           <Button type="button" onClick={onClose} className="self-start">
@@ -358,7 +358,7 @@ function BookIntoBlockModal({ block, branchId, auth, onClose }: { block: GroupBl
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          <p className="text-small text-primary-dark/70">
+          <p className="text-small text-surface-muted">
             {block.pickup} of {block.blockSize} rooms booked so far — this reservation takes the block&rsquo;s own rate of {formatMoney(block.blockRate)}/night.
           </p>
           <Input id="block-booking-guest-name" label="Guest Name" value={guestName} onChange={(e) => setGuestName(e.target.value)} />
@@ -534,11 +534,11 @@ function RoomingListModal({ block, branchId, auth, onClose }: { block: GroupBloc
       <div className="flex flex-col gap-3 max-h-[70vh] overflow-y-auto">
         {result ? (
           <>
-            <p className="text-body font-semibold text-secondary">
+            <p className="text-body font-semibold text-surface">
               Booked {result.created.length} of {result.created.length + result.failed.length} guests.
             </p>
             {result.created.length > 0 ? (
-              <ul className="text-small text-secondary list-disc pl-5">
+              <ul className="text-small text-surface list-disc pl-5">
                 {result.created.map((c) => (
                   <li key={c.reservationId}>
                     {c.guestName} — {c.confirmationNumber}
@@ -556,7 +556,7 @@ function RoomingListModal({ block, branchId, auth, onClose }: { block: GroupBloc
                     </li>
                   ))}
                 </ul>
-                <p className="text-tiny text-secondary-light">Fix these and book them one by one, or upload a list of just these guests.</p>
+                <p className="text-tiny text-surface-muted">Fix these and book them one by one, or upload a list of just these guests.</p>
               </>
             ) : null}
             <Button type="button" onClick={onClose} className="self-start">
@@ -565,7 +565,7 @@ function RoomingListModal({ block, branchId, auth, onClose }: { block: GroupBloc
           </>
         ) : (
           <>
-            <p className="text-small text-primary-dark/70">
+            <p className="text-small text-surface-muted">
               One row per guest, from a CSV file. Leave the dates blank to use the block&rsquo;s own{blockDates ? ` (${blockDates})` : ''}. {remaining} of the
               block&rsquo;s {block.blockSize} rooms are left.
             </p>
@@ -577,7 +577,7 @@ function RoomingListModal({ block, branchId, auth, onClose }: { block: GroupBloc
                 Choose CSV File
                 <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(e) => chooseFile(e.target.files?.[0])} />
               </label>
-              {fileName ? <span className="text-tiny text-secondary-light">{fileName}</span> : null}
+              {fileName ? <span className="text-tiny text-surface-muted">{fileName}</span> : null}
             </div>
 
             {parsed && parsed.problems.length > 0 ? (
@@ -591,12 +591,12 @@ function RoomingListModal({ block, branchId, auth, onClose }: { block: GroupBloc
 
             {parsed && parsed.problems.length === 0 && parsed.rows.length > 0 ? (
               <>
-                <p className="text-small text-secondary">
+                <p className="text-small text-surface">
                   {parsed.rows.length} guest{parsed.rows.length === 1 ? '' : 's'} ready to book.
                   {tooMany ? <span className="text-red-700"> That&rsquo;s more than the {remaining} rooms left.</span> : null}
                 </p>
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-tiny text-secondary">
+                  <table className="w-full border-collapse text-tiny text-surface">
                     <thead>
                       <tr className="text-left font-bold">
                         <th className="py-1 pr-3">Row</th>
@@ -616,7 +616,7 @@ function RoomingListModal({ block, branchId, auth, onClose }: { block: GroupBloc
                       ))}
                     </tbody>
                   </table>
-                  {parsed.rows.length > 8 ? <p className="text-tiny text-secondary-light">…and {parsed.rows.length - 8} more.</p> : null}
+                  {parsed.rows.length > 8 ? <p className="text-tiny text-surface-muted">…and {parsed.rows.length - 8} more.</p> : null}
                 </div>
               </>
             ) : null}
@@ -733,13 +733,13 @@ function EventSpacesSection({ branchId, auth }: { branchId: string; auth: AuthOp
     <Section label="Event Space Calendar">
       <div className="flex flex-col gap-4">
         <Card tone="accent" className="flex flex-col gap-3">
-          <p className="text-small font-semibold text-primary-dark">Register a Space</p>
+          <p className="text-small font-semibold text-surface">Register a Space</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl">
             <Input id="event-space-name" label="Name" value={spaceName} onChange={(e) => setSpaceName(e.target.value)} placeholder="Grand Ballroom" />
             <Select id="event-space-category" label="Category" options={CATEGORY_OPTIONS} value={category} onChange={setCategory} />
             <Input id="event-space-capacity" label="Capacity" type="number" min={1} value={capacity} onChange={(e) => setCapacity(e.target.value)} />
           </div>
-          <p className="text-tiny text-secondary-light">Seats per layout (optional) — a layout left blank uses the capacity above.</p>
+          <p className="text-tiny text-surface-muted">Seats per layout (optional) — a layout left blank uses the capacity above.</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl">
             {SETUP_STYLES.map((style) => (
               <Input
@@ -760,11 +760,11 @@ function EventSpacesSection({ branchId, auth }: { branchId: string; auth: AuthOp
         </Card>
 
         {spaces.length === 0 ? (
-          <p className="text-body text-primary-dark/70">No event spaces registered yet.</p>
+          <p className="text-body text-surface-muted">No event spaces registered yet.</p>
         ) : (
           <>
             <Card tone="accent" className="flex flex-col gap-3">
-              <p className="text-small font-semibold text-primary-dark">Book a Space</p>
+              <p className="text-small font-semibold text-surface">Book a Space</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl">
                 <Select
                   id="event-booking-space"
@@ -795,24 +795,24 @@ function EventSpacesSection({ branchId, auth }: { branchId: string; auth: AuthOp
               </Button>
             </Card>
 
-            <p className="text-small text-primary-dark/70">
+            <p className="text-small text-surface-muted">
               Showing bookings from {from} to {to}.
             </p>
             {bookingsQuery.isLoading ? (
-              <p className="text-body text-primary-dark/70">Loading…</p>
+              <p className="text-body text-surface-muted">Loading…</p>
             ) : (bookingsQuery.data ?? []).length === 0 ? (
-              <p className="text-body text-primary-dark/70">No bookings in this range.</p>
+              <p className="text-body text-surface-muted">No bookings in this range.</p>
             ) : (
               <div className="flex flex-col gap-2">
                 {(bookingsQuery.data ?? []).map((booking) => (
                   <Card key={booking.id} tone="secondary" className="flex flex-wrap items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-body font-semibold text-secondary">{booking.title}</p>
-                      <p className="text-tiny text-secondary-light">
+                      <p className="text-body font-semibold text-surface">{booking.title}</p>
+                      <p className="text-tiny text-surface-muted">
                         {spaceById.get(booking.eventSpaceId)?.name ?? 'Unknown space'} · {new Date(booking.startsAt).toLocaleString()} – {new Date(booking.endsAt).toLocaleString()}
                       </p>
                       {booking.setupStyle || booking.headcount ? (
-                        <p className="text-tiny text-secondary-light">
+                        <p className="text-tiny text-surface-muted">
                           {[booking.setupStyle ? SETUP_STYLE_LABELS[booking.setupStyle] : null, booking.headcount ? `${booking.headcount} guests` : null]
                             .filter(Boolean)
                             .join(' · ')}
@@ -859,7 +859,7 @@ function EventDetailsModal({
   return (
     <Modal open onClose={onClose} title={detail ? detail.title : 'Event Details'}>
       {detailQuery.isError ? <p className="text-small text-red-600">{errorText(detailQuery.error)}</p> : null}
-      {detail ? <EventDetailsForm key={detail.id} detail={detail} branchId={branchId} from={from} to={to} auth={auth} /> : <p className="text-body text-primary-dark/70">Loading…</p>}
+      {detail ? <EventDetailsForm key={detail.id} detail={detail} branchId={branchId} from={from} to={to} auth={auth} /> : <p className="text-body text-surface-muted">Loading…</p>}
     </Modal>
   );
 }
@@ -932,7 +932,7 @@ function EventDetailsForm({ detail, branchId, from, to, auth }: { detail: EventB
 
   return (
     <div className="flex flex-col gap-3 max-h-[70vh] overflow-y-auto pr-1">
-      <p className="text-small text-secondary-light">
+      <p className="text-small text-surface-muted">
         {space.name} · {new Date(detail.startsAt).toLocaleString()} – {new Date(detail.endsAt).toLocaleString()}
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -952,12 +952,12 @@ function EventDetailsForm({ detail, branchId, from, to, auth }: { detail: EventB
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-small font-semibold text-secondary">Catering</p>
+          <p className="text-small font-semibold text-surface">Catering</p>
           <Button type="button" size="sm" variant="outline" onClick={() => setLines((current) => [...current, { description: '', quantity: '', unitPrice: '' }])}>
             Add Line
           </Button>
         </div>
-        {lines.length === 0 ? <p className="text-tiny text-secondary-light">No catering yet.</p> : null}
+        {lines.length === 0 ? <p className="text-tiny text-surface-muted">No catering yet.</p> : null}
         {lines.map((line, index) => (
           <Card key={index} tone="secondary" className="flex flex-col gap-2">
             <Input
@@ -986,7 +986,7 @@ function EventDetailsForm({ detail, branchId, from, to, auth }: { detail: EventB
           </Card>
         ))}
         {detail.cateringLines.length > 0 ? (
-          <dl className="flex flex-col gap-1 border-t border-secondary/20 pt-2 text-small text-secondary">
+          <dl className="flex flex-col gap-1 border-t border-secondary/20 pt-2 text-small text-surface">
             <div className="flex justify-between">
               <dt>Subtotal</dt>
               <dd>{formatMoney(detail.totals.subtotal, symbol)}</dd>
@@ -1005,7 +1005,7 @@ function EventDetailsForm({ detail, branchId, from, to, auth }: { detail: EventB
                 <dd>{formatMoney(detail.totals.taxIncluded, symbol)}</dd>
               </div>
             ) : null}
-            <p className="text-tiny text-secondary-light">As last saved.</p>
+            <p className="text-tiny text-surface-muted">As last saved.</p>
           </dl>
         ) : null}
       </div>

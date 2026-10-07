@@ -132,13 +132,13 @@ export default function CancelReservationPage() {
     <Container className="max-w-3xl py-10 flex flex-col gap-6">
       <PageHeader icon={<CancelReservationIcon className="size-8" />} title="Cancel Reservation" subtitle="Handle cancellations" />
 
-      {cancelledName ? <p className="text-body font-semibold text-primary-dark">{cancelledName}&apos;s reservation is cancelled.</p> : null}
+      {cancelledName ? <p className="text-body font-semibold text-surface">{cancelledName}&apos;s reservation is cancelled.</p> : null}
 
       <Section label="Reservation Search">
         {confirmedQuery.isLoading || waitlistedQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading reservations…</p>
+          <p className="text-body text-surface-muted">Loading reservations…</p>
         ) : options.length === 0 ? (
-          <p className="text-body text-primary-dark/70">No confirmed or waitlisted reservations to cancel.</p>
+          <p className="text-body text-surface-muted">No confirmed or waitlisted reservations to cancel.</p>
         ) : (
           <>
             <Select id="cancel-reservation" name="reservationId" label="Reservation" options={options} value={selectedId} onChange={pick} />
@@ -159,25 +159,25 @@ export default function CancelReservationPage() {
       {selected ? (
         <Section label="Cancellation Policy">
           {quoteQuery.isLoading ? (
-            <p className="text-body text-primary-dark/70">Checking the cancellation policy…</p>
+            <p className="text-body text-surface-muted">Checking the cancellation policy…</p>
           ) : quoteQuery.isError || !quote ? (
             <p className="text-small text-red-600">Couldn&apos;t load the cancellation terms for this reservation.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               <Card tone="accent" className="flex flex-col gap-2">
-                <p className="text-small text-primary-dark">{quote.policy.summary}</p>
+                <p className="text-small text-surface">{quote.policy.summary}</p>
                 <p className={`text-small font-semibold ${quote.withinFreeWindow ? 'text-green-700' : 'text-red-600'}`}>
                   {quote.withinFreeWindow
                     ? `Free to cancel until ${new Date(quote.freeCancellationUntil).toLocaleString()}.`
                     : `The free cancellation window closed ${new Date(quote.freeCancellationUntil).toLocaleString()}.`}
                 </p>
                 {!quote.policy.allowOnlineCancellation ? (
-                  <p className="text-tiny text-primary-dark/70">Guests can&apos;t cancel online at this property — cancellations come through the desk.</p>
+                  <p className="text-tiny text-surface-muted">Guests can&apos;t cancel online at this property — cancellations come through the desk.</p>
                 ) : null}
               </Card>
 
               <Card tone="secondary" className="flex flex-col gap-2">
-                <h3 className="text-body font-bold text-secondary">Penalty &amp; Refund</h3>
+                <h3 className="text-body font-bold text-surface">Penalty &amp; Refund</h3>
                 <Row label={`Charge (${PENALTY_LABELS[quote.penaltyType]})`} value={formatMoney(quote.penaltyAmount, symbol)} />
                 <Row label="Tax" value={formatMoney(quote.penaltyTax, symbol)} />
                 <Row label="Total charge" value={waiving ? 'Waived' : formatMoney(quote.penaltyTotal, symbol)} />
@@ -191,7 +191,7 @@ export default function CancelReservationPage() {
                   <Row label="Guest will owe" value={formatMoney(quote.amountOwed, symbol)} />
                 )}
                 {Number(quote.refundDue) > 0 || (waiving && Number(quote.paidSoFar) > 0) ? (
-                  <p className="text-tiny text-secondary-light">Refunds aren&apos;t issued automatically — record it from the guest&apos;s folio.</p>
+                  <p className="text-tiny text-surface-muted">Refunds aren&apos;t issued automatically — record it from the guest&apos;s folio.</p>
                 ) : null}
               </Card>
             </div>
@@ -255,8 +255,8 @@ export default function CancelReservationPage() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-small text-secondary-light">{label}</span>
-      <span className="text-body font-semibold text-secondary">{value}</span>
+      <span className="text-small text-surface-muted">{label}</span>
+      <span className="text-body font-semibold text-surface">{value}</span>
     </div>
   );
 }

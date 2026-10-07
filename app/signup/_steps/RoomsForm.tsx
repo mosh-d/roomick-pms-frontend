@@ -196,7 +196,7 @@ export function RoomsForm({ onBack, onNext }: { onBack: () => void; onNext: () =
                   type="button"
                   onClick={() => remove(index)}
                   aria-label="Remove room"
-                  className="mt-6 text-secondary-light hover:text-secondary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+                  className="mt-6 text-surface-muted hover:text-surface cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
                 >
                   <XIcon className="size-4" />
                 </button>
@@ -208,14 +208,14 @@ export function RoomsForm({ onBack, onNext }: { onBack: () => void; onNext: () =
             <button
               type="button"
               onClick={() => append({ roomTypeLocalId: roomTypeOptions[0]?.value ?? '', number: '', view: '' })}
-              className="inline-flex items-center gap-1 text-body font-semibold text-primary-text hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
+              className="inline-flex items-center gap-1 text-body font-semibold text-surface-accent hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
             >
               <PlusIcon className="size-4" /> Add room
             </button>
             <button
               type="button"
               onClick={() => setPatternOpen(true)}
-              className="inline-flex items-center gap-1 text-body font-semibold text-primary-text hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
+              className="inline-flex items-center gap-1 text-body font-semibold text-surface-accent hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
             >
               <PlusIcon className="size-4" /> Generate
             </button>
@@ -435,7 +435,7 @@ function SetupPatternModal({
             {formatNumberList(willReplace)}
           </p>
         ) : (
-          <p className="text-small text-secondary-light">This will replace any existing rooms in this generated range.</p>
+          <p className="text-small text-surface-muted">This will replace any existing rooms in this generated range.</p>
         )}
         {otherFloorConflicts.length > 0 ? (
           <p className="text-small text-red-600">

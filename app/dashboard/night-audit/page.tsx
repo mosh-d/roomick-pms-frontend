@@ -71,7 +71,7 @@ export default function NightAuditPage() {
       {runError ? <p className="text-small text-red-600">{runError}</p> : null}
       {lastRun ? (
         <Card tone="secondary">
-          <p className="text-small text-secondary">
+          <p className="text-small text-surface">
             <span className="font-bold">Audit {lastRun.status} for {lastRun.auditDate}.</span>{' '}
             {lastRun.chargesPosted} room {lastRun.chargesPosted === 1 ? 'charge' : 'charges'} posted across {lastRun.foliosProcessed}{' '}
             {lastRun.foliosProcessed === 1 ? 'folio' : 'folios'}
@@ -82,7 +82,7 @@ export default function NightAuditPage() {
       ) : null}
 
       {preflightQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading pre-audit checks…</p>
+        <p className="text-body text-surface-muted">Loading pre-audit checks…</p>
       ) : preflightQuery.isError || !preflight ? (
         <p className="text-body text-red-600">Could not load pre-audit information.</p>
       ) : (
@@ -91,8 +91,8 @@ export default function NightAuditPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
               <Card tone="secondary" className="flex flex-col gap-3">
                 <div>
-                  <h3 className="text-body font-bold text-secondary">Pre-audit Checklist</h3>
-                  <p className="text-small text-secondary-light">Conditions that should be met before the night audit runs</p>
+                  <h3 className="text-body font-bold text-surface">Pre-audit Checklist</h3>
+                  <p className="text-small text-surface-muted">Conditions that should be met before the night audit runs</p>
                 </div>
                 <div className="flex flex-col gap-2 pt-2 border-t border-secondary/20">
                   {preflight.checklist.map((item) => (
@@ -103,11 +103,11 @@ export default function NightAuditPage() {
 
               <Card tone="secondary" className="flex flex-col gap-3">
                 <div>
-                  <h3 className="text-body font-bold text-secondary">Open Folios</h3>
-                  <p className="text-small text-secondary-light">Folios still in open status ({preflight.openFolios.length})</p>
+                  <h3 className="text-body font-bold text-surface">Open Folios</h3>
+                  <p className="text-small text-surface-muted">Folios still in open status ({preflight.openFolios.length})</p>
                 </div>
                 {preflight.openFolios.length === 0 ? (
-                  <p className="text-small text-secondary-light pt-2 border-t border-secondary/20">No open folios.</p>
+                  <p className="text-small text-surface-muted pt-2 border-t border-secondary/20">No open folios.</p>
                 ) : (
                   <div className="flex flex-col pt-2 border-t border-secondary/20 max-h-64 overflow-y-auto">
                     {preflight.openFolios.map((f) => (
@@ -115,10 +115,10 @@ export default function NightAuditPage() {
                         key={f.id}
                         type="button"
                         onClick={() => router.push(`/dashboard/billing/${f.id}`)}
-                        className="flex items-center justify-between gap-3 py-2 text-left border-b border-secondary/10 last:border-0 cursor-pointer hover:text-primary-text transition-colors"
+                        className="flex items-center justify-between gap-3 py-2 text-left border-b border-secondary/10 last:border-0 cursor-pointer hover:text-surface-accent transition-colors"
                       >
-                        <span className="text-small text-secondary truncate">{f.guestName}</span>
-                        <span className="text-tiny text-secondary-light shrink-0">View folio →</span>
+                        <span className="text-small text-surface truncate">{f.guestName}</span>
+                        <span className="text-tiny text-surface-muted shrink-0">View folio →</span>
                       </button>
                     ))}
                   </div>
@@ -128,29 +128,29 @@ export default function NightAuditPage() {
           </Section>
 
           <Section label="Unresolved No-Shows">
-            <p className="text-small text-primary-dark/70">
+            <p className="text-small text-surface-muted">
               Confirmed arrivals whose date has passed without a check-in. Running the audit marks these as no-shows and applies the
               branch&apos;s no-show penalty policy.
             </p>
             {preflight.unresolvedNoShows.length === 0 ? (
-              <p className="text-body text-primary-dark/70">Nothing unresolved — every arrival is accounted for.</p>
+              <p className="text-body text-surface-muted">Nothing unresolved — every arrival is accounted for.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="border-b border-primary/25">
-                      <th className="text-small font-bold text-primary-dark pb-2 pr-4">Guest Name</th>
-                      <th className="text-small font-bold text-primary-dark pb-2 pr-4">Confirmation #</th>
-                      <th className="text-small font-bold text-primary-dark pb-2 pr-4">Expected Arrival</th>
-                      <th className="text-small font-bold text-primary-dark pb-2 text-right">Action</th>
+                      <th className="text-small font-bold text-surface pb-2 pr-4">Guest Name</th>
+                      <th className="text-small font-bold text-surface pb-2 pr-4">Confirmation #</th>
+                      <th className="text-small font-bold text-surface pb-2 pr-4">Expected Arrival</th>
+                      <th className="text-small font-bold text-surface pb-2 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {preflight.unresolvedNoShows.map((r) => (
                       <tr key={r.id} className="border-b border-primary/15 last:border-0">
-                        <td className="text-small text-primary-dark py-3 pr-4">{r.guestName}</td>
-                        <td className="text-small text-primary-dark py-3 pr-4">{r.confirmationNumber}</td>
-                        <td className="text-small text-primary-dark py-3 pr-4">{new Date(r.checkInDate).toLocaleDateString()}</td>
+                        <td className="text-small text-surface py-3 pr-4">{r.guestName}</td>
+                        <td className="text-small text-surface py-3 pr-4">{r.confirmationNumber}</td>
+                        <td className="text-small text-surface py-3 pr-4">{new Date(r.checkInDate).toLocaleDateString()}</td>
                         <td className="py-3 text-right">
                           <Button size="sm" variant="outline" onClick={() => router.push(`/dashboard/check-in/${r.id}`)}>
                             View Reservation
@@ -168,7 +168,7 @@ export default function NightAuditPage() {
             <Button type="button" onClick={() => setConfirmOpen(true)} disabled={preflight.alreadyRan} loading={runMutation.isPending}>
               Trigger Audit
             </Button>
-            <p className="text-small text-primary-dark/70">
+            <p className="text-small text-surface-muted">
               {preflight.alreadyRan
                 ? `${preflight.auditDate} has already been audited for this property.`
                 : `Will close ${preflight.auditDate}.`}
@@ -183,25 +183,25 @@ export default function NightAuditPage() {
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-primary/25">
-                  <th className="text-small font-bold text-primary-dark pb-2 pr-4">Audit Date</th>
-                  <th className="text-small font-bold text-primary-dark pb-2 pr-4">Status</th>
-                  <th className="text-small font-bold text-primary-dark pb-2 pr-4">Trigger</th>
-                  <th className="text-small font-bold text-primary-dark pb-2 pr-4 text-right">Folios</th>
-                  <th className="text-small font-bold text-primary-dark pb-2 pr-4 text-right">Charges</th>
-                  <th className="text-small font-bold text-primary-dark pb-2 text-right">Posted</th>
+                  <th className="text-small font-bold text-surface pb-2 pr-4">Audit Date</th>
+                  <th className="text-small font-bold text-surface pb-2 pr-4">Status</th>
+                  <th className="text-small font-bold text-surface pb-2 pr-4">Trigger</th>
+                  <th className="text-small font-bold text-surface pb-2 pr-4 text-right">Folios</th>
+                  <th className="text-small font-bold text-surface pb-2 pr-4 text-right">Charges</th>
+                  <th className="text-small font-bold text-surface pb-2 text-right">Posted</th>
                 </tr>
               </thead>
               <tbody>
                 {runsQuery.data.map((run) => (
                   <tr key={run.id} className="border-b border-primary/15 last:border-0">
-                    <td className="text-small text-primary-dark py-3 pr-4">{new Date(run.auditDate).toLocaleDateString()}</td>
+                    <td className="text-small text-surface py-3 pr-4">{new Date(run.auditDate).toLocaleDateString()}</td>
                     <td className="py-3 pr-4">
                       <RunStatusBadge status={run.status} />
                     </td>
-                    <td className="text-small text-primary-dark/70 py-3 pr-4">{run.triggeredBy ? 'Manual' : 'Scheduled'}</td>
-                    <td className="text-small text-primary-dark py-3 pr-4 text-right">{run.foliosProcessed ?? '—'}</td>
-                    <td className="text-small text-primary-dark py-3 pr-4 text-right">{run.chargesPosted ?? '—'}</td>
-                    <td className="text-small text-primary-dark py-3 text-right">
+                    <td className="text-small text-surface-muted py-3 pr-4">{run.triggeredBy ? 'Manual' : 'Scheduled'}</td>
+                    <td className="text-small text-surface py-3 pr-4 text-right">{run.foliosProcessed ?? '—'}</td>
+                    <td className="text-small text-surface py-3 pr-4 text-right">{run.chargesPosted ?? '—'}</td>
+                    <td className="text-small text-surface py-3 text-right">
                       {run.totalAmountPosted ? formatMoney(run.totalAmountPosted, currencySymbolFor(run.currency)) : '—'}
                     </td>
                   </tr>
@@ -210,7 +210,7 @@ export default function NightAuditPage() {
             </table>
           </div>
         ) : (
-          <p className="text-body text-primary-dark/70">No audits have run for this property yet.</p>
+          <p className="text-body text-surface-muted">No audits have run for this property yet.</p>
         )}
       </Section>
 
@@ -231,17 +231,17 @@ function ChecklistRow({ item }: { item: PreflightCheck }) {
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
-        <p className={`text-small ${item.passed === null ? 'text-secondary-light' : 'text-secondary'}`}>{item.label}</p>
+        <p className={`text-small ${item.passed === null ? 'text-surface-muted' : 'text-surface'}`}>{item.label}</p>
         {/* `text-secondary/60`, not the bare `secondary-light` token — that
             pale lavender-gray read as too washed out for a detail line
             people actually need to read (a real in-house count, a real
             count of urgent work orders), not decorative filler. A partial
             opacity of the dark `secondary` color gives a touch more visual
             weight while staying clearly secondary/muted — same mechanism
-            `WizardShell.tsx`'s own `text-secondary/70` "active but muted"
+            `WizardShell.tsx`'s own `text-surface/70` "active but muted"
             state already uses, just a step lighter since this is a
             passive caption, not something the user is actively on. */}
-        {item.detail ? <p className="text-tiny text-secondary/60">{item.detail}</p> : null}
+        {item.detail ? <p className="text-tiny text-surface/60">{item.detail}</p> : null}
       </div>
       <span className="shrink-0 pt-0.5">
         {item.passed === true ? (
@@ -249,7 +249,7 @@ function ChecklistRow({ item }: { item: PreflightCheck }) {
         ) : item.passed === false ? (
           <XIcon className="size-4 text-red-600" />
         ) : (
-          <span className="text-tiny text-secondary-light">Not tracked</span>
+          <span className="text-tiny text-surface-muted">Not tracked</span>
         )}
       </span>
     </div>

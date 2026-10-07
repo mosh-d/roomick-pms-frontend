@@ -88,7 +88,7 @@ export const SignaturePad = forwardRef<SignaturePadHandle, { label?: string }>(f
 
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-small font-semibold text-secondary">{label}</span>
+      <span className="text-small font-semibold text-surface">{label}</span>
       <canvas
         ref={canvasRef}
         width={500}
@@ -102,7 +102,7 @@ export const SignaturePad = forwardRef<SignaturePadHandle, { label?: string }>(f
         <Button type="button" variant="outline" size="sm" onClick={clearCanvas} disabled={!hasDrawn}>
           Clear
         </Button>
-        {!hasDrawn ? <span className="text-tiny text-secondary-light">Sign above with mouse, touch, or stylus</span> : null}
+        {!hasDrawn ? <span className="text-tiny text-surface-muted">Sign above with mouse, touch, or stylus</span> : null}
       </div>
     </div>
   );

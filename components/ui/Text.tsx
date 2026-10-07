@@ -26,9 +26,9 @@ const ROLE_CLASSES: Record<TextRole, string> = {
   header: 'text-header',
   subheader: 'text-subheader',
   body: 'text-body',
-  accent: 'text-body text-primary-text',
+  accent: 'text-body text-surface-accent',
   small: 'text-small',
-  smallAccent: 'text-small text-primary-text',
+  smallAccent: 'text-small text-surface-accent',
   tiny: 'text-tiny',
   // Emphasis is reserved for the one hero metric on a screen (e.g.
   // today's occupancy %) — always bold, never available in regular weight.

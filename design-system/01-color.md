@@ -52,17 +52,42 @@ them `primary-dark` (`#2E2400`), none of them anywhere near `#160029`.
 muted tone; on the page background it reads as washed-out and off-hue.
 
 So: **`secondary`/`secondary-light` are for text inside a secondary-toned
-card.** Everywhere else is the primary family. The practical test when
-writing a component — walk up the tree and find the nearest ancestor with a
-background: if it isn't `CARD_TONE_CLASSES.secondary`, the text is primary.
+card.** Everywhere else is the primary family. No exceptions — form-field
+labels and values included (an earlier draft exempted them; the owner
+corrected it twice: violet labels in a gold box are the exact mismatch this
+rule exists to prevent).
 
-**One deliberate exception: form-field labels.** `Input`/`Select`/`Textarea`
-keep `text-secondary` on their labels regardless of surface. They're used
-inside every tone (a `Section`, a secondary card, a bare page), so a single
-color is the only way they stay consistent — and `secondary` (`#160029`) vs
-`primary-dark` (`#2E2400`) is imperceptible at label size, both reading as
-near-black. This is the one place the surface rule doesn't apply, and it's a
-call, not an oversight.
+### How it's enforced: surfaces, not hand-picked colours
+
+Components don't pick a family — the surface does. Every surface carries a
+`surface-*` class (`app/globals.css`) that sets three variables, and text
+reads them through three utilities:
+
+| Utility | Page / `primary` | `accent` | `secondary` |
+|---|---|---|---|
+| `text-surface` | `primary-dark` | `primary-dark` | `secondary` |
+| `text-surface-muted` | `primary-dark` @70% | `accent-dark` | `secondary-light` |
+| `text-surface-accent` | `primary-text` (gold) | `primary-text` | `secondary` |
+
+`Card` and `Section` get the class from `CARD_TONE_CLASSES`; the body and
+`Modal` panel are `surface-page`. Inherited text follows the surface too, so
+a component written with `text-surface` is right wherever it's dropped —
+which is what fixed the form fields: one `Input` reads bronze in a gold
+`Section` and violet in a secondary card. Field underlines, focus tints and
+dropdown highlights use the same variables (`border-surface-muted/40`,
+`bg-surface-muted/10`).
+
+**An element that paints its own background is its own surface.** A
+lavender status pill (`bg-secondary-light/20 text-secondary`) or a gold chip
+(`bg-primary/15 text-primary-dark`) keeps the text that matches its own
+fill, wherever it sits. Anything else that paints a background without
+`Card` names its surface with the class (`surface-secondary`, …).
+
+Don't write `text-secondary*` or `text-primary-dark*` for text that sits on
+a surface — write `text-surface*`. The check that proved it app-wide was a
+browser pass over every page comparing each text element's hue family
+(violet / bronze-gold / slate) with that of its nearest painted background
+— zero mismatches, dialogs and open dropdowns included.
 
 ## Accessibility extension: `primary-text`
 

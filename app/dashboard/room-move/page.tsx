@@ -107,7 +107,7 @@ export default function RoomMovePage() {
       {error ? <p className="text-small text-red-600">{error}</p> : null}
       {notice ? (
         <Card tone="secondary">
-          <p className="text-small text-secondary">{notice}</p>
+          <p className="text-small text-surface">{notice}</p>
         </Card>
       ) : null}
 
@@ -131,11 +131,11 @@ export default function RoomMovePage() {
       {stay && room ? (
         <Section label="Rate">
           {quoteQuery.isLoading ? (
-            <p className="text-body text-primary-dark/70">Working out the nights left…</p>
+            <p className="text-body text-surface-muted">Working out the nights left…</p>
           ) : quoteQuery.isError || !quote ? (
             <p className="text-body text-red-600">Couldn&apos;t price the nights left for this room.</p>
           ) : quote.nightsLeft === 0 ? (
-            <p className="text-body text-primary-dark/70">Every night of the stay is already on the bill — the move changes the room, not the price.</p>
+            <p className="text-body text-surface-muted">Every night of the stay is already on the bill — the move changes the room, not the price.</p>
           ) : (
             <>
               <RadioCard<RateChoice>
@@ -159,7 +159,7 @@ export default function RoomMovePage() {
                   },
                 ]}
               />
-              <p className="text-small text-primary-dark/70">
+              <p className="text-small text-surface-muted">
                 From {quote.firstNight ? new Date(`${quote.firstNight}T00:00:00`).toLocaleDateString() : 'tonight'}.
                 {quote.tonightAlreadyBilled ? ' Tonight is already on the bill from check-in, at the old rate — it stays as billed.' : ''} Tax applies to each night as usual.
               </p>
@@ -179,7 +179,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
       <span className="text-small text-accent-dark">{label}</span>
-      <span className="text-body font-semibold text-primary-dark">{value}</span>
+      <span className="text-body font-semibold text-surface">{value}</span>
     </div>
   );
 }

@@ -8,8 +8,8 @@ const ALL_VALUES = Object.keys(STATUS_STYLES) as StatusTagValue[];
 export function StatusTagsSection() {
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-header font-bold text-secondary">Status tags</h2>
-      <p className="text-small text-secondary-light max-w-prose">
+      <h2 className="text-header font-bold text-surface">Status tags</h2>
+      <p className="text-small text-surface-muted max-w-prose">
         Values match backend enum literals exactly. See lib/deriveRoomStatus.ts for how the composite room-status
         badge is derived from 3 backend columns.
       </p>

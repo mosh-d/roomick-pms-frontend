@@ -105,7 +105,7 @@ export default function GuestFolioListPage() {
               type="button"
               onClick={() => setFilter(tab.value)}
               className={`rounded-control px-3 py-1.5 text-small font-semibold cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                filter === tab.value ? 'bg-primary text-white' : 'text-primary-dark hover:bg-accent/10'
+                filter === tab.value ? 'bg-primary text-white' : 'text-surface hover:bg-accent/10'
               }`}
             >
               {tab.label}
@@ -116,7 +116,7 @@ export default function GuestFolioListPage() {
       </div>
 
       {foliosQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading folios…</p>
+        <p className="text-body text-surface-muted">Loading folios…</p>
       ) : foliosQuery.isError ? (
         <p className="text-body text-red-600">Could not load folios. Please try refreshing.</p>
       ) : (
@@ -141,7 +141,7 @@ function GuestStatusBadge({ status }: { status: FolioListRow['guestStatus'] }) {
   if (status === 'in_house') {
     return <span className="inline-flex rounded-pill bg-status-occupied px-3 py-1 text-tiny font-semibold text-white">Still In-House</span>;
   }
-  return <span className="text-secondary-light">—</span>;
+  return <span className="text-surface-muted">—</span>;
 }
 
 /** Positive = owed by the guest (red). Negative = a credit owed back to them (green), matching the in-house PMS's own convention. */
@@ -150,5 +150,5 @@ function BalanceCell({ amount, currency }: { amount: string; currency: string })
   const numeric = Number(amount);
   if (numeric < 0) return <span className="font-semibold text-green-700">Credit {formatMoney(Math.abs(numeric), symbol)}</span>;
   if (numeric > 0) return <span className="font-semibold text-red-600">{formatMoney(amount, symbol)}</span>;
-  return <span className="text-secondary-light">{formatMoney(amount, symbol)}</span>;
+  return <span className="text-surface-muted">{formatMoney(amount, symbol)}</span>;
 }

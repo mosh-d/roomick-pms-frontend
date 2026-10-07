@@ -77,21 +77,21 @@ function FeatureFlagsSection({ auth }: { auth: AuthOpts }) {
 
   return (
     <Section label="Feature Flags">
-      <p className="text-small text-primary-dark/70">
+      <p className="text-small text-surface-muted">
         Enable or disable a flag for this tenant only — global rollout and every other tenant&rsquo;s membership stay platform-controlled. No flag
         currently gates any real behavior in the app yet; toggling one records the choice but has no visible effect until a feature is built behind it.
       </p>
       {flagsQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : (flagsQuery.data ?? []).length === 0 ? (
-        <p className="text-body text-primary-dark/70">No feature flags exist yet.</p>
+        <p className="text-body text-surface-muted">No feature flags exist yet.</p>
       ) : (
         <div className="flex flex-col gap-2">
           {(flagsQuery.data ?? []).map((flag) => (
             <Card key={flag.id} tone="accent" className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-body font-semibold text-primary-dark">{flag.name}</p>
-                <p className="text-tiny text-primary-dark/60">
+                <p className="text-body font-semibold text-surface">{flag.name}</p>
+                <p className="text-tiny text-surface-muted">
                   {flag.enabledForThisTenant ? 'On for this tenant' : 'Off for this tenant'}
                   {flag.rolloutPct !== null ? ` · ${flag.rolloutPct}% global rollout` : ''}
                 </p>
@@ -129,7 +129,7 @@ function BackupManagementSection({ auth }: { auth: AuthOpts }) {
   return (
     <Section label="Backup Management">
       <div className="flex items-center justify-between gap-4">
-        <p className="text-small text-primary-dark/70">A full snapshot of this tenant&rsquo;s own data also runs automatically every night at 2 AM.</p>
+        <p className="text-small text-surface-muted">A full snapshot of this tenant&rsquo;s own data also runs automatically every night at 2 AM.</p>
         <Button type="button" variant="outline" loading={triggerMutation.isPending} onClick={runBackup}>
           Run Backup Now
         </Button>
@@ -138,14 +138,14 @@ function BackupManagementSection({ auth }: { auth: AuthOpts }) {
       {triggerMutation.isSuccess ? <p className="text-small text-green-700">Backup {triggerMutation.data.status}.</p> : null}
 
       {backupsQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : (backupsQuery.data ?? []).length === 0 ? (
-        <p className="text-body text-primary-dark/70">No backups recorded yet for this tenant.</p>
+        <p className="text-body text-surface-muted">No backups recorded yet for this tenant.</p>
       ) : (
         <Card tone="secondary" className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="text-small font-bold text-secondary text-left">
+              <tr className="text-small font-bold text-surface text-left">
                 <th className="py-2 pr-4">Started</th>
                 <th className="py-2 pr-4">Status</th>
                 <th className="py-2 pr-4">Size</th>
@@ -184,7 +184,7 @@ function BackupRow({ record, auth }: { record: BackupRecordSummary; auth: AuthOp
   }
 
   return (
-    <tr className="border-t border-secondary/10 text-small text-secondary align-top">
+    <tr className="border-t border-secondary/10 text-small text-surface align-top">
       <td className="py-2 pr-4">{new Date(record.startedAt).toLocaleString()}</td>
       <td className="py-2 pr-4">
         <span className={`inline-flex items-center rounded-pill px-2 py-0.5 text-tiny font-semibold ${STATUS_TONE[record.status] ?? 'bg-secondary-light/20 text-secondary'}`}>{record.status}</span>
@@ -227,43 +227,43 @@ function SystemHealthSection({ auth }: { auth: AuthOpts }) {
 
   return (
     <Section label="System Health Monitor">
-      <p className="text-small text-primary-dark/70">
+      <p className="text-small text-surface-muted">
         CPU utilization isn&rsquo;t shown — it only means anything as a delta over a measured interval, and there&rsquo;s no such sampling
         infrastructure in this app yet. Request metrics are a 15-minute in-memory rolling window; they reset on every server restart.
       </p>
       {healthQuery.isLoading || !health ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : (
         <div className="flex flex-wrap gap-4">
           <Card tone="accent" className="flex-1 min-w-40">
-            <p className="text-tiny text-primary-dark/70">Status</p>
+            <p className="text-tiny text-surface-muted">Status</p>
             <p className={`text-header font-bold ${health.status === 'ok' ? 'text-green-700' : 'text-red-600'}`}>{health.status === 'ok' ? 'OK' : 'Degraded'}</p>
           </Card>
           <Card tone="accent" className="flex-1 min-w-40">
-            <p className="text-tiny text-primary-dark/70">Database</p>
-            <p className="text-header font-bold text-primary-dark">{health.checks.database === 'up' ? `${health.checks.databaseLatencyMs}ms` : 'Down'}</p>
+            <p className="text-tiny text-surface-muted">Database</p>
+            <p className="text-header font-bold text-surface">{health.checks.database === 'up' ? `${health.checks.databaseLatencyMs}ms` : 'Down'}</p>
           </Card>
           <Card tone="accent" className="flex-1 min-w-40">
-            <p className="text-tiny text-primary-dark/70">Uptime</p>
-            <p className="text-header font-bold text-primary-dark">{Math.floor(health.process.uptimeSeconds / 60)}m</p>
+            <p className="text-tiny text-surface-muted">Uptime</p>
+            <p className="text-header font-bold text-surface">{Math.floor(health.process.uptimeSeconds / 60)}m</p>
           </Card>
           <Card tone="accent" className="flex-1 min-w-40">
-            <p className="text-tiny text-primary-dark/70">Memory (heap)</p>
-            <p className="text-header font-bold text-primary-dark">
+            <p className="text-tiny text-surface-muted">Memory (heap)</p>
+            <p className="text-header font-bold text-surface">
               {health.process.memory.heapUsedMb} / {health.process.memory.heapTotalMb} MB
             </p>
           </Card>
           <Card tone="accent" className="flex-1 min-w-40">
-            <p className="text-tiny text-primary-dark/70">Requests (last {health.requestMetrics.windowMinutes}m)</p>
-            <p className="text-header font-bold text-primary-dark">{health.requestMetrics.requestCount}</p>
+            <p className="text-tiny text-surface-muted">Requests (last {health.requestMetrics.windowMinutes}m)</p>
+            <p className="text-header font-bold text-surface">{health.requestMetrics.requestCount}</p>
           </Card>
           <Card tone="accent" className="flex-1 min-w-40">
-            <p className="text-tiny text-primary-dark/70">Avg Response Time</p>
-            <p className="text-header font-bold text-primary-dark">{health.requestMetrics.avgResponseTimeMs !== null ? `${health.requestMetrics.avgResponseTimeMs}ms` : '—'}</p>
+            <p className="text-tiny text-surface-muted">Avg Response Time</p>
+            <p className="text-header font-bold text-surface">{health.requestMetrics.avgResponseTimeMs !== null ? `${health.requestMetrics.avgResponseTimeMs}ms` : '—'}</p>
           </Card>
           <Card tone="accent" className="flex-1 min-w-40">
-            <p className="text-tiny text-primary-dark/70">Error Rate</p>
-            <p className="text-header font-bold text-primary-dark">{health.requestMetrics.errorRatePct !== null ? `${health.requestMetrics.errorRatePct}%` : '—'}</p>
+            <p className="text-tiny text-surface-muted">Error Rate</p>
+            <p className="text-header font-bold text-surface">{health.requestMetrics.errorRatePct !== null ? `${health.requestMetrics.errorRatePct}%` : '—'}</p>
           </Card>
         </div>
       )}

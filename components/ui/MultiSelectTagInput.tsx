@@ -103,9 +103,9 @@ export function MultiSelectTagInput({
   return (
     <div
       ref={containerRef}
-      className={`flex flex-col gap-1 rounded-control px-3 -mx-3 py-2 transition-colors ${open ? 'bg-secondary-light/15' : ''}`}
+      className={`flex flex-col gap-1 rounded-control px-3 -mx-3 py-2 transition-colors ${open ? 'bg-surface-muted/10' : ''}`}
     >
-      <label id={`${fieldId}-label`} htmlFor={fieldId} className="text-small font-semibold text-secondary">
+      <label id={`${fieldId}-label`} htmlFor={fieldId} className="text-small font-semibold text-surface">
         {label}
       </label>
 
@@ -115,14 +115,14 @@ export function MultiSelectTagInput({
           {value.map((tagValue) => (
             <span
               key={tagValue}
-              className="inline-flex items-center gap-1 rounded-pill bg-secondary-light/30 px-3 py-1 text-small text-secondary"
+              className="inline-flex items-center gap-1 rounded-pill bg-surface-muted/15 px-3 py-1 text-small text-surface"
             >
               {labelFor(tagValue)}
               <button
                 type="button"
                 onClick={() => removeTag(tagValue)}
                 aria-label={`Remove ${labelFor(tagValue)}`}
-                className="text-secondary-light hover:text-secondary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+                className="text-surface-muted hover:text-surface cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
               >
                 <XIcon className="size-3" />
               </button>
@@ -155,7 +155,7 @@ export function MultiSelectTagInput({
               addCustomTag(draft);
               setDraft('');
             }}
-            className="inline-flex items-center gap-1 pb-1 text-body font-semibold text-primary-text hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
+            className="inline-flex items-center gap-1 pb-1 text-body font-semibold text-surface-accent hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
           >
             <PlusIcon className="size-4" /> Add
           </button>
@@ -186,7 +186,7 @@ export function MultiSelectTagInput({
             : { 'aria-labelledby': `${fieldId}-label`, 'aria-describedby': errorId ?? hintId })}
           onClick={() => setOpen((o) => !o)}
           className={`${allowCustom ? 'mt-3' : ''} w-full flex items-center justify-between gap-2 bg-transparent border-0 border-b pb-1 text-body text-left cursor-pointer focus:outline-none ${
-            !allowCustom && error ? 'border-red-600' : open ? 'border-secondary' : FIELD_UNDERLINE_CLASS
+            !allowCustom && error ? 'border-red-600' : open ? 'border-surface' : FIELD_UNDERLINE_CLASS
           }`}
         >
           {allowCustom ? 'Pick from common options' : 'Tick an option'}
@@ -223,7 +223,7 @@ export function MultiSelectTagInput({
           {error}
         </p>
       ) : hint ? (
-        <p id={hintId} className="text-small text-secondary-light mt-1">
+        <p id={hintId} className="text-small text-surface-muted mt-1">
           {hint}
         </p>
       ) : null}

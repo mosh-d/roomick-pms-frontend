@@ -66,7 +66,7 @@ export default function EnterpriseHqPage() {
 
       {!isOwner(user) ? (
         <Card tone="accent">
-          <p className="text-body text-primary-dark">Enterprise / HQ is available to the account Owner only.</p>
+          <p className="text-body text-surface">Enterprise / HQ is available to the account Owner only.</p>
         </Card>
       ) : (
         <>
@@ -90,25 +90,25 @@ function PortfolioOverviewSection({ auth }: { auth: AuthOpts }) {
   return (
     <Section label="Portfolio Overview">
       {portfolioQuery.isLoading || !portfolio ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : portfolio.branches.length === 0 ? (
-        <p className="text-body text-primary-dark/70">No branches yet.</p>
+        <p className="text-body text-surface-muted">No branches yet.</p>
       ) : (
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap gap-4">
             <Card tone="accent" className="flex-1 min-w-40">
-              <p className="text-tiny text-primary-dark/70">Brands</p>
-              <p className="text-header font-bold text-primary-dark">{portfolio.brandCount}</p>
+              <p className="text-tiny text-surface-muted">Brands</p>
+              <p className="text-header font-bold text-surface">{portfolio.brandCount}</p>
             </Card>
             <Card tone="accent" className="flex-1 min-w-40">
-              <p className="text-tiny text-primary-dark/70">Branches</p>
-              <p className="text-header font-bold text-primary-dark">{portfolio.branchCount}</p>
+              <p className="text-tiny text-surface-muted">Branches</p>
+              <p className="text-header font-bold text-surface">{portfolio.branchCount}</p>
             </Card>
           </div>
           <Card tone="secondary" className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="text-small font-bold text-secondary text-left">
+                <tr className="text-small font-bold text-surface text-left">
                   <th className="py-2 pr-4">Branch</th>
                   <th className="py-2 pr-4">Brand</th>
                   <th className="py-2 pr-4">Occupancy Now</th>
@@ -119,7 +119,7 @@ function PortfolioOverviewSection({ auth }: { auth: AuthOpts }) {
               </thead>
               <tbody>
                 {portfolio.branches.map((b) => (
-                  <tr key={b.branchId} className="border-t border-secondary/10 text-small text-secondary">
+                  <tr key={b.branchId} className="border-t border-secondary/10 text-small text-surface">
                     <td className="py-2 pr-4">{b.branchName}</td>
                     <td className="py-2 pr-4">{b.brandName}</td>
                     <td className="py-2 pr-4">
@@ -132,7 +132,7 @@ function PortfolioOverviewSection({ auth }: { auth: AuthOpts }) {
                     <td className="py-2 pr-4 text-right">
                       {/* Straight into the branch's own Front Desk — the same switch the breadcrumb's property menu makes. */}
                       {b.branchId === activeBranchId ? (
-                        <span className="text-tiny text-secondary-light">Working here</span>
+                        <span className="text-tiny text-surface-muted">Working here</span>
                       ) : (
                         <Button
                           type="button"
@@ -174,7 +174,7 @@ function CrossPropertyReportsSection({ auth }: { auth: AuthOpts }) {
               type="button"
               onClick={() => setType(tab.value)}
               className={`rounded-control px-3 py-1.5 text-small font-semibold cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                type === tab.value ? 'bg-primary text-white' : 'text-primary-dark hover:bg-accent/10'
+                type === tab.value ? 'bg-primary text-white' : 'text-surface hover:bg-accent/10'
               }`}
             >
               {tab.label}
@@ -192,15 +192,15 @@ function CrossPropertyReportsSection({ auth }: { auth: AuthOpts }) {
       </div>
 
       {reportQuery.isLoading || !report ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : report.rows.length === 0 ? (
-        <p className="text-body text-primary-dark/70">No branches to report on.</p>
+        <p className="text-body text-surface-muted">No branches to report on.</p>
       ) : (
         <div className="flex flex-col gap-2">
           <Card tone="secondary" className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="text-small font-bold text-secondary text-left">
+                <tr className="text-small font-bold text-surface text-left">
                   <th className="py-2 pr-4">Branch</th>
                   <th className="py-2 pr-4">Currency</th>
                   <th className="py-2 pr-4">{REPORT_TABS.find((t) => t.value === type)?.label}</th>
@@ -208,14 +208,14 @@ function CrossPropertyReportsSection({ auth }: { auth: AuthOpts }) {
               </thead>
               <tbody>
                 {report.rows.map((r) => (
-                  <tr key={r.branchId} className="border-t border-secondary/10 text-small text-secondary">
+                  <tr key={r.branchId} className="border-t border-secondary/10 text-small text-surface">
                     <td className="py-2 pr-4">{r.branchName}</td>
                     <td className="py-2 pr-4">{r.currency}</td>
                     <td className="py-2 pr-4">{headlineFor(type, r.summary)}</td>
                   </tr>
                 ))}
                 {report.blendedTotal ? (
-                  <tr className="border-t border-secondary/20 text-small font-bold text-secondary">
+                  <tr className="border-t border-secondary/20 text-small font-bold text-surface">
                     <td className="py-2 pr-4">All Branches</td>
                     <td className="py-2 pr-4">{report.rows[0]?.currency}</td>
                     <td className="py-2 pr-4">{headlineFor(type, report.blendedTotal)}</td>
@@ -225,7 +225,7 @@ function CrossPropertyReportsSection({ auth }: { auth: AuthOpts }) {
             </table>
           </Card>
           {report.mixedCurrencies && type !== 'occupancy' ? (
-            <p className="text-tiny text-primary-dark/60">
+            <p className="text-tiny text-surface-muted">
               Branches use different currencies — no blended total is shown for {REPORT_TABS.find((t) => t.value === type)?.label} to avoid summing amounts across currencies with no conversion.
             </p>
           ) : null}
@@ -242,7 +242,7 @@ function BrandManagementSection({ auth }: { auth: AuthOpts }) {
   return (
     <Section label="Brand Management">
       {brandsQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : (
         <div className="flex flex-col gap-3">
           {(brandsQuery.data ?? []).map((brand) => (

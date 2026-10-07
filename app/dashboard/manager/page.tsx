@@ -37,8 +37,8 @@ function tomorrow(): string {
 function KpiCard({ label, value }: { label: string; value: string }) {
   return (
     <Card tone="accent" className="flex-1 min-w-40">
-      <p className="text-tiny text-primary-dark/70">{label}</p>
-      <p className="text-header font-bold text-primary-dark">{value}</p>
+      <p className="text-tiny text-surface-muted">{label}</p>
+      <p className="text-header font-bold text-surface">{value}</p>
     </Card>
   );
 }
@@ -50,7 +50,7 @@ function KpiCard({ label, value }: { label: string; value: string }) {
  * composite-status colors via `STATUS_STYLES`, no click actions).
  */
 function RoomStatusMiniMap({ rooms }: { rooms: Array<{ id: string; number: string; occupancyStatus: 'vacant' | 'occupied'; cleanlinessStatus: 'dirty' | 'cleaning' | 'clean' | 'inspected'; heldStatus: 'out_of_order' | 'blocked' | null }> }) {
-  if (rooms.length === 0) return <p className="text-small text-secondary-light">No rooms configured yet.</p>;
+  if (rooms.length === 0) return <p className="text-small text-surface-muted">No rooms configured yet.</p>;
   return (
     <div className="flex flex-wrap gap-1.5">
       {rooms.map((room) => {
@@ -174,7 +174,7 @@ function StaffManagementSection({ branchId, auth }: { branchId: string; auth: { 
             ) : null}
           </div>
         ) : (
-          <span className="text-small text-secondary/70">Off</span>
+          <span className="text-small text-surface/70">Off</span>
         ),
       sortValue: (s) => (s.mfaEnabled ? 1 : 0),
     },
@@ -198,12 +198,12 @@ function StaffManagementSection({ branchId, auth }: { branchId: string; auth: { 
           </Button>
         </div>
         {staffQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading staff…</p>
+          <p className="text-body text-surface-muted">Loading staff…</p>
         ) : (
           <Card tone="secondary">
             <Table columns={columns} rows={staffQuery.data ?? []} emptyMessage="No staff at this branch yet." exportFileName="staff" />
             {mfaMessage ? (
-              <p className="text-small text-secondary mt-2" id="staff-mfa-message">
+              <p className="text-small text-surface mt-2" id="staff-mfa-message">
                 {mfaMessage}
               </p>
             ) : null}
@@ -252,7 +252,7 @@ function RateOverrideSection({ branchId, auth }: { branchId: string; auth: { acc
             {search.trim() && (
               <Card tone="secondary" className="flex flex-col gap-2 max-h-64 overflow-y-auto">
                 {(searchQuery.data ?? []).length === 0 ? (
-                  <p className="text-small text-secondary-light">No matching reservations.</p>
+                  <p className="text-small text-surface-muted">No matching reservations.</p>
                 ) : (
                   (searchQuery.data ?? []).map((r) => (
                     <button
@@ -266,7 +266,7 @@ function RateOverrideSection({ branchId, auth }: { branchId: string; auth: { acc
                       }}
                       className="text-left rounded-control px-2 py-1.5 hover:bg-secondary-light/20"
                     >
-                      <span className="font-semibold text-secondary">{r.guest.name}</span> — {r.confirmationNumber} ({r.roomType.name}, {r.status})
+                      <span className="font-semibold text-surface">{r.guest.name}</span> — {r.confirmationNumber} ({r.roomType.name}, {r.status})
                     </button>
                   ))
                 )}
@@ -277,8 +277,8 @@ function RateOverrideSection({ branchId, auth }: { branchId: string; auth: { acc
           <Card tone="accent" className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-semibold text-primary-dark">{selected.guest.name}</p>
-                <p className="text-small text-primary-dark/70">
+                <p className="font-semibold text-surface">{selected.guest.name}</p>
+                <p className="text-small text-surface-muted">
                   {selected.confirmationNumber} — {selected.roomType.name}, {nights} night(s), current nightly rate {formatMoney(currentNightlyRate, currencySymbolFor(selected.branch.currency))}
                 </p>
               </div>
@@ -366,11 +366,11 @@ export default function ManagerDashboardPage() {
             <KpiCard label="Outstanding Balances" value={outstandingQuery.data ? formatMoney(outstandingTotal, currencySymbolFor(outstandingCurrency)) : '—'} />
             <KpiCard label="Alerts Needing Attention" value={alertsQuery.data ? String(alertsQuery.data.total) : '—'} />
           </div>
-          <p className="text-tiny text-secondary-light">
+          <p className="text-tiny text-surface-muted">
             &quot;Alerts Needing Attention&quot; covers missed check-ins, overdue checkouts, overdue balances, and urgent maintenance — urgent work orders and rooms out of service.
           </p>
           <div>
-            <p className="text-small font-semibold text-primary-dark/80 mb-2">Room Status</p>
+            <p className="text-small font-semibold text-surface/80 mb-2">Room Status</p>
             <RoomStatusMiniMap rooms={roomsQuery.data ?? []} />
           </div>
         </div>

@@ -131,7 +131,7 @@ export default function RatePlansPage() {
       render: (p) => (
         <span
           className={`inline-flex items-center rounded-pill px-3 py-1 text-small font-semibold ${
-            p.isActive ? 'bg-status-clean text-white' : 'border border-secondary/30 text-secondary-light'
+            p.isActive ? 'bg-status-clean text-white' : 'border border-secondary/30 text-surface-muted'
           }`}
         >
           {p.isActive ? 'Active' : 'Retired'}
@@ -159,7 +159,7 @@ export default function RatePlansPage() {
       />
 
       <Section label="Architecture Rule">
-        <p className="text-body text-primary-dark">
+        <p className="text-body text-surface">
           Lives exclusively in the backend as <code>RateResolverService</code>, never replicated on the client. Rate Plan Management below is the one real
           screen that configures the cascade tiers (base, seasonal, weekend, corporate) and negotiated/promotional overrides it applies on every booking
           screen.
@@ -187,7 +187,7 @@ export default function RatePlansPage() {
 
       <Section label="Rate Plans">
         {ratePlansQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading rate plans…</p>
+          <p className="text-body text-surface-muted">Loading rate plans…</p>
         ) : (
           <Table columns={columns} rows={ratePlansQuery.data ?? []} emptyMessage="No rate plans yet — every stay prices at the room type's own base rate." />
         )}

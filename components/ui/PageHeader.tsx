@@ -54,13 +54,13 @@ export function PageHeader({
                 title lockup and reads wrong in a different color from the
                 words it sits against. */}
             {icon ? (
-              <span className="shrink-0 text-primary-dark" aria-hidden>
+              <span className="shrink-0 text-surface" aria-hidden>
                 {icon}
               </span>
             ) : null}
-            <h1 className="font-display text-title font-bold text-primary-dark truncate">{title}</h1>
+            <h1 className="font-display text-title font-bold text-surface truncate">{title}</h1>
           </div>
-          {subtitle ? <p className="text-body text-primary-dark/75">{subtitle}</p> : null}
+          {subtitle ? <p className="text-body text-surface-muted">{subtitle}</p> : null}
         </div>
         {actions ? <div className="shrink-0 flex items-center gap-3">{actions}</div> : null}
       </div>

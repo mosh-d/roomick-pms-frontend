@@ -106,14 +106,14 @@ function ApiKeysSection({ auth }: { auth: AuthOpts }) {
 
   return (
     <Section label="API Keys">
-      <p className="text-small text-primary-dark/70">
+      <p className="text-small text-surface-muted">
         Generate and manage partner API credentials. Not yet accepted by any endpoint as an alternative to signing in — generating a key records it for a
         future integration, it doesn&rsquo;t grant access on its own yet.
       </p>
 
       {justCreated ? (
         <Card tone="accent" className="flex flex-col gap-2 border-2">
-          <p className="text-small font-semibold text-primary-dark">
+          <p className="text-small font-semibold text-surface">
             &ldquo;{justCreated.name}&rdquo; created — copy this key now. It won&rsquo;t be shown again.
           </p>
           <div className="flex items-center gap-2">
@@ -137,14 +137,14 @@ function ApiKeysSection({ auth }: { auth: AuthOpts }) {
       {error ? <p className="text-small text-red-600">{error}</p> : null}
 
       {keysQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : (keysQuery.data ?? []).length === 0 ? (
-        <p className="text-body text-primary-dark/70">No API keys yet.</p>
+        <p className="text-body text-surface-muted">No API keys yet.</p>
       ) : (
         <Card tone="secondary" className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="text-small font-bold text-secondary text-left">
+              <tr className="text-small font-bold text-surface text-left">
                 <th className="py-2 pr-4">Name</th>
                 <th className="py-2 pr-4">Key</th>
                 <th className="py-2 pr-4">Created</th>
@@ -155,7 +155,7 @@ function ApiKeysSection({ auth }: { auth: AuthOpts }) {
             </thead>
             <tbody>
               {(keysQuery.data ?? []).map((key) => (
-                <tr key={key.id} className="border-t border-secondary/10 text-small text-secondary">
+                <tr key={key.id} className="border-t border-secondary/10 text-small text-surface">
                   <td className="py-2 pr-4">{key.name}</td>
                   <td className="py-2 pr-4 font-mono">{key.keyPrefix}…</td>
                   <td className="py-2 pr-4">{new Date(key.createdAt).toLocaleDateString()}</td>
@@ -204,14 +204,14 @@ function WebhooksSection({ auth }: { auth: AuthOpts }) {
 
   return (
     <Section label="Webhooks">
-      <p className="text-small text-primary-dark/70">
+      <p className="text-small text-surface-muted">
         Subscribe external systems to PMS events. These subscriptions are stored but not yet triggered by real events — delivery isn&rsquo;t wired up in
         this pass.
       </p>
 
       {justCreated ? (
         <Card tone="accent" className="flex flex-col gap-2 border-2">
-          <p className="text-small font-semibold text-primary-dark">Webhook for {justCreated.url} created — copy the signing secret now. It won&rsquo;t be shown again.</p>
+          <p className="text-small font-semibold text-surface">Webhook for {justCreated.url} created — copy the signing secret now. It won&rsquo;t be shown again.</p>
           <div className="flex items-center gap-2">
             <code className="flex-1 rounded-control border border-primary/30 bg-white px-3 py-2 text-tiny break-all">{justCreated.secret}</code>
             <CopyButton value={justCreated.secret} />
@@ -232,16 +232,16 @@ function WebhooksSection({ auth }: { auth: AuthOpts }) {
       {error ? <p className="text-small text-red-600">{error}</p> : null}
 
       {webhooksQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : (webhooksQuery.data ?? []).length === 0 ? (
-        <p className="text-body text-primary-dark/70">No webhooks yet.</p>
+        <p className="text-body text-surface-muted">No webhooks yet.</p>
       ) : (
         <div className="flex flex-col gap-2">
           {(webhooksQuery.data ?? []).map((webhook) => (
             <Card key={webhook.id} tone="accent" className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-body font-semibold text-primary-dark break-all">{webhook.url}</p>
-                <p className="text-tiny text-primary-dark/60">
+                <p className="text-body font-semibold text-surface break-all">{webhook.url}</p>
+                <p className="text-tiny text-surface-muted">
                   {webhook.eventTypes.join(', ')} · {webhook.isActive ? 'Active' : 'Deactivated'}
                 </p>
               </div>

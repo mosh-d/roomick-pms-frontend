@@ -60,15 +60,15 @@ export default function InspectionWorkflowPage() {
 
       <Section label="Pending Inspections">
         {roomsQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading rooms…</p>
+          <p className="text-body text-surface-muted">Loading rooms…</p>
         ) : awaitingInspection.length === 0 ? (
-          <p className="text-body text-primary-dark/70">Nothing awaiting inspection right now.</p>
+          <p className="text-body text-surface-muted">Nothing awaiting inspection right now.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {awaitingInspection.map((room) => (
               <Card key={room.id} tone="secondary" className="flex flex-col gap-3">
-                <span className="text-body font-bold text-secondary">Room {room.number}</span>
-                <p className="text-small text-secondary-light border-b border-secondary/20 pb-2">Awaiting inspection by supervisor</p>
+                <span className="text-body font-bold text-surface">Room {room.number}</span>
+                <p className="text-small text-surface-muted border-b border-secondary/20 pb-2">Awaiting inspection by supervisor</p>
                 <div className="flex gap-2">
                   <Button size="sm" loading={changeStatusMutation.isPending} onClick={() => approve(room.id)}>
                     Approve

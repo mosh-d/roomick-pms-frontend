@@ -91,7 +91,7 @@ export function AutoLoginStep({
   if (loggedIn) {
     return (
       <Section label="Signed in">
-        <p className="text-body text-secondary">Already signed in — nothing to redo here.</p>
+        <p className="text-body text-surface">Already signed in — nothing to redo here.</p>
         <Button type="button" onClick={onSuccess}>
           Continue
         </Button>
@@ -102,13 +102,13 @@ export function AutoLoginStep({
   if (!password) {
     return (
       <Section label="Sign in required">
-        <p className="text-small text-secondary-light">
+        <p className="text-small text-surface-muted">
           Your session isn&apos;t active, and there&apos;s no password to sign you back in with automatically. Log
           in to continue.
         </p>
         <Link
           href="/login"
-          className="inline-flex items-center justify-center gap-2 rounded-control font-semibold cursor-pointer transition-[filter] bg-primary text-white hover:brightness-125 hover:text-secondary px-4 py-2 text-body min-h-11 w-fit"
+          className="inline-flex items-center justify-center gap-2 rounded-control font-semibold cursor-pointer transition-[filter] bg-primary text-white hover:brightness-125 hover:text-surface px-4 py-2 text-body min-h-11 w-fit"
         >
           Go to login
         </Link>
@@ -132,7 +132,7 @@ export function AutoLoginStep({
           </Button>
         </>
       ) : (
-        <p className="text-body text-secondary-light">One moment…</p>
+        <p className="text-body text-surface-muted">One moment…</p>
       )}
     </Section>
   );

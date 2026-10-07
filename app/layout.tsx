@@ -34,7 +34,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     // blanket "hide hydration bugs" — it only silences *attribute*
     // mismatches on this one element, not children or genuine app bugs.
     <html lang="en" className={`${satoshi.variable} ${playfairDisplay.variable} h-full`} suppressHydrationWarning>
-      <body className="min-h-full flex flex-col bg-white font-body text-body text-secondary antialiased">
+      <body className="min-h-full flex flex-col bg-white font-body text-body text-surface antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

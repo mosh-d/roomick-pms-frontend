@@ -18,7 +18,7 @@ export function FormSection({
 }) {
   return (
     <fieldset className={`border border-dashed border-accent/60 rounded-card p-4 ${className}`}>
-      <legend className="px-2 text-small font-semibold text-secondary">{label}</legend>
+      <legend className="px-2 text-small font-semibold text-surface">{label}</legend>
       <div className="flex flex-col gap-4">{children}</div>
     </fieldset>
   );

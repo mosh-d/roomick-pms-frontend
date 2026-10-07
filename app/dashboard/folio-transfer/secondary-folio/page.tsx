@@ -105,7 +105,7 @@ export default function CreateSecondaryFolioPage() {
       {error ? <p className="text-small text-red-600">{error}</p> : null}
       {notice ? (
         <Card tone="secondary">
-          <p className="text-small text-secondary">{notice}</p>
+          <p className="text-small text-surface">{notice}</p>
         </Card>
       ) : null}
 
@@ -118,9 +118,9 @@ export default function CreateSecondaryFolioPage() {
         <>
           <Section label="Its Bills">
             {foliosQuery.isLoading ? (
-              <p className="text-body text-primary-dark/70">Loading…</p>
+              <p className="text-body text-surface-muted">Loading…</p>
             ) : (foliosQuery.data ?? []).length === 0 ? (
-              <p className="text-body text-primary-dark/70">No bills yet — the main bill opens at check-in. A secondary one can be opened now.</p>
+              <p className="text-body text-surface-muted">No bills yet — the main bill opens at check-in. A secondary one can be opened now.</p>
             ) : (
               <div className="flex flex-wrap gap-3" role="list" aria-label="Folio tabs">
                 {(foliosQuery.data ?? []).map((folio, index) => (
@@ -130,13 +130,13 @@ export default function CreateSecondaryFolioPage() {
                     role="listitem"
                     className="flex min-w-48 flex-col gap-1 rounded-card border border-primary/25 bg-white px-4 py-3 hover:border-primary"
                   >
-                    <span className="text-small font-bold text-primary-dark">
+                    <span className="text-small font-bold text-surface">
                       {TAB_LETTERS[index] ?? index + 1} · {folio.label ?? 'Main bill'}
                     </span>
-                    <span className="text-tiny text-primary-dark/70">
+                    <span className="text-tiny text-surface-muted">
                       {[folio.payerName ? `Paid by ${folio.payerName}` : null, folio.corporateAccount?.name ?? null].filter(Boolean).join(' · ') || 'The guest'}
                     </span>
-                    <span className="text-small text-primary-dark">
+                    <span className="text-small text-surface">
                       {folio.status === 'settled' ? 'Settled' : `Owes ${formatMoney(folio.balanceDue, symbol)}`}
                     </span>
                   </Link>

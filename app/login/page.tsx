@@ -111,8 +111,8 @@ export default function LoginPage() {
 
   return (
     <Container className="max-w-xl py-16">
-      <h1 className="font-display text-title font-bold text-secondary mb-2">Log in to Roomick</h1>
-      <p className="text-body text-secondary-light mb-8">Enter your account details to continue.</p>
+      <h1 className="font-display text-title font-bold text-surface mb-2">Log in to Roomick</h1>
+      <p className="text-body text-surface-muted mb-8">Enter your account details to continue.</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <Section label="Account">
@@ -133,9 +133,9 @@ export default function LoginPage() {
         </Button>
       </form>
 
-      <p className="text-small text-secondary-light mt-6">
+      <p className="text-small text-surface-muted mt-6">
         Don&apos;t have an account?{' '}
-        <Link href="/signup" className="text-primary-text font-semibold hover:underline">
+        <Link href="/signup" className="text-surface-accent font-semibold hover:underline">
           Sign up
         </Link>
       </p>
@@ -180,8 +180,8 @@ function SecondStep({ challengeToken, onExpired }: { challengeToken: string; onE
 
   return (
     <Container className="max-w-xl py-16">
-      <h1 className="font-display text-title font-bold text-secondary mb-2">Two-step sign-in</h1>
-      <p className="text-body text-secondary-light mb-8">
+      <h1 className="font-display text-title font-bold text-surface mb-2">Two-step sign-in</h1>
+      <p className="text-body text-surface-muted mb-8">
         {useRecovery ? 'Enter one of the recovery codes you saved when you set this up. Each one works once.' : 'Enter the 6-digit code from your authenticator app.'}
       </p>
 
@@ -214,7 +214,7 @@ function SecondStep({ challengeToken, onExpired }: { challengeToken: string; onE
       <div className="flex flex-wrap gap-4 mt-6 text-small">
         <button
           type="button"
-          className="text-primary-text font-semibold hover:underline"
+          className="text-surface-accent font-semibold hover:underline"
           onClick={() => {
             setUseRecovery((current) => !current);
             setCode('');
@@ -223,7 +223,7 @@ function SecondStep({ challengeToken, onExpired }: { challengeToken: string; onE
         >
           {useRecovery ? 'Use my authenticator app instead' : 'Use a recovery code instead'}
         </button>
-        <button type="button" className="text-secondary-light hover:underline" onClick={() => onExpired('')}>
+        <button type="button" className="text-surface-muted hover:underline" onClick={() => onExpired('')}>
           Start again
         </button>
       </div>

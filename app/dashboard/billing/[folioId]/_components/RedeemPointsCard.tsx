@@ -53,11 +53,11 @@ export function RedeemPointsCard({
 
   return (
     <Card tone="primary" className="flex flex-col gap-3 max-w-2xl">
-      <p className="text-body font-semibold text-secondary">Redeem Points</p>
+      <p className="text-body font-semibold text-surface">Redeem Points</p>
       {loyalty.balance <= 0 ? (
-        <p className="text-small text-secondary">{guest.name} has no points left.</p>
+        <p className="text-small text-surface">{guest.name} has no points left.</p>
       ) : (
-        <p className="text-small text-secondary">
+        <p className="text-small text-surface">
           {guest.name} has {loyalty.balance.toLocaleString()} points{loyalty.tier ? ` (${loyalty.tier.name})` : ''}, each worth {formatMoney(loyalty.pointValue ?? '0', currencySymbol)}.
           {most > 0 ? ` The most this bill can take is ${most.toLocaleString()}.` : ' This bill has nothing left to pay.'}
         </p>

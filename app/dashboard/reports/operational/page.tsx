@@ -62,7 +62,7 @@ function TrendBars({ data, formatValue }: { data: Array<{ label: string; value: 
       {data.map((d) => (
         <div key={d.label} className="flex flex-col items-center gap-1 shrink-0 w-8" title={`${d.label}: ${formatValue(d.value)}`}>
           <div className="w-5 bg-primary/70 rounded-t" style={{ height: `${Math.max(2, (d.value / max) * 100)}px` }} />
-          <span className="text-tiny text-primary-dark/60 rotate-0 whitespace-nowrap">{d.label.slice(5)}</span>
+          <span className="text-tiny text-surface-muted rotate-0 whitespace-nowrap">{d.label.slice(5)}</span>
         </div>
       ))}
     </div>
@@ -72,8 +72,8 @@ function TrendBars({ data, formatValue }: { data: Array<{ label: string; value: 
 function KpiCard({ label, value }: { label: string; value: string }) {
   return (
     <Card tone="accent" className="flex-1 min-w-40">
-      <p className="text-tiny text-primary-dark/70">{label}</p>
-      <p className="text-header font-bold text-primary-dark">{value}</p>
+      <p className="text-tiny text-surface-muted">{label}</p>
+      <p className="text-header font-bold text-surface">{value}</p>
     </Card>
   );
 }
@@ -149,7 +149,7 @@ export default function OperationalReportsPage() {
               type="button"
               onClick={() => setReportType(tab.value)}
               className={`rounded-control px-3 py-1.5 text-small font-semibold cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                reportType === tab.value ? 'bg-primary text-white' : 'text-primary-dark hover:bg-accent/10'
+                reportType === tab.value ? 'bg-primary text-white' : 'text-surface hover:bg-accent/10'
               }`}
             >
               {tab.label}
@@ -185,7 +185,7 @@ export default function OperationalReportsPage() {
 
       {reportType === 'occupancy' ? (
         occupancyQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading…</p>
+          <p className="text-body text-surface-muted">Loading…</p>
         ) : occupancyQuery.data ? (
           <>
             <div className="flex flex-wrap gap-4">
@@ -202,7 +202,7 @@ export default function OperationalReportsPage() {
             >
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="text-small font-bold text-secondary text-left">
+                  <tr className="text-small font-bold text-surface text-left">
                     <th className="py-2 pr-4">Room Type</th>
                     <th className="py-2 pr-4">Available</th>
                     <th className="py-2 pr-4">Sold</th>
@@ -211,7 +211,7 @@ export default function OperationalReportsPage() {
                 </thead>
                 <tbody>
                   {occupancyQuery.data.byRoomType.map((r) => (
-                    <tr key={r.roomTypeId} className="border-t border-secondary/10 text-small text-secondary">
+                    <tr key={r.roomTypeId} className="border-t border-secondary/10 text-small text-surface">
                       <td className="py-2 pr-4">{r.roomTypeName}</td>
                       <td className="py-2 pr-4">{r.roomNightsAvailable}</td>
                       <td className="py-2 pr-4">{r.roomNightsSold}</td>
@@ -227,7 +227,7 @@ export default function OperationalReportsPage() {
 
       {reportType === 'adr' ? (
         adrQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading…</p>
+          <p className="text-body text-surface-muted">Loading…</p>
         ) : adrQuery.data ? (
           <>
             <div className="flex flex-wrap gap-4">
@@ -244,7 +244,7 @@ export default function OperationalReportsPage() {
             >
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="text-small font-bold text-secondary text-left">
+                  <tr className="text-small font-bold text-surface text-left">
                     <th className="py-2 pr-4">Room Type</th>
                     <th className="py-2 pr-4">Sold</th>
                     <th className="py-2 pr-4">Revenue</th>
@@ -253,7 +253,7 @@ export default function OperationalReportsPage() {
                 </thead>
                 <tbody>
                   {adrQuery.data.byRoomType.map((r) => (
-                    <tr key={r.roomTypeId} className="border-t border-secondary/10 text-small text-secondary">
+                    <tr key={r.roomTypeId} className="border-t border-secondary/10 text-small text-surface">
                       <td className="py-2 pr-4">{r.roomTypeName}</td>
                       <td className="py-2 pr-4">{r.roomNightsSold}</td>
                       <td className="py-2 pr-4">{symbol}{r.roomRevenue}</td>
@@ -269,7 +269,7 @@ export default function OperationalReportsPage() {
 
       {reportType === 'revpar' ? (
         revparQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading…</p>
+          <p className="text-body text-surface-muted">Loading…</p>
         ) : revparQuery.data ? (
           <>
             <div className="flex flex-wrap gap-4">
@@ -286,7 +286,7 @@ export default function OperationalReportsPage() {
             >
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="text-small font-bold text-secondary text-left">
+                  <tr className="text-small font-bold text-surface text-left">
                     <th className="py-2 pr-4">Room Type</th>
                     <th className="py-2 pr-4">Available</th>
                     <th className="py-2 pr-4">Revenue</th>
@@ -295,7 +295,7 @@ export default function OperationalReportsPage() {
                 </thead>
                 <tbody>
                   {revparQuery.data.byRoomType.map((r) => (
-                    <tr key={r.roomTypeId} className="border-t border-secondary/10 text-small text-secondary">
+                    <tr key={r.roomTypeId} className="border-t border-secondary/10 text-small text-surface">
                       <td className="py-2 pr-4">{r.roomTypeName}</td>
                       <td className="py-2 pr-4">{r.roomNightsAvailable}</td>
                       <td className="py-2 pr-4">{symbol}{r.roomRevenue}</td>
@@ -311,7 +311,7 @@ export default function OperationalReportsPage() {
 
       {reportType === 'revenue' ? (
         revenueQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading…</p>
+          <p className="text-body text-surface-muted">Loading…</p>
         ) : revenueQuery.data ? (
           <>
             <div className="flex flex-wrap gap-4">
@@ -326,14 +326,14 @@ export default function OperationalReportsPage() {
             >
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="text-small font-bold text-secondary text-left">
+                  <tr className="text-small font-bold text-surface text-left">
                     <th className="py-2 pr-4">Department</th>
                     <th className="py-2 pr-4">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   {revenueQuery.data.byDepartment.map((d) => (
-                    <tr key={d.chargeType} className="border-t border-secondary/10 text-small text-secondary capitalize">
+                    <tr key={d.chargeType} className="border-t border-secondary/10 text-small text-surface capitalize">
                       <td className="py-2 pr-4">{d.chargeType}</td>
                       <td className="py-2 pr-4">{symbol}{d.amount}</td>
                     </tr>
@@ -347,14 +347,14 @@ export default function OperationalReportsPage() {
             >
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="text-small font-bold text-secondary text-left">
+                  <tr className="text-small font-bold text-surface text-left">
                     <th className="py-2 pr-4">Method</th>
                     <th className="py-2 pr-4">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   {revenueQuery.data.byPaymentMethod.map((p) => (
-                    <tr key={p.method} className="border-t border-secondary/10 text-small text-secondary capitalize">
+                    <tr key={p.method} className="border-t border-secondary/10 text-small text-surface capitalize">
                       <td className="py-2 pr-4">{p.method.replace('_', ' ')}</td>
                       <td className="py-2 pr-4">{symbol}{p.amount}</td>
                     </tr>

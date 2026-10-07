@@ -101,7 +101,7 @@ export default function DeparturesDashboardPage() {
     {
       key: 'status',
       label: 'Status',
-      render: () => <span className="text-primary-text font-semibold">Due Out</span>,
+      render: () => <span className="text-surface-accent font-semibold">Due Out</span>,
       sortValue: () => 'Due Out',
     },
     {
@@ -110,9 +110,9 @@ export default function DeparturesDashboardPage() {
       align: 'right',
       render: (r) => {
         const folio = folioByReservation.get(r.id);
-        if (!folio) return <span className="text-secondary-light">—</span>;
+        if (!folio) return <span className="text-surface-muted">—</span>;
         const owed = Number(folio.balanceDue);
-        return <span className={owed > 0 ? 'font-semibold text-red-600' : 'text-secondary-light'}>{formatMoney(folio.balanceDue, currencySymbolFor(folio.currency))}</span>;
+        return <span className={owed > 0 ? 'font-semibold text-red-600' : 'text-surface-muted'}>{formatMoney(folio.balanceDue, currencySymbolFor(folio.currency))}</span>;
       },
       sortValue: (r) => Number(folioByReservation.get(r.id)?.balanceDue ?? 0),
       exportValue: (r) => folioByReservation.get(r.id)?.balanceDue ?? '',
@@ -153,7 +153,7 @@ export default function DeparturesDashboardPage() {
       {actionError ? <p className="text-small text-red-600">{actionError}</p> : null}
 
       {departuresQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading departures…</p>
+        <p className="text-body text-surface-muted">Loading departures…</p>
       ) : departuresQuery.isError ? (
         <p className="text-body text-red-600">Could not load departures. Please try refreshing.</p>
       ) : (

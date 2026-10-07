@@ -52,12 +52,12 @@ export function TaxRuleBuilder({
       {rules.map((rule, index) => (
         <Card key={rule.localId} tone="secondary" className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-body font-bold text-secondary">Rule {index + 1}</span>
+            <span className="text-body font-bold text-surface">Rule {index + 1}</span>
             <button
               type="button"
               aria-label={`Remove rule ${index + 1}`}
               onClick={() => onChange(rules.filter((r) => r.localId !== rule.localId))}
-              className="p-1 rounded-control text-secondary hover:bg-secondary/10 cursor-pointer"
+              className="p-1 rounded-control text-surface hover:bg-secondary/10 cursor-pointer"
             >
               <XIcon className="size-4" />
             </button>
@@ -74,7 +74,7 @@ export function TaxRuleBuilder({
       <button
         type="button"
         onClick={() => onChange([...rules, newTaxRuleDraft()])}
-        className="self-end inline-flex items-center gap-1.5 text-small font-semibold text-secondary underline cursor-pointer"
+        className="self-end inline-flex items-center gap-1.5 text-small font-semibold text-surface underline cursor-pointer"
       >
         <PlusIcon className="size-4" />
         Add Tax Rule

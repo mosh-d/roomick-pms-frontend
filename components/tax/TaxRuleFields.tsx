@@ -93,7 +93,7 @@ export function TaxRuleFields({
         hint="Exclusive: added on top of the price. Inclusive: already inside your prices — the guest pays the price, and the bill shows how much of it was tax."
       />
       <fieldset className="flex flex-col gap-2">
-        <legend className="text-small font-semibold text-secondary mb-2">Tax Rate</legend>
+        <legend className="text-small font-semibold text-surface mb-2">Tax Rate</legend>
         <RadioCard
           name={`${idPrefix}-kind`}
           options={[

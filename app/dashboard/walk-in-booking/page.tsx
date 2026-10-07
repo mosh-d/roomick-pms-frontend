@@ -278,9 +278,9 @@ export default function WalkInBookingPage() {
         {isImmediate && roomTypeId ? (
           <Section label="Room Selection">
             {roomsQuery.isLoading ? (
-              <p className="text-body text-primary-dark/70">Loading rooms…</p>
+              <p className="text-body text-surface-muted">Loading rooms…</p>
             ) : buildings.length === 0 ? (
-              <p className="text-body text-primary-dark/70">No ready rooms of this type — nothing vacant and clean/inspected right now.</p>
+              <p className="text-body text-surface-muted">No ready rooms of this type — nothing vacant and clean/inspected right now.</p>
             ) : (
               <RoomGrid buildings={buildings} selectedRoomId={selectedRoomId} onSelectRoom={setSelectedRoomId} />
             )}
@@ -289,7 +289,7 @@ export default function WalkInBookingPage() {
 
         {isImmediate ? (
           <Section label="ID Capture">
-            <p className="text-small text-secondary-light">Optional — can be captured later from the guest&apos;s profile. Never blocks check-in.</p>
+            <p className="text-small text-surface-muted">Optional — can be captured later from the guest&apos;s profile. Never blocks check-in.</p>
             <div className="flex flex-wrap gap-4">
               <div className="w-48">
                 <Select id="idDocType" name="idDocType" label="ID Type" options={ID_DOC_TYPE_OPTIONS} value={idDocType} onChange={setIdDocType} placeholder="Select type" />

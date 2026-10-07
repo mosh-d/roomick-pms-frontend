@@ -58,7 +58,7 @@ export default function AlertsPage() {
             type="button"
             onClick={() => setTab(t.value)}
             className={`inline-flex items-center gap-2 rounded-control px-3 py-1.5 text-small font-semibold cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              tab === t.value ? 'bg-primary text-white' : 'text-primary-dark hover:bg-accent/10'
+              tab === t.value ? 'bg-primary text-white' : 'text-surface hover:bg-accent/10'
             }`}
           >
             {t.label}
@@ -76,7 +76,7 @@ export default function AlertsPage() {
       </div>
 
       {alertsQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : alertsQuery.isError || !alerts ? (
         <p className="text-body text-red-600">Could not load alerts.</p>
       ) : tab === 'missedCheckIns' ? (
@@ -132,7 +132,7 @@ function ReservationAlertsTable({
   if (rows.length === 0) {
     return (
       <Section label="All Clear">
-        <p className="text-body text-primary-dark/70">{emptyLabel}</p>
+        <p className="text-body text-surface-muted">{emptyLabel}</p>
       </Section>
     );
   }
@@ -142,7 +142,7 @@ function ReservationAlertsTable({
       <Card tone="secondary" className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="text-small font-bold text-secondary text-left">
+            <tr className="text-small font-bold text-surface text-left">
               <th className="py-2 pr-4">Guest</th>
               <th className="py-2 pr-4">Confirmation #</th>
               <th className="py-2 pr-4">Room</th>
@@ -156,7 +156,7 @@ function ReservationAlertsTable({
               const bill = balanceOf?.(r);
               const owes = bill ? Number(bill.balanceDue) : 0;
               return (
-                <tr key={r.id} className="border-t border-secondary/10 text-small text-secondary">
+                <tr key={r.id} className="border-t border-secondary/10 text-small text-surface">
                   <td className="py-2 pr-4 font-semibold">{r.guest.name}</td>
                   <td className="py-2 pr-4">{r.confirmationNumber}</td>
                   <td className="py-2 pr-4">{r.room ? `${r.room.number} (${r.roomType.name})` : r.roomType.name}</td>
@@ -185,7 +185,7 @@ function ReservationAlertsTable({
           </tbody>
         </table>
       </Card>
-      {footnote ? <p className="text-small text-primary-dark/70">{footnote}</p> : null}
+      {footnote ? <p className="text-small text-surface-muted">{footnote}</p> : null}
     </Section>
   );
 }
@@ -197,7 +197,7 @@ function MaintenanceTable({ rows }: { rows: MaintenanceAlert[] }) {
   if (rows.length === 0) {
     return (
       <Section label="All Clear">
-        <p className="text-body text-primary-dark/70">No urgent work orders, and no room out of service.</p>
+        <p className="text-body text-surface-muted">No urgent work orders, and no room out of service.</p>
       </Section>
     );
   }
@@ -207,7 +207,7 @@ function MaintenanceTable({ rows }: { rows: MaintenanceAlert[] }) {
       <Card tone="secondary" className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="text-small font-bold text-secondary text-left">
+            <tr className="text-small font-bold text-surface text-left">
               <th className="py-2 pr-4">Work Order</th>
               <th className="py-2 pr-4">Room</th>
               <th className="py-2 pr-4">Priority</th>
@@ -218,7 +218,7 @@ function MaintenanceTable({ rows }: { rows: MaintenanceAlert[] }) {
           </thead>
           <tbody>
             {rows.map((w) => (
-              <tr key={w.id} className="border-t border-secondary/10 text-small text-secondary">
+              <tr key={w.id} className="border-t border-secondary/10 text-small text-surface">
                 <td className="py-2 pr-4 font-semibold">
                   {w.title}
                   {w.takesRoomOutOfService ? <span className="block text-tiny font-normal text-red-700">Room out of service</span> : null}
@@ -227,7 +227,7 @@ function MaintenanceTable({ rows }: { rows: MaintenanceAlert[] }) {
                 <td className={`py-2 pr-4 ${w.priority === 'urgent' ? 'font-semibold text-red-700' : ''}`}>{PRIORITY_LABEL[w.priority]}</td>
                 <td className="py-2 pr-4">
                   {STATUS_LABEL[w.status]}
-                  {w.assignedToUser ? <span className="block text-tiny text-secondary-light">{w.assignedToUser.name}</span> : null}
+                  {w.assignedToUser ? <span className="block text-tiny text-surface-muted">{w.assignedToUser.name}</span> : null}
                 </td>
                 <td className="py-2 pr-4">{new Date(w.createdAt).toLocaleDateString()}</td>
                 <td className="py-2 pr-4 text-right">
@@ -250,7 +250,7 @@ function OverdueBalancesTable({ rows }: { rows: FolioListRow[] }) {
   if (rows.length === 0) {
     return (
       <Section label="All Clear">
-        <p className="text-body text-primary-dark/70">No overdue balances — every departed guest&apos;s folio is fully settled.</p>
+        <p className="text-body text-surface-muted">No overdue balances — every departed guest&apos;s folio is fully settled.</p>
       </Section>
     );
   }
@@ -260,7 +260,7 @@ function OverdueBalancesTable({ rows }: { rows: FolioListRow[] }) {
       <Card tone="secondary" className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="text-small font-bold text-secondary text-left">
+            <tr className="text-small font-bold text-surface text-left">
               <th className="py-2 pr-4">Guest</th>
               <th className="py-2 pr-4">Confirmation #</th>
               <th className="py-2 pr-4">Checked Out</th>
@@ -270,7 +270,7 @@ function OverdueBalancesTable({ rows }: { rows: FolioListRow[] }) {
           </thead>
           <tbody>
             {rows.map((f) => (
-              <tr key={f.id} className="border-t border-secondary/10 text-small text-secondary">
+              <tr key={f.id} className="border-t border-secondary/10 text-small text-surface">
                 <td className="py-2 pr-4 font-semibold">{f.guest.name}</td>
                 <td className="py-2 pr-4">{f.reservation?.confirmationNumber ?? 'NIL'}</td>
                 <td className="py-2 pr-4">{f.reservation ? new Date(f.reservation.checkOutDate).toLocaleDateString() : 'NIL'}</td>

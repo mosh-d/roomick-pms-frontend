@@ -119,7 +119,7 @@ export function TaxRulesSection({ branchId, currency, auth }: { branchId: string
   return (
     <Section label="Tax Rules">
       <div className="flex flex-col gap-3">
-        <p className="text-small text-secondary">
+        <p className="text-small text-surface">
           The taxes every charge at this branch is billed under, each on its own line of the bill. An exclusive tax is added on top of the price; an inclusive
           one is already inside your prices, so the guest pays the price and the bill shows how much of it was tax. A fixed amount is charged once per charge —
           once a night on room charges.
@@ -133,7 +133,7 @@ export function TaxRulesSection({ branchId, currency, auth }: { branchId: string
         ) : null}
         {error ? <p className="text-small text-red-600">{error}</p> : null}
         {rulesQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading tax rules…</p>
+          <p className="text-body text-surface-muted">Loading tax rules…</p>
         ) : rulesQuery.isError ? (
           <p className="text-small text-red-600">{errorText(rulesQuery.error)}</p>
         ) : (
@@ -143,7 +143,7 @@ export function TaxRulesSection({ branchId, currency, auth }: { branchId: string
         )}
         {retired.length > 0 ? (
           <div className="flex flex-col gap-2">
-            <button type="button" className="self-start text-small font-semibold text-secondary underline cursor-pointer" onClick={() => setShowRetired((v) => !v)}>
+            <button type="button" className="self-start text-small font-semibold text-surface underline cursor-pointer" onClick={() => setShowRetired((v) => !v)}>
               {showRetired ? 'Hide' : 'Show'} retired rules ({retired.length})
             </button>
             {showRetired ? (
@@ -153,7 +153,7 @@ export function TaxRulesSection({ branchId, currency, auth }: { branchId: string
             ) : null}
           </div>
         ) : null}
-        <p className="text-tiny text-secondary-light">
+        <p className="text-tiny text-surface-muted">
           Changing or retiring a rule applies from the next charge — bills already posted keep the tax they were charged.
         </p>
       </div>
@@ -215,7 +215,7 @@ function TaxRuleDialog({
   return (
     <Modal open onClose={onClose} title={rule ? `Change ${rule.name}` : 'Add Tax Rule'}>
       <TaxRuleFields idPrefix="tax-rule" value={draft} onChange={setDraft} currency={currency} />
-      {rule ? <p className="text-tiny text-secondary-light">Saving replaces the current rule from the next charge on. Bills already posted keep the old one.</p> : null}
+      {rule ? <p className="text-tiny text-surface-muted">Saving replaces the current rule from the next charge on. Bills already posted keep the old one.</p> : null}
       {attempted && problem ? <p className="text-small text-red-600">{problem}</p> : null}
       {error ? <p className="text-small text-red-600">{error}</p> : null}
       <div className="flex items-center gap-3">

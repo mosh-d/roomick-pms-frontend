@@ -262,10 +262,10 @@ export function BranchSetupForm({ onBack, onNext }: { onBack: () => void; onNext
               content: (
                 <div className="flex flex-col gap-1">
                   {brandTaxRules.length === 0 ? (
-                    <p className="text-small text-secondary-light">The brand has no default tax rules, so this branch will charge no tax until you add some.</p>
+                    <p className="text-small text-surface-muted">The brand has no default tax rules, so this branch will charge no tax until you add some.</p>
                   ) : (
                     brandTaxRules.map((rule) => (
-                      <p key={rule.localId} className="text-small text-secondary">
+                      <p key={rule.localId} className="text-small text-surface">
                         <span className="font-semibold">{rule.name || 'Untitled'}</span> — {describeTaxRuleDraft(rule, symbol)}
                       </p>
                     ))

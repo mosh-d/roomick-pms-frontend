@@ -121,18 +121,18 @@ export default function NoShowHandlingPage() {
 
       <Section label="Pending No-Shows">
         {pendingQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading…</p>
+          <p className="text-body text-surface-muted">Loading…</p>
         ) : pendingList.length === 0 ? (
-          <p className="text-body text-primary-dark/70">Nothing pending — every confirmed arrival has either checked in or already been marked.</p>
+          <p className="text-body text-surface-muted">Nothing pending — every confirmed arrival has either checked in or already been marked.</p>
         ) : (
           <div className="flex flex-col gap-3">
             {pendingList.map((r) => (
               <Card key={r.id} tone="secondary" className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-body font-semibold text-secondary">
+                  <p className="text-body font-semibold text-surface">
                     {r.guest.name} — {r.roomType.name}
                   </p>
-                  <p className="text-small text-secondary-light">
+                  <p className="text-small text-surface-muted">
                     {r.confirmationNumber} · Check-in was {new Date(r.checkInDate).toLocaleDateString()}
                   </p>
                 </div>
@@ -147,9 +147,9 @@ export default function NoShowHandlingPage() {
 
       <Section label="Recent No-Shows">
         {recentQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading…</p>
+          <p className="text-body text-surface-muted">Loading…</p>
         ) : recentList.length === 0 ? (
-          <p className="text-body text-primary-dark/70">No no-shows recorded yet.</p>
+          <p className="text-body text-surface-muted">No no-shows recorded yet.</p>
         ) : (
           <div className="flex flex-col gap-3">
             {recentList.map((r) => {
@@ -160,10 +160,10 @@ export default function NoShowHandlingPage() {
                 <Card key={r.id} tone="secondary" className="flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-4">
                     <div>
-                      <p className="text-body font-semibold text-secondary">
+                      <p className="text-body font-semibold text-surface">
                         {r.guest.name} — {r.roomType.name}
                       </p>
-                      <p className="text-small text-secondary-light">
+                      <p className="text-small text-surface-muted">
                         {r.confirmationNumber} · Was due {new Date(r.checkInDate).toLocaleDateString()}
                       </p>
                     </div>
@@ -179,7 +179,7 @@ export default function NoShowHandlingPage() {
                     </div>
                   </div>
                   {record ? (
-                    <p className="text-small text-secondary-light">
+                    <p className="text-small text-surface-muted">
                       Penalty ({record.penaltyType.replace('_', ' ')}):{' '}
                       {record.penaltyAmount === null ? 'None' : formatMoney(record.penaltyAmount, symbol)}
                       {record.penaltyWaived ? ' — Waived' : ''}
@@ -204,7 +204,7 @@ export default function NoShowHandlingPage() {
       <Modal open={reinstating !== null} onClose={() => setReinstating(null)} title="Reinstate reservation">
         {reinstating ? (
           <div className="flex flex-col gap-4">
-            <p className="text-body text-secondary-light">
+            <p className="text-body text-surface-muted">
               {reinstating.guest.name} — {reinstating.roomType.name}. The original dates have passed; pick new ones for this late arrival.
             </p>
             <div className="grid grid-cols-2 gap-4">
@@ -226,7 +226,7 @@ export default function NoShowHandlingPage() {
               />
             </div>
             {reinstating.noShowRecords[0] && !reinstating.noShowRecords[0].penaltyWaived && reinstating.noShowRecords[0].penaltyAmount !== null ? (
-              <label className="flex items-center gap-2 text-small text-secondary">
+              <label className="flex items-center gap-2 text-small text-surface">
                 <input type="checkbox" checked={reinstateWaive} onChange={(e) => setReinstateWaive(e.target.checked)} />
                 Also waive the no-show penalty
               </label>

@@ -59,7 +59,7 @@ export default function ArrivalsDashboardPage() {
     {
       key: 'expected',
       label: 'Expected',
-      render: (r) => (r.estimatedArrivalTime ? <span className="tabular-nums">{r.estimatedArrivalTime}</span> : <span className="text-secondary-light">—</span>),
+      render: (r) => (r.estimatedArrivalTime ? <span className="tabular-nums">{r.estimatedArrivalTime}</span> : <span className="text-surface-muted">—</span>),
       // Guests who never said sort to the end rather than the beginning: a
       // desk sorting by arrival wants the times in order first, not a block
       // of blanks. 'zz' is past any real HH:mm.
@@ -76,7 +76,7 @@ export default function ArrivalsDashboardPage() {
         r.preArrivalCompletedAt ? (
           <span className="font-semibold text-green-700">Checked in online</span>
         ) : (
-          <span className="text-primary-text font-semibold">Pending Check-In</span>
+          <span className="text-surface-accent font-semibold">Pending Check-In</span>
         ),
       sortValue: (r) => (r.preArrivalCompletedAt ? 'Checked in online' : 'Pending Check-In'),
     },
@@ -99,14 +99,14 @@ export default function ArrivalsDashboardPage() {
       <SearchInput label="Search arrivals by guest name" placeholder="Search by guest name" value={search} onChange={setSearch} />
 
       {preArrivalCount > 0 ? (
-        <p className="text-small text-secondary">
+        <p className="text-small text-surface">
           <span className="font-semibold text-green-700">{preArrivalCount}</span> of {arrivalsQuery.data?.length ?? 0} arriving guests checked in online — those
           only need a room assigned and a key.
         </p>
       ) : null}
 
       {arrivalsQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading arrivals…</p>
+        <p className="text-body text-surface-muted">Loading arrivals…</p>
       ) : arrivalsQuery.isError ? (
         <p className="text-body text-red-600">Could not load arrivals. Please try refreshing.</p>
       ) : (

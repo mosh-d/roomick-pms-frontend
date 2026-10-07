@@ -151,11 +151,11 @@ function WorkOrderDetailModalInner({ order, branchId, auth, onClose }: { order: 
 
   return (
     <Modal open onClose={onClose} title={order.title}>
-      <p className="text-small text-secondary-light">
+      <p className="text-small text-surface-muted">
         {order.room ? `Room ${order.room.number}` : 'Common area'} — reported by {order.reportedByUser?.name ?? 'Unknown'}
         {order.takesRoomOutOfService ? ' — this order is holding the room out of service' : ''}
       </p>
-      {order.description ? <p className="text-body text-secondary">{order.description}</p> : null}
+      {order.description ? <p className="text-body text-surface">{order.description}</p> : null}
       <Select id="wo-status" label="Status" options={STATUS_OPTIONS} value={status} onChange={setStatus} />
       <Select id="wo-assigned-to" label="Assign to" options={staffOptions} value={assignedTo} onChange={setAssignedTo} placeholder="Unassigned" />
       <Textarea id="wo-completion-notes" label="Completion notes" value={completionNotes} onChange={(e) => setCompletionNotes(e.target.value)} />
@@ -182,14 +182,14 @@ function WorkOrderBoard({ branchId, auth }: { branchId: string; auth: AuthOpts }
   return (
     <Section label="Work Order Board">
       {workOrdersQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading work orders…</p>
+        <p className="text-body text-surface-muted">Loading work orders…</p>
       ) : (
         <div className="flex gap-4 overflow-x-auto pb-2">
           {STATUS_COLUMNS.map((col) => {
             const columnOrders = orders.filter((o) => o.status === col.status);
             return (
               <div key={col.status} className={`flex flex-col gap-2 min-w-64 shrink-0 ${col.status === 'cancelled' ? 'opacity-60' : ''}`}>
-                <p className="text-tiny font-bold uppercase tracking-wide text-primary-dark/50">
+                <p className="text-tiny font-bold uppercase tracking-wide text-surface-muted">
                   {col.label} ({columnOrders.length})
                 </p>
                 <div className="flex flex-col gap-2">
@@ -197,15 +197,15 @@ function WorkOrderBoard({ branchId, auth }: { branchId: string; auth: AuthOpts }
                     <button key={o.id} type="button" onClick={() => setDetailTarget(o)} className="text-left">
                       <Card tone="secondary" className="flex flex-col gap-1.5 hover:bg-secondary/10 transition-colors">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-small font-semibold text-secondary">{o.title}</span>
+                          <span className="text-small font-semibold text-surface">{o.title}</span>
                           <PriorityBadge priority={o.priority} />
                         </div>
-                        <span className="text-tiny text-secondary-light">{o.room ? `Room ${o.room.number}` : 'Common area'}</span>
-                        {o.assignedToUser ? <span className="text-tiny text-secondary-light">Assigned: {o.assignedToUser.name}</span> : null}
+                        <span className="text-tiny text-surface-muted">{o.room ? `Room ${o.room.number}` : 'Common area'}</span>
+                        {o.assignedToUser ? <span className="text-tiny text-surface-muted">Assigned: {o.assignedToUser.name}</span> : null}
                       </Card>
                     </button>
                   ))}
-                  {columnOrders.length === 0 ? <p className="text-tiny text-secondary-light">Nothing here.</p> : null}
+                  {columnOrders.length === 0 ? <p className="text-tiny text-surface-muted">Nothing here.</p> : null}
                 </div>
               </div>
             );
@@ -286,7 +286,7 @@ function warrantyBadge(warrantyUntil: string | null): { text: string; className:
   const daysLeft = Math.ceil((new Date(warrantyUntil).getTime() - Date.now()) / 86_400_000);
   if (daysLeft < 0) return { text: 'Expired', className: 'text-red-600 font-semibold' };
   if (daysLeft <= 30) return { text: `${daysLeft}d left`, className: 'text-orange-600 font-semibold' };
-  return { text: new Date(warrantyUntil).toLocaleDateString(), className: 'text-secondary-light' };
+  return { text: new Date(warrantyUntil).toLocaleDateString(), className: 'text-surface-muted' };
 }
 
 function AssetRegistrySection({ branchId, auth }: { branchId: string; auth: AuthOpts }) {
@@ -302,14 +302,14 @@ function AssetRegistrySection({ branchId, auth }: { branchId: string; auth: Auth
       label: 'Warranty',
       render: (a) => {
         const badge = warrantyBadge(a.warrantyUntil);
-        return badge ? <span className={badge.className}>{badge.text}</span> : <span className="text-secondary-light">—</span>;
+        return badge ? <span className={badge.className}>{badge.text}</span> : <span className="text-surface-muted">—</span>;
       },
     },
     {
       key: 'nextServiceDue',
       label: 'Next Service Due',
       render: (a) => {
-        if (!a.nextServiceDue) return <span className="text-secondary-light">—</span>;
+        if (!a.nextServiceDue) return <span className="text-surface-muted">—</span>;
         const overdue = new Date(a.nextServiceDue).getTime() < Date.now();
         return <span className={overdue ? 'text-red-600 font-semibold' : ''}>{new Date(a.nextServiceDue).toLocaleDateString()}</span>;
       },
@@ -326,7 +326,7 @@ function AssetRegistrySection({ branchId, auth }: { branchId: string; auth: Auth
           </Button>
         </div>
         {assetsQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading assets…</p>
+          <p className="text-body text-surface-muted">Loading assets…</p>
         ) : (
           <Card tone="secondary">
             <Table columns={columns} rows={assetsQuery.data ?? []} emptyMessage="No assets registered yet." exportFileName="assets" />

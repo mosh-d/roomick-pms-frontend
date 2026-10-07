@@ -73,7 +73,7 @@ function ExtendStayDialogInner({
 
   return (
     <Modal open title={`Extend ${target.guestName}'s stay`} onClose={onClose}>
-      <p className="text-body text-secondary-light">
+      <p className="text-body text-surface-muted">
         Currently checked out on {new Date(target.checkOutDate).toLocaleDateString()}. Pick the new check-out date — the rate for the
         whole stay is re-resolved, so the total updates to match the extra night(s).
       </p>

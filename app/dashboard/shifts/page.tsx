@@ -86,7 +86,7 @@ function DenominationCounter({ rows, onChange }: { rows: CashDenomination[]; onC
           <div className="w-24">
             <Input name={`count-${i}`} label="Count" type="number" min={0} value={row.count || ''} onChange={(e) => updateRow(i, { count: Number(e.target.value) })} />
           </div>
-          <p className="text-small text-primary-dark/70 pb-2">= {(row.denomination * row.count).toFixed(2)}</p>
+          <p className="text-small text-surface-muted pb-2">= {(row.denomination * row.count).toFixed(2)}</p>
           <button type="button" onClick={() => removeRow(i)} className="text-small text-red-600 pb-2 cursor-pointer">
             Remove
           </button>
@@ -96,7 +96,7 @@ function DenominationCounter({ rows, onChange }: { rows: CashDenomination[]; onC
         <Button type="button" variant="outline" onClick={addRow} className="self-start">
           Add Denomination
         </Button>
-        <p className="text-small font-semibold text-primary-dark">Total: {sumDenominations(rows).toFixed(2)}</p>
+        <p className="text-small font-semibold text-surface">Total: {sumDenominations(rows).toFixed(2)}</p>
       </div>
     </div>
   );
@@ -131,7 +131,7 @@ export default function ShiftManagementPage() {
       />
 
       {currentShiftQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : currentShiftQuery.data ? (
         <OpenShiftDetail shiftId={currentShiftQuery.data.id} branchId={activeBranchId} auth={auth} />
       ) : (
@@ -140,14 +140,14 @@ export default function ShiftManagementPage() {
 
       <Section label="Shift History">
         {historyQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading…</p>
+          <p className="text-body text-surface-muted">Loading…</p>
         ) : (historyQuery.data ?? []).length === 0 ? (
-          <p className="text-body text-primary-dark/70">No shifts recorded yet at this branch.</p>
+          <p className="text-body text-surface-muted">No shifts recorded yet at this branch.</p>
         ) : (
           <Card tone="secondary" className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="text-small font-bold text-secondary text-left">
+                <tr className="text-small font-bold text-surface text-left">
                   <th className="py-2 pr-4">Agent</th>
                   <th className="py-2 pr-4">Type</th>
                   <th className="py-2 pr-4">Opened</th>
@@ -158,7 +158,7 @@ export default function ShiftManagementPage() {
               </thead>
               <tbody>
                 {(historyQuery.data ?? []).map((shift) => (
-                  <tr key={shift.id} className="border-t border-secondary/10 text-small text-secondary">
+                  <tr key={shift.id} className="border-t border-secondary/10 text-small text-surface">
                     <td className="py-2 pr-4">{shift.agent?.name ?? '—'}</td>
                     <td className="py-2 pr-4 capitalize">{shift.shiftType}</td>
                     <td className="py-2 pr-4">{new Date(shift.openedAt).toLocaleString()}</td>
@@ -211,13 +211,13 @@ function OpenShiftForm({ branchId, auth, handover }: { branchId: string; auth: A
         <Section label="Handover">
           {handover?.lastClosedShift?.handoverNotes ? (
             <Card tone="accent">
-              <p className="text-small font-semibold text-primary-dark mb-1">Notes from the last shift</p>
-              <p className="text-body text-primary-dark">{handover.lastClosedShift.handoverNotes}</p>
+              <p className="text-small font-semibold text-surface mb-1">Notes from the last shift</p>
+              <p className="text-body text-surface">{handover.lastClosedShift.handoverNotes}</p>
             </Card>
           ) : null}
           {(handover?.unresolvedIssues ?? []).length > 0 ? (
             <div className="flex flex-col gap-2">
-              <p className="text-small font-semibold text-primary-dark">Unresolved issues carried forward</p>
+              <p className="text-small font-semibold text-surface">Unresolved issues carried forward</p>
               {handover!.unresolvedIssues.map((issue) => (
                 <IssueRow key={issue.id} issue={issue} branchId={branchId} auth={auth} />
               ))}
@@ -231,7 +231,7 @@ function OpenShiftForm({ branchId, auth, handover }: { branchId: string; auth: A
           <Select name="shiftType" label="Shift Type" options={SHIFT_TYPE_OPTIONS} value={shiftType} onChange={setShiftType} />
           <Input name="openingFloat" label="Opening Float" type="number" min={0} value={openingFloat} onChange={(e) => setOpeningFloat(e.target.value)} placeholder="50000" />
         </div>
-        <p className="text-small font-semibold text-primary-dark">Opening Denomination Count (optional)</p>
+        <p className="text-small font-semibold text-surface">Opening Denomination Count (optional)</p>
         <DenominationCounter rows={breakdown} onChange={setBreakdown} />
         {error ? <p className="text-small text-red-600">{error}</p> : null}
         <Button type="button" disabled={!shiftType || !openingFloat} loading={mutation.isPending} onClick={submit} className="self-start">
@@ -259,9 +259,9 @@ function IssueRow({ issue, branchId, auth }: { issue: ShiftIssue; branchId: stri
     <Card tone="secondary" className="flex flex-col gap-2">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-body text-secondary">{issue.description}</p>
+          <p className="text-body text-surface">{issue.description}</p>
           {issue.shift ? (
-            <p className="text-tiny text-secondary-light">
+            <p className="text-tiny text-surface-muted">
               From {issue.shift.agent.name}&rsquo;s {issue.shift.shiftType} shift, {new Date(issue.shift.openedAt).toLocaleDateString()}
             </p>
           ) : null}
@@ -288,7 +288,7 @@ function OpenShiftDetail({ shiftId, branchId, auth }: { shiftId: string; branchI
   const addIssueMutation = useAddShiftIssueMutation(branchId, auth);
 
   const shift = shiftQuery.data;
-  if (!shift) return <p className="text-body text-primary-dark/70">Loading…</p>;
+  if (!shift) return <p className="text-body text-surface-muted">Loading…</p>;
 
   const cashPayments = (shift.payments ?? []).filter((p) => p.method === 'cash');
   // Point of Sale cash lands in the same drawer — closing the shift expects both.
@@ -308,27 +308,27 @@ function OpenShiftDetail({ shiftId, branchId, auth }: { shiftId: string; branchI
       <Section label="Current Shift">
         <Card tone="accent" className="flex flex-wrap gap-x-8 gap-y-2">
           <div>
-            <p className="text-tiny text-primary-dark/70">Type</p>
-            <p className="text-body font-semibold capitalize text-primary-dark">{shift.shiftType}</p>
+            <p className="text-tiny text-surface-muted">Type</p>
+            <p className="text-body font-semibold capitalize text-surface">{shift.shiftType}</p>
           </div>
           <div>
-            <p className="text-tiny text-primary-dark/70">Opened</p>
-            <p className="text-body font-semibold text-primary-dark">{new Date(shift.openedAt).toLocaleString()}</p>
+            <p className="text-tiny text-surface-muted">Opened</p>
+            <p className="text-body font-semibold text-surface">{new Date(shift.openedAt).toLocaleString()}</p>
           </div>
           <div>
-            <p className="text-tiny text-primary-dark/70">Opening Float</p>
-            <p className="text-body font-semibold text-primary-dark">{shift.openingFloat}</p>
+            <p className="text-tiny text-surface-muted">Opening Float</p>
+            <p className="text-body font-semibold text-surface">{shift.openingFloat}</p>
           </div>
           <div>
-            <p className="text-tiny text-primary-dark/70">Cash Taken So Far</p>
-            <p className="text-body font-semibold text-primary-dark">{cashTakenSoFar.toFixed(2)}</p>
-            {posCashSoFar > 0 ? <p className="text-tiny text-primary-dark/70">incl. {posCashSoFar.toFixed(2)} at Point of Sale</p> : null}
+            <p className="text-tiny text-surface-muted">Cash Taken So Far</p>
+            <p className="text-body font-semibold text-surface">{cashTakenSoFar.toFixed(2)}</p>
+            {posCashSoFar > 0 ? <p className="text-tiny text-surface-muted">incl. {posCashSoFar.toFixed(2)} at Point of Sale</p> : null}
           </div>
         </Card>
       </Section>
 
       <Section label="Shift Issues">
-        {unresolvedIssues.length === 0 ? <p className="text-body text-primary-dark/70">No open issues on this shift.</p> : null}
+        {unresolvedIssues.length === 0 ? <p className="text-body text-surface-muted">No open issues on this shift.</p> : null}
         <div className="flex flex-col gap-2">
           {unresolvedIssues.map((issue) => (
             <IssueRow key={issue.id} issue={issue} branchId={branchId} auth={auth} />
@@ -398,7 +398,7 @@ function CloseShiftForm({ shift, branchId, auth }: { shift: Shift; branchId: str
           placeholder={shift.openingFloat}
         />
       </div>
-      <p className="text-small font-semibold text-primary-dark">Closing Denomination Count (optional)</p>
+      <p className="text-small font-semibold text-surface">Closing Denomination Count (optional)</p>
       <DenominationCounter rows={breakdown} onChange={setBreakdown} />
 
       <div className="max-w-xl">
@@ -409,9 +409,9 @@ function CloseShiftForm({ shift, branchId, auth }: { shift: Shift; branchId: str
       </div>
 
       <div className="flex flex-col gap-2 max-w-xl">
-        <p className="text-small font-semibold text-primary-dark">Hand Off to Next Shift</p>
+        <p className="text-small font-semibold text-surface">Hand Off to Next Shift</p>
         {handoffIssues.map((issue, i) => (
-          <p key={i} className="text-small text-primary-dark/80">
+          <p key={i} className="text-small text-surface/80">
             • {issue.description}
           </p>
         ))}

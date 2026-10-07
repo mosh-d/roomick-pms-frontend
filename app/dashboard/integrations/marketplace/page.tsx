@@ -67,9 +67,9 @@ export default function MarketplacePage() {
       {marketplace.isError ? (
         <p className="text-small text-red-600">{marketplace.error instanceof ApiError ? marketplace.error.message : 'Couldn’t load the marketplace.'}</p>
       ) : marketplace.isLoading ? (
-        <p className="text-small text-secondary">Loading…</p>
+        <p className="text-small text-surface">Loading…</p>
       ) : visible.length === 0 ? (
-        <p className="text-small text-secondary">Nothing matches that.</p>
+        <p className="text-small text-surface">Nothing matches that.</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="marketplace-listings">
           {visible.map((listing) => (
@@ -87,7 +87,7 @@ function CategoryChip({ label, active, onClick }: { label: string; active: boole
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={`rounded-full border px-3 py-1 text-small ${active ? 'border-secondary bg-secondary text-white' : 'border-secondary/30 text-secondary hover:bg-secondary/10'}`}
+      className={`rounded-full border px-3 py-1 text-small ${active ? 'border-primary bg-primary text-white' : 'border-surface-muted/40 text-surface hover:bg-surface-muted/10'}`}
     >
       {label}
     </button>
@@ -101,15 +101,15 @@ function ListingCard({ listing }: { listing: MarketplaceListing }) {
       <Card className={`h-full flex flex-col gap-2 hover:border-secondary/50 ${state === 'coming_later' ? 'opacity-80' : ''}`}>
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="text-body font-semibold text-secondary">{listing.name}</p>
-            <p className="text-tiny text-secondary/70">
+            <p className="text-body font-semibold text-surface">{listing.name}</p>
+            <p className="text-tiny text-surface/70">
               {listing.categoryLabel} · {listing.vendor}
             </p>
           </div>
           <ListingStateBadge state={state} />
         </div>
-        <p className="text-small text-secondary">{listing.summary}</p>
-        {state === 'coming_later' && listing.waitingOn ? <p className="text-tiny text-secondary/70">Waiting on: {listing.waitingOn}</p> : null}
+        <p className="text-small text-surface">{listing.summary}</p>
+        {state === 'coming_later' && listing.waitingOn ? <p className="text-tiny text-surface/70">Waiting on: {listing.waitingOn}</p> : null}
         {state === 'on' && listing.connection?.lastRunSummary ? <p className="text-tiny text-green-800">{listing.connection.lastRunSummary}</p> : null}
       </Card>
     </Link>

@@ -81,7 +81,7 @@ export default function RegistrationCardsHubPage() {
 
       <Section label="Card Template">
         {templateQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading…</p>
+          <p className="text-body text-surface-muted">Loading…</p>
         ) : (
           <TemplateForm initial={templateQuery.data ?? {}} branchId={activeBranchId} auth={auth} />
         )}
@@ -89,9 +89,9 @@ export default function RegistrationCardsHubPage() {
 
       <Section label="Look Up a Card">
         {checkedInQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading…</p>
+          <p className="text-body text-surface-muted">Loading…</p>
         ) : reservationOptions.length === 0 ? (
-          <p className="text-body text-primary-dark/70">No checked-in guests right now — a card exists only once someone has checked in.</p>
+          <p className="text-body text-surface-muted">No checked-in guests right now — a card exists only once someone has checked in.</p>
         ) : (
           <>
             <Select name="reservationId" label="Checked-In Guest" options={reservationOptions} value={selectedReservationId} onChange={setSelectedReservationId} />
@@ -150,7 +150,7 @@ function TemplateForm({ initial, branchId, auth }: { initial: RegCardTemplate; b
       <Textarea name="houseRules" label="House Rules" value={houseRules} onChange={(e) => setHouseRules(e.target.value)} hint="Printed on every generated card" />
       <YesNoToggle label="Show Rate on Card" name="showRate" value={showRate} onChange={setShowRate} />
       {error ? <p className="text-small text-red-600">{error}</p> : null}
-      {saved ? <p className="text-small text-primary-dark">Template saved.</p> : null}
+      {saved ? <p className="text-small text-surface">Template saved.</p> : null}
       <Button type="button" loading={setTemplateMutation.isPending} onClick={save} className="self-start">
         Save Template
       </Button>

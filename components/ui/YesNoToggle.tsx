@@ -32,7 +32,7 @@ export function YesNoToggle({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-small font-semibold text-secondary">{label}</span>
+      <span className="text-small font-semibold text-surface">{label}</span>
       <div role="radiogroup" aria-label={label} className="inline-flex gap-2">
         {options.map((option) => {
           const isSelected = value === option.value;
@@ -56,7 +56,7 @@ export function YesNoToggle({
                   // own `bg-primary text-white` convention for anything on a
                   // solid primary-gold fill; the near-black secondary text
                   // read as low-contrast against it here (found live).
-                  isSelected ? 'bg-primary text-white border-primary' : 'border-secondary-light/40 text-secondary'
+                  isSelected ? 'bg-primary text-white border-primary' : 'border-surface-muted/40 text-surface'
                 }`}
               >
                 {option.text}

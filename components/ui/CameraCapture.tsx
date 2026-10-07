@@ -98,19 +98,19 @@ export function CameraCapture({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-small font-semibold text-secondary">{label}</span>
+      <span className="text-small font-semibold text-surface">{label}</span>
 
       {photoBase64 ? (
         <div className="flex flex-col items-start gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element -- a captured/uploaded data: URI, not an app asset next/image can optimize */}
-          <img src={`data:image/jpeg;base64,${photoBase64}`} alt="Captured ID document" className="max-h-48 w-auto rounded-card border border-secondary-light/40" />
+          <img src={`data:image/jpeg;base64,${photoBase64}`} alt="Captured ID document" className="max-h-48 w-auto rounded-card border border-surface-muted/40" />
           <Button type="button" variant="outline" size="sm" onClick={retake}>
             <RetakeIcon className="size-4" /> Retake
           </Button>
         </div>
       ) : cameraActive ? (
         <div className="flex flex-col items-start gap-2">
-          <video ref={videoRef} muted playsInline className="max-h-64 w-auto rounded-card border border-secondary-light/40 bg-black" />
+          <video ref={videoRef} muted playsInline className="max-h-64 w-auto rounded-card border border-surface-muted/40 bg-black" />
           <div className="flex gap-2">
             <Button type="button" size="sm" onClick={capture}>
               <CameraIcon className="size-4" /> Capture
@@ -129,12 +129,12 @@ export function CameraCapture({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="text-small text-secondary-light underline hover:text-secondary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
+            className="text-small text-surface-muted underline hover:text-surface cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
           >
             or upload a photo instead
           </button>
           <input ref={fileInputRef} type="file" accept="image/*" className="sr-only" onChange={(event) => handleFilePicked(event.target.files?.[0] ?? null)} />
-          {hint ? <span className="text-tiny text-secondary-light">{hint}</span> : null}
+          {hint ? <span className="text-tiny text-surface-muted">{hint}</span> : null}
         </div>
       )}
     </div>

@@ -118,8 +118,8 @@ export default function ManageBookingPage() {
   if (propertyQuery.isError) {
     return (
       <Container className="max-w-3xl py-16 flex flex-col gap-3">
-        <h1 className="font-display text-h2 text-secondary">Property not found</h1>
-        <p className="text-body text-secondary-light">This booking link isn&rsquo;t active. Please check the link with the property directly.</p>
+        <h1 className="font-display text-h2 text-surface">Property not found</h1>
+        <p className="text-body text-surface-muted">This booking link isn&rsquo;t active. Please check the link with the property directly.</p>
       </Container>
     );
   }
@@ -128,8 +128,8 @@ export default function ManageBookingPage() {
     <Container className="max-w-3xl py-10 flex flex-col gap-8">
       <header className="flex flex-col gap-1">
         {propertyQuery.data ? <p className="text-small font-semibold uppercase tracking-wide text-accent-dark">{propertyQuery.data.brandName}</p> : null}
-        <h1 className="font-display text-h1 text-secondary">{propertyQuery.data?.name ?? 'Your booking'}</h1>
-        <p className="text-body text-secondary-light">Look up a booking you&rsquo;ve already made.</p>
+        <h1 className="font-display text-h1 text-surface">{propertyQuery.data?.name ?? 'Your booking'}</h1>
+        <p className="text-body text-surface-muted">Look up a booking you&rsquo;ve already made.</p>
       </header>
 
       {booking ? (
@@ -199,13 +199,13 @@ export default function ManageBookingPage() {
               Find Booking
             </Button>
           </div>
-          <p className="text-tiny text-secondary-light">
+          <p className="text-tiny text-surface-muted">
             Can&rsquo;t find your confirmation number? Contact the property directly — for your security we can&rsquo;t look a booking up by email alone.
           </p>
         </Section>
       )}
 
-      <p className="text-small text-secondary-light">
+      <p className="text-small text-surface-muted">
         <Link href={`/book/${slug}`} className="underline">
           Book another stay at {propertyQuery.data?.name ?? 'this property'}
         </Link>
@@ -272,7 +272,7 @@ function PreArrivalSection({
       <Section label="Check-In Details">
         <Card tone="secondary" className="flex flex-col gap-2">
           <p className="text-small font-semibold text-green-800">Check-in details completed</p>
-          <p className="text-small text-secondary">
+          <p className="text-small text-surface">
             Thanks — we have everything we need. {booking.estimatedArrivalTime ? `We'll expect you around ${booking.estimatedArrivalTime}.` : ''} Please bring
             photo ID for the front desk.
           </p>
@@ -284,7 +284,7 @@ function PreArrivalSection({
   return (
     <Section label="Check In Online">
       <Card tone="secondary" className="flex flex-col gap-3">
-        <p className="text-small text-secondary">Complete these now and check-in at the property will just be collecting your key.</p>
+        <p className="text-small text-surface">Complete these now and check-in at the property will just be collecting your key.</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-2">
           <Input id="pre-arrival-phone" label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+234…" />
@@ -301,19 +301,19 @@ function PreArrivalSection({
 
         {booking.houseRules ? (
           <div className="flex flex-col gap-1">
-            <p className="text-small font-semibold text-secondary">House rules</p>
-            <div className="max-h-40 overflow-y-auto rounded-control border border-secondary/20 p-3 text-small text-secondary whitespace-pre-wrap">
+            <p className="text-small font-semibold text-surface">House rules</p>
+            <div className="max-h-40 overflow-y-auto rounded-control border border-secondary/20 p-3 text-small text-surface whitespace-pre-wrap">
               {booking.houseRules}
             </div>
           </div>
         ) : null}
 
-        <label className="flex items-center gap-2 text-small text-secondary">
+        <label className="flex items-center gap-2 text-small text-surface">
           <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />
           I accept {booking.houseRules ? 'the house rules above' : "the property's house rules"}
         </label>
 
-        <label className="flex items-center gap-2 text-small text-secondary">
+        <label className="flex items-center gap-2 text-small text-surface">
           <input id="pre-arrival-marketing-opt-in" type="checkbox" checked={marketingOptIn} onChange={(e) => setMarketingOptIn(e.target.checked)} />
           Email me offers and news from this property (optional — unsubscribe any time)
         </label>
@@ -326,7 +326,7 @@ function PreArrivalSection({
           </Button>
         </div>
 
-        <p className="text-tiny text-secondary-light">
+        <p className="text-tiny text-surface-muted">
           You&rsquo;ll still need to show photo ID when you arrive — identity documents can&rsquo;t be submitted online yet.
         </p>
       </Card>
@@ -394,7 +394,7 @@ function GuestMessagesSection({ slug, booking, lookupEmail }: { slug: string; bo
       <Card tone="secondary" className="flex flex-col gap-3">
         {messages === null ? (
           <>
-            <p className="text-small text-secondary">Questions or requests about your stay? Message {booking.property.name} here — their replies appear on this page.</p>
+            <p className="text-small text-surface">Questions or requests about your stay? Message {booking.property.name} here — their replies appear on this page.</p>
             <div>
               <Button type="button" variant="outline" onClick={load} loading={listMutation.isPending}>
                 View messages
@@ -404,7 +404,7 @@ function GuestMessagesSection({ slug, booking, lookupEmail }: { slug: string; bo
         ) : (
           <>
             {messages.length === 0 ? (
-              <p className="text-small text-secondary-light">No messages yet.</p>
+              <p className="text-small text-surface-muted">No messages yet.</p>
             ) : (
               <ul className="flex flex-col gap-2">
                 {messages.map((message, index) => (
@@ -412,11 +412,11 @@ function GuestMessagesSection({ slug, booking, lookupEmail }: { slug: string; bo
                     key={index}
                     className={`rounded-control p-3 text-small ${message.from === 'you' ? 'bg-secondary-light/10 mr-6' : 'bg-accent/15 ml-6'}`}
                   >
-                    <p className="text-tiny text-secondary-light">
+                    <p className="text-tiny text-surface-muted">
                       {message.from === 'you' ? 'You' : booking.property.name} · {new Date(message.sentAt).toLocaleString()}
                       {message.requestLabel ? ` · ${message.requestLabel}` : ''}
                     </p>
-                    <p className="text-secondary whitespace-pre-wrap wrap-break-word">{message.body}</p>
+                    <p className="text-surface whitespace-pre-wrap wrap-break-word">{message.body}</p>
                   </li>
                 ))}
               </ul>
@@ -507,7 +507,7 @@ function CancelBookingSection({
   return (
     <Section label="Cancel Booking">
       <Card tone="secondary" className="flex flex-col gap-3">
-        <p className="text-small text-secondary">{booking.cancellationPolicySummary}</p>
+        <p className="text-small text-surface">{booking.cancellationPolicySummary}</p>
 
         {!quote ? (
           <div>
@@ -516,7 +516,7 @@ function CancelBookingSection({
             </Button>
           </div>
         ) : !quote.canCancelOnline ? (
-          <p className="text-small text-secondary">{quote.blockedReason}</p>
+          <p className="text-small text-surface">{quote.blockedReason}</p>
         ) : (
           <>
             {free ? (
@@ -528,7 +528,7 @@ function CancelBookingSection({
                 <p className="text-small font-semibold text-red-600">
                   The free cancellation window closed at {deadline} (property time), so cancelling now is charged.
                 </p>
-                <dl className="flex flex-col gap-1 text-small text-secondary max-w-sm">
+                <dl className="flex flex-col gap-1 text-small text-surface max-w-sm">
                   <ChargeRow label="Cancellation charge" value={money(quote.charge.amount)} />
                   {Number(quote.charge.tax) > 0 ? <ChargeRow label="Tax" value={money(quote.charge.tax)} /> : null}
                   <ChargeRow label="Total" value={money(quote.charge.total)} bold />
@@ -542,7 +542,7 @@ function CancelBookingSection({
             <Input id="cancel-reason" label="Reason (optional)" value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
 
             {!free ? (
-              <label className="flex items-center gap-2 text-small text-secondary">
+              <label className="flex items-center gap-2 text-small text-surface">
                 <input type="checkbox" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} />
                 I understand cancelling will be charged {money(quote.charge.total)}
               </label>
@@ -585,8 +585,8 @@ function CancellationConfirmed({ charged, currency }: { charged: string; currenc
   return (
     <div role="status">
       <Card tone="secondary" className="flex flex-col gap-1">
-        <p className="text-body font-semibold text-secondary">Your booking has been cancelled.</p>
-        <p className="text-small text-secondary">
+        <p className="text-body font-semibold text-surface">Your booking has been cancelled.</p>
+        <p className="text-small text-surface">
           {free
             ? 'No cancellation charge applies.'
             : `A cancellation charge of ${currency} ${charged} applies under the property's policy. Payments can't be made online yet — the property will settle it with you.`}
@@ -626,7 +626,7 @@ function GuestFolioSection({ slug, booking, lookupEmail }: { slug: string; booki
     return (
       <Section label="Your Bill">
         <Card tone="secondary" className="flex flex-col gap-3">
-          <p className="text-small text-secondary">See the charges on your stay so far, what you&rsquo;ve paid, and your balance.</p>
+          <p className="text-small text-surface">See the charges on your stay so far, what you&rsquo;ve paid, and your balance.</p>
           {error ? <p className="text-small text-red-600">{error}</p> : null}
           <div>
             <Button type="button" onClick={load} loading={folioMutation.isPending}>
@@ -645,23 +645,23 @@ function GuestFolioSection({ slug, booking, lookupEmail }: { slug: string; booki
     <Section label="Your Bill">
       <Card tone="secondary" className="flex flex-col gap-4">
         {folio.stillAccruing ? (
-          <p className="text-small text-secondary">
+          <p className="text-small text-surface">
             Room charges are added each night, so this shows what&rsquo;s been posted so far.
             {folio.roomTotalForStay ? ` Your room rate for the full stay is ${money(folio.roomTotalForStay)}.` : ''}
           </p>
         ) : null}
 
         <div className="flex flex-col gap-1">
-          <p className="text-small font-semibold text-secondary">Charges</p>
+          <p className="text-small font-semibold text-surface">Charges</p>
           {folio.lineItems.length === 0 ? (
-            <p className="text-small text-secondary-light">No charges posted yet.</p>
+            <p className="text-small text-surface-muted">No charges posted yet.</p>
           ) : (
             <ul className="flex flex-col divide-y divide-secondary/10">
               {folio.lineItems.map((item, index) => (
-                <li key={index} className="flex items-start justify-between gap-4 py-2 text-small text-secondary">
+                <li key={index} className="flex items-start justify-between gap-4 py-2 text-small text-surface">
                   <div className="flex flex-col min-w-0">
                     <span className="wrap-break-word">{item.description}</span>
-                    <span className="text-tiny text-secondary-light">
+                    <span className="text-tiny text-surface-muted">
                       {CHARGE_LABELS[item.chargeType] ?? item.chargeType} · {new Date(item.serviceDate ?? item.postedAt).toLocaleDateString()}
                     </span>
                   </div>
@@ -674,15 +674,15 @@ function GuestFolioSection({ slug, booking, lookupEmail }: { slug: string; booki
 
         {folio.payments.length > 0 ? (
           <div className="flex flex-col gap-1">
-            <p className="text-small font-semibold text-secondary">Payments</p>
+            <p className="text-small font-semibold text-surface">Payments</p>
             <ul className="flex flex-col divide-y divide-secondary/10">
               {folio.payments.map((payment, index) => (
-                <li key={index} className="flex items-start justify-between gap-4 py-2 text-small text-secondary">
+                <li key={index} className="flex items-start justify-between gap-4 py-2 text-small text-surface">
                   <div className="flex flex-col min-w-0">
                     <span>
                       {PAYMENT_PURPOSE_LABELS[payment.purpose] ?? payment.purpose} · {PAYMENT_METHOD_LABELS[payment.method] ?? payment.method}
                     </span>
-                    <span className="text-tiny text-secondary-light">{new Date(payment.recordedAt).toLocaleDateString()}</span>
+                    <span className="text-tiny text-surface-muted">{new Date(payment.recordedAt).toLocaleDateString()}</span>
                   </div>
                   <span className="shrink-0 tabular-nums">{money(payment.amount)}</span>
                 </li>
@@ -691,7 +691,7 @@ function GuestFolioSection({ slug, booking, lookupEmail }: { slug: string; booki
           </div>
         ) : null}
 
-        <dl className="flex flex-col gap-1 text-small text-secondary border-t border-secondary/20 pt-3 max-w-sm w-full ml-auto">
+        <dl className="flex flex-col gap-1 text-small text-surface border-t border-secondary/20 pt-3 max-w-sm w-full ml-auto">
           <div className="flex justify-between gap-4">
             <dt>Charges</dt>
             <dd className="tabular-nums">{money(folio.subTotal)}</dd>
@@ -715,13 +715,13 @@ function GuestFolioSection({ slug, booking, lookupEmail }: { slug: string; booki
         </dl>
 
         {folio.otherFoliosExist ? (
-          <p className="text-tiny text-secondary-light">
+          <p className="text-tiny text-surface-muted">
             Some charges on this stay are billed separately — for example to a company account — and aren&rsquo;t shown here. The front desk can help with those.
           </p>
         ) : null}
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-tiny text-secondary-light">
+          <p className="text-tiny text-surface-muted">
             As of {new Date(folio.asOf).toLocaleString()}. To settle your bill, please see the front desk — payments can&rsquo;t be made online yet.
           </p>
           <Button type="button" size="sm" variant="outline" onClick={load} loading={folioMutation.isPending}>
@@ -742,42 +742,42 @@ function BookingDetail({ booking, onLookupAnother }: { booking: PublicBookingDet
     <Section label="Your Booking">
       <Card tone={isCancelled ? 'secondary' : 'accent'} className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="font-display text-h2 text-secondary">{booking.confirmationNumber}</p>
+          <p className="font-display text-h2 text-surface">{booking.confirmationNumber}</p>
           <span className={`text-small font-semibold ${isCancelled ? 'text-red-600' : 'text-green-800'}`}>
             {STATUS_LABELS[booking.status] ?? booking.status}
           </span>
         </div>
 
-        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-small text-secondary">
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-small text-surface">
           <div>
-            <dt className="text-secondary-light">Guest</dt>
+            <dt className="text-surface-muted">Guest</dt>
             <dd className="font-semibold">{booking.guestName}</dd>
           </div>
           <div>
-            <dt className="text-secondary-light">Room</dt>
+            <dt className="text-surface-muted">Room</dt>
             <dd className="font-semibold">{booking.roomTypeName}</dd>
           </div>
           <div>
-            <dt className="text-secondary-light">Check-in</dt>
+            <dt className="text-surface-muted">Check-in</dt>
             <dd className="font-semibold">
               {new Date(booking.checkInDate).toLocaleDateString()} from {booking.property.checkInTime}
             </dd>
           </div>
           <div>
-            <dt className="text-secondary-light">Check-out</dt>
+            <dt className="text-surface-muted">Check-out</dt>
             <dd className="font-semibold">
               {new Date(booking.checkOutDate).toLocaleDateString()} by {booking.property.checkOutTime}
             </dd>
           </div>
           <div>
-            <dt className="text-secondary-light">Guests</dt>
+            <dt className="text-surface-muted">Guests</dt>
             <dd className="font-semibold">
               {booking.adults} adult{booking.adults === 1 ? '' : 's'}
               {booking.children > 0 ? `, ${booking.children} child${booking.children === 1 ? '' : 'ren'}` : ''}
             </dd>
           </div>
           <div>
-            <dt className="text-secondary-light">
+            <dt className="text-surface-muted">
               Total · {nights} night{nights === 1 ? '' : 's'}
             </dt>
             <dd className="font-semibold">
@@ -787,8 +787,8 @@ function BookingDetail({ booking, onLookupAnother }: { booking: PublicBookingDet
         </dl>
 
         {booking.specialRequests ? (
-          <div className="text-small text-secondary">
-            <p className="text-secondary-light">Your requests</p>
+          <div className="text-small text-surface">
+            <p className="text-surface-muted">Your requests</p>
             <p>{booking.specialRequests}</p>
           </div>
         ) : null}
@@ -796,10 +796,10 @@ function BookingDetail({ booking, onLookupAnother }: { booking: PublicBookingDet
         {/* Arrival instructions only make sense before arrival. Once checked in,
             the bill below shows payments and the balance, and this line would
             contradict it. */}
-        {booking.status === 'confirmed' ? <p className="text-tiny text-primary-dark/70">Payment is taken at the property on arrival. Please quote your confirmation number when you check in.</p> : null}
+        {booking.status === 'confirmed' ? <p className="text-tiny text-surface-muted">Payment is taken at the property on arrival. Please quote your confirmation number when you check in.</p> : null}
       </Card>
 
-      <p className="text-small text-secondary-light">
+      <p className="text-small text-surface-muted">
         Need to change your dates or room? Please contact {booking.property.name} directly — changes can&rsquo;t be made online yet.
       </p>
 

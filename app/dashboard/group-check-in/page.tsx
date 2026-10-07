@@ -135,8 +135,8 @@ export default function GroupCheckInPage() {
       {error ? <p className="text-small text-red-600">{error}</p> : null}
       {result ? (
         <Card tone="secondary" className="flex flex-col gap-2">
-          <p className="text-small font-semibold text-secondary">Checked in {result.checkedIn.length} guests.</p>
-          <ul className="text-small text-secondary list-disc pl-5">
+          <p className="text-small font-semibold text-surface">Checked in {result.checkedIn.length} guests.</p>
+          <ul className="text-small text-surface list-disc pl-5">
             {result.checkedIn.map((c) => (
               <li key={c.reservationId}>
                 Room {c.roomNumber ?? '?'} — {c.guestName} ({c.confirmationNumber})
@@ -144,7 +144,7 @@ export default function GroupCheckInPage() {
             ))}
           </ul>
           {result.masterFolioId ? (
-            <Link href={`/dashboard/billing/${result.masterFolioId}`} className="text-small text-secondary underline underline-offset-2 self-start">
+            <Link href={`/dashboard/billing/${result.masterFolioId}`} className="text-small text-surface underline underline-offset-2 self-start">
               Open the group&apos;s master bill
             </Link>
           ) : null}
@@ -153,9 +153,9 @@ export default function GroupCheckInPage() {
 
       <Section label="Group">
         {arrivalsQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading today&apos;s arrivals…</p>
+          <p className="text-body text-surface-muted">Loading today&apos;s arrivals…</p>
         ) : groups.length === 0 ? (
-          <p className="text-body text-primary-dark/70">No group is arriving today. Guests booked into a group block from Sales &amp; Events show here on their arrival day.</p>
+          <p className="text-body text-surface-muted">No group is arriving today. Guests booked into a group block from Sales &amp; Events show here on their arrival day.</p>
         ) : (
           <Select id="group-block" name="blockId" label="Arriving group" options={groupOptions} value={blockId} onChange={pickGroup} />
         )}
@@ -164,16 +164,16 @@ export default function GroupCheckInPage() {
       {group ? (
         <>
           <Section label="Guests and Rooms">
-            <p className="text-small text-primary-dark/70">Each guest gets a ready room of their type — change any of them, or leave a guest out to check them in later.</p>
+            <p className="text-small text-surface-muted">Each guest gets a ready room of their type — change any of them, or leave a guest out to check them in later.</p>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-primary/25">
                     <th className="pb-2 pr-4 w-10" />
-                    <th className="text-small font-bold text-primary-dark pb-2 pr-4">Guest</th>
-                    <th className="text-small font-bold text-primary-dark pb-2 pr-4">Confirmation #</th>
-                    <th className="text-small font-bold text-primary-dark pb-2 pr-4">Room Type</th>
-                    <th className="text-small font-bold text-primary-dark pb-2 min-w-48">Room</th>
+                    <th className="text-small font-bold text-surface pb-2 pr-4">Guest</th>
+                    <th className="text-small font-bold text-surface pb-2 pr-4">Confirmation #</th>
+                    <th className="text-small font-bold text-surface pb-2 pr-4">Room Type</th>
+                    <th className="text-small font-bold text-surface pb-2 min-w-48">Room</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -194,11 +194,11 @@ export default function GroupCheckInPage() {
                             className="size-4 accent-primary cursor-pointer"
                           />
                         </td>
-                        <td className="text-small text-primary-dark py-3 pr-4">
+                        <td className="text-small text-surface py-3 pr-4">
                           <GuestNameCell guest={r.guest} />
                         </td>
-                        <td className="text-small text-primary-dark py-3 pr-4">{r.confirmationNumber}</td>
-                        <td className="text-small text-primary-dark py-3 pr-4">{r.roomType.name}</td>
+                        <td className="text-small text-surface py-3 pr-4">{r.confirmationNumber}</td>
+                        <td className="text-small text-surface py-3 pr-4">{r.roomType.name}</td>
                         <td className="py-1">
                           {included.has(r.id) ? (
                             options.length === 0 && !room ? (
@@ -215,7 +215,7 @@ export default function GroupCheckInPage() {
                               />
                             )
                           ) : (
-                            <span className="text-small text-primary-dark/60">Later</span>
+                            <span className="text-small text-surface-muted">Later</span>
                           )}
                         </td>
                       </tr>
@@ -227,7 +227,7 @@ export default function GroupCheckInPage() {
           </Section>
 
           <Section label="Billing">
-            <label className="flex items-start gap-2 text-small text-primary-dark cursor-pointer">
+            <label className="flex items-start gap-2 text-small text-surface cursor-pointer">
               <input type="checkbox" className="size-4 mt-0.5 accent-primary cursor-pointer" checked={masterBill} onChange={(e) => setMasterBill(e.target.checked)} />
               <span>
                 <span className="font-semibold">Bill the group&apos;s rooms to one master bill.</span> Every guest&apos;s room nights go on a bill on the lead guest&apos;s

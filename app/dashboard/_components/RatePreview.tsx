@@ -40,35 +40,35 @@ export function RatePreview({
   return (
     <Card tone="accent" className="flex flex-col gap-1">
       {quoteQuery.isPending ? (
-        <p className="text-small text-secondary">Calculating rate…</p>
+        <p className="text-small text-surface">Calculating rate…</p>
       ) : quoteQuery.isError ? (
         <p className="text-small text-red-600">Couldn&apos;t calculate the rate for this stay.</p>
       ) : quoteQuery.data ? (
         <>
           <div className="flex items-center justify-between">
-            <span className="text-small text-secondary">
+            <span className="text-small text-surface">
               {quoteQuery.data.perNight.length} {quoteQuery.data.perNight.length === 1 ? 'night' : 'nights'} · avg {formatMoney(quoteQuery.data.nightlyRate, symbol)}/night
             </span>
-            <span className="text-small font-semibold text-secondary">
+            <span className="text-small font-semibold text-surface">
               {quoteQuery.data.ruleApplied.type === 'base' ? 'Standard Rate' : (quoteQuery.data.ruleApplied.planName ?? 'Adjusted Rate')}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-small text-secondary">Subtotal</span>
-            <span className="text-small text-secondary">{formatMoney(quoteQuery.data.subtotal, symbol)}</span>
+            <span className="text-small text-surface">Subtotal</span>
+            <span className="text-small text-surface">{formatMoney(quoteQuery.data.subtotal, symbol)}</span>
           </div>
           {Number(quoteQuery.data.taxTotal) > 0 ? (
             <div className="flex items-center justify-between">
-              <span className="text-small text-secondary">Tax</span>
-              <span className="text-small text-secondary">{formatMoney(quoteQuery.data.taxTotal, symbol)}</span>
+              <span className="text-small text-surface">Tax</span>
+              <span className="text-small text-surface">{formatMoney(quoteQuery.data.taxTotal, symbol)}</span>
             </div>
           ) : null}
           <div className="flex items-center justify-between border-t border-accent-dark/20 pt-1 mt-1">
-            <span className="text-small font-semibold text-secondary">Total</span>
-            <span className="text-body font-semibold text-secondary">{formatMoney(quoteQuery.data.totalWithTax, symbol)}</span>
+            <span className="text-small font-semibold text-surface">Total</span>
+            <span className="text-body font-semibold text-surface">{formatMoney(quoteQuery.data.totalWithTax, symbol)}</span>
           </div>
           {Number(quoteQuery.data.taxIncluded) > 0 ? (
-            <p className="text-tiny text-secondary-light text-right">Includes {formatMoney(quoteQuery.data.taxIncluded, symbol)} tax</p>
+            <p className="text-tiny text-surface-muted text-right">Includes {formatMoney(quoteQuery.data.taxIncluded, symbol)} tax</p>
           ) : null}
         </>
       ) : null}

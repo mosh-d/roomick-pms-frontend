@@ -174,7 +174,7 @@ export default function SplitBillingPage() {
       {error ? <p className="text-small text-red-600">{error}</p> : null}
       {notice ? (
         <Card tone="secondary">
-          <p className="text-small text-secondary">{notice}</p>
+          <p className="text-small text-surface">{notice}</p>
         </Card>
       ) : null}
 
@@ -182,8 +182,8 @@ export default function SplitBillingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           <div className="flex flex-col gap-3">
             <div>
-              <h3 className="text-body font-bold text-primary-dark">From</h3>
-              <p className="text-small text-primary-dark/70">The folio you want to move charges out of</p>
+              <h3 className="text-body font-bold text-surface">From</h3>
+              <p className="text-small text-surface-muted">The folio you want to move charges out of</p>
             </div>
             <SearchInput label="Search folios by guest name" placeholder="Search by guest name" value={search} onChange={setSearch} />
             <Select
@@ -206,11 +206,11 @@ export default function SplitBillingPage() {
 
           <div className="flex flex-col gap-3">
             <div>
-              <h3 className="text-body font-bold text-primary-dark">To</h3>
-              <p className="text-small text-primary-dark/70">Another folio on the same reservation</p>
+              <h3 className="text-body font-bold text-surface">To</h3>
+              <p className="text-small text-surface-muted">Another folio on the same reservation</p>
             </div>
             {!sourceFolioId ? (
-              <p className="text-small text-primary-dark/70">Pick a source folio first.</p>
+              <p className="text-small text-surface-muted">Pick a source folio first.</p>
             ) : (
               <>
                 <Select
@@ -222,7 +222,7 @@ export default function SplitBillingPage() {
                   onChange={setTargetFolioId}
                 />
                 {targetOptions.length === 0 ? (
-                  <p className="text-small text-primary-dark/70">
+                  <p className="text-small text-surface-muted">
                     This reservation only has one folio. Open another below to split charges into it.
                   </p>
                 ) : null}
@@ -255,7 +255,7 @@ export default function SplitBillingPage() {
       {source ? (
         <Section label="Bill Splitter">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <p className="text-small text-primary-dark/70 max-w-xl">
+            <p className="text-small text-surface-muted max-w-xl">
               Pick the charges to move. A charge&apos;s tax moves with it automatically, so neither bill is left carrying tax on a charge it
               doesn&apos;t have.
             </p>
@@ -272,7 +272,7 @@ export default function SplitBillingPage() {
           </div>
 
           {movableItems.length === 0 ? (
-            <p className="text-body text-primary-dark/70">No charges match this filter.</p>
+            <p className="text-body text-surface-muted">No charges match this filter.</p>
           ) : (
             <>
               <div className="flex items-center gap-3">
@@ -294,10 +294,10 @@ export default function SplitBillingPage() {
                   <thead>
                     <tr className="border-b border-primary/25">
                       <th className="pb-2 pr-4 w-10" />
-                      <th className="text-small font-bold text-primary-dark pb-2 pr-4">Service Date</th>
-                      <th className="text-small font-bold text-primary-dark pb-2 pr-4">Description</th>
-                      <th className="text-small font-bold text-primary-dark pb-2 pr-4">Charge Type</th>
-                      <th className="text-small font-bold text-primary-dark pb-2 text-right">Amount</th>
+                      <th className="text-small font-bold text-surface pb-2 pr-4">Service Date</th>
+                      <th className="text-small font-bold text-surface pb-2 pr-4">Description</th>
+                      <th className="text-small font-bold text-surface pb-2 pr-4">Charge Type</th>
+                      <th className="text-small font-bold text-surface pb-2 text-right">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -310,7 +310,7 @@ export default function SplitBillingPage() {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start pt-2">
                 <Card tone="secondary" className="flex flex-col gap-2">
-                  <h3 className="text-body font-bold text-secondary">Preview</h3>
+                  <h3 className="text-body font-bold text-surface">Preview</h3>
                   <DetailRow label="Charges selected" value={String(selectedIds.size)} />
                   {comingAlong > 0 ? <DetailRow label="Tax and corrections moving with them" value={String(comingAlong)} /> : null}
                   <DetailRow label="Amount moving" value={formatMoney(selectedTotal, symbol)} />
@@ -319,7 +319,7 @@ export default function SplitBillingPage() {
                       label="Source balance after"
                       value={formatMoney(Number(source.totals.balanceDue) - selectedTotal, symbol)}
                     />
-                    <p className="text-tiny text-secondary-light">
+                    <p className="text-tiny text-surface-muted">
                       Nothing is created or destroyed — the combined balance across both folios is unchanged.
                     </p>
                   </div>
@@ -371,19 +371,19 @@ function SplitRow({
           className={`size-4 accent-primary ${locked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
         />
       </td>
-      <td className="text-small text-primary-dark py-3 pr-4 whitespace-nowrap">
+      <td className="text-small text-surface py-3 pr-4 whitespace-nowrap">
         {item.serviceDate ? new Date(item.serviceDate).toLocaleDateString() : '—'}
       </td>
-      <td className={`text-small py-3 pr-4 ${item.chargeType === 'tax' ? 'text-primary-dark/70' : 'text-primary-dark'}`}>
+      <td className={`text-small py-3 pr-4 ${item.chargeType === 'tax' ? 'text-surface-muted' : 'text-surface'}`}>
         {item.description}
-        {locked ? <span className="block text-tiny text-primary-dark/60">Moves with its charge</span> : null}
+        {locked ? <span className="block text-tiny text-surface-muted">Moves with its charge</span> : null}
       </td>
       <td className="py-3 pr-4">
         <span className="inline-flex rounded-pill bg-primary/15 px-2 py-0.5 text-tiny font-semibold text-primary-dark capitalize">
           {item.chargeType === 'fnb' ? 'FnB' : item.chargeType}
         </span>
       </td>
-      <td className="text-small text-primary-dark py-3 text-right whitespace-nowrap font-semibold">{formatMoney(item.amount, symbol)}</td>
+      <td className="text-small text-surface py-3 text-right whitespace-nowrap font-semibold">{formatMoney(item.amount, symbol)}</td>
     </tr>
   );
 }
@@ -391,8 +391,8 @@ function SplitRow({
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-small text-secondary-light">{label}</span>
-      <span className="text-small font-semibold text-secondary">{value}</span>
+      <span className="text-small text-surface-muted">{label}</span>
+      <span className="text-small font-semibold text-surface">{value}</span>
     </div>
   );
 }

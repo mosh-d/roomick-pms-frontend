@@ -58,7 +58,7 @@ export function LogoUpload({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-small font-semibold text-secondary">{label}</span>
+      <span className="text-small font-semibold text-surface">{label}</span>
 
       {file ? (
         <div className="flex items-center gap-3 rounded-card border border-accent/40 p-3">
@@ -69,12 +69,12 @@ export function LogoUpload({
               file
             </div>
           )}
-          <span className="flex-1 truncate text-body text-secondary">{file.name}</span>
+          <span className="flex-1 truncate text-body text-surface">{file.name}</span>
           <button
             type="button"
             onClick={() => onFileChange(null)}
             aria-label="Remove logo"
-            className="text-secondary-light hover:text-secondary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+            className="text-surface-muted hover:text-surface cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
           >
             <XIcon />
           </button>
@@ -95,11 +95,11 @@ export function LogoUpload({
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="text-body font-semibold text-primary-text hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
+            className="text-body font-semibold text-surface-accent hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
           >
             Click to upload or drag and drop
           </button>
-          <span className="text-tiny text-secondary-light">{hint}</span>
+          <span className="text-tiny text-surface-muted">{hint}</span>
         </div>
       )}
 

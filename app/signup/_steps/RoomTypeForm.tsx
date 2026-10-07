@@ -115,7 +115,7 @@ export function RoomTypeForm({ onBack, onNext }: { onBack: () => void; onNext: (
               type="button"
               onClick={() => remove(index)}
               aria-label="Remove room type"
-              className="self-end text-secondary-light hover:text-secondary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+              className="self-end text-surface-muted hover:text-surface cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
             >
               <XIcon className="size-4" />
             </button>
@@ -213,7 +213,7 @@ export function RoomTypeForm({ onBack, onNext }: { onBack: () => void; onNext: (
       <button
         type="button"
         onClick={() => append({ name: '', baseRate: 0, adults: 2, children: 0, amenities: [] })}
-        className="inline-flex items-center gap-1 self-start text-body font-semibold text-primary-text hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
+        className="inline-flex items-center gap-1 self-start text-body font-semibold text-surface-accent hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
       >
         <PlusIcon className="size-4" /> Add room type
       </button>

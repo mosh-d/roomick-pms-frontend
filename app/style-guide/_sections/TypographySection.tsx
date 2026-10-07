@@ -15,15 +15,15 @@ const ROLES: { role: TextRole; metrics: string }[] = [
 export function TypographySection() {
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-header font-bold text-secondary">Typography</h2>
-      <p className="text-small text-secondary-light max-w-prose">
+      <h2 className="text-header font-bold text-surface">Typography</h2>
+      <p className="text-small text-surface-muted max-w-prose">
         9 roles from the brand spec&apos;s type scale, mapped onto 6 unique size/line-height tokens — see
         design-system/02-typography.md for the full mapping table.
       </p>
       <div className="flex flex-col gap-4">
         {ROLES.map(({ role, metrics }) => (
           <div key={role} className="flex items-baseline gap-4 border-b border-accent/20 pb-3">
-            <span className="w-28 shrink-0 text-tiny text-secondary-light">
+            <span className="w-28 shrink-0 text-tiny text-surface-muted">
               {role} <br /> {metrics}
             </span>
             <div className="flex flex-col gap-1">
@@ -41,10 +41,10 @@ export function TypographySection() {
       </div>
 
       <div>
-        <h3 className="text-subheader font-semibold text-secondary mb-3">
+        <h3 className="text-subheader font-semibold text-surface mb-3">
           Display serif (opt-in) — <code className="text-tiny">font-display</code>
         </h3>
-        <p className="text-small text-secondary-light max-w-prose mb-3">
+        <p className="text-small text-surface-muted max-w-prose mb-3">
           Playfair Display isn&apos;t used anywhere in the 9 default roles above (Satoshi is the default for all of
           them, per 02-typography.md) — it&apos;s an opt-in layer for occasional brand moments, applied via the{' '}
           <code className="text-tiny">font-display</code> utility on top of Header/Title/Emphasis, never below{' '}
@@ -52,9 +52,9 @@ export function TypographySection() {
           just documented.
         </p>
         <div className="flex flex-col gap-3">
-          <p className="text-title font-display text-secondary">The quick brown fox</p>
-          <p className="text-header font-display font-semibold text-secondary">The quick brown fox</p>
-          <p className="text-title font-display font-bold italic text-secondary">The quick brown fox</p>
+          <p className="text-title font-display text-surface">The quick brown fox</p>
+          <p className="text-header font-display font-semibold text-surface">The quick brown fox</p>
+          <p className="text-title font-display font-bold italic text-surface">The quick brown fox</p>
         </div>
       </div>
     </section>

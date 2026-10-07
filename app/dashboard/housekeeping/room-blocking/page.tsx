@@ -104,18 +104,18 @@ export default function RoomBlockingPage() {
 
       <Section label="Blocked Rooms">
         {blocksQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading blocks…</p>
+          <p className="text-body text-surface-muted">Loading blocks…</p>
         ) : (blocksQuery.data ?? []).length === 0 ? (
-          <p className="text-body text-primary-dark/70">No rooms are currently blocked.</p>
+          <p className="text-body text-surface-muted">No rooms are currently blocked.</p>
         ) : (
           <div className="flex flex-col gap-3">
             {(blocksQuery.data ?? []).map((block) => (
               <Card key={block.id} tone="secondary" className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-body font-semibold text-secondary">
+                  <p className="text-body font-semibold text-surface">
                     Room {block.room.number} — <span className="capitalize">{block.reason.replace('_', ' ')}</span>
                   </p>
-                  <p className="text-small text-secondary-light">
+                  <p className="text-small text-surface-muted">
                     {new Date(block.fromDate).toLocaleDateString()} – {new Date(block.toDate).toLocaleDateString()}
                     {block.notes ? ` · ${block.notes}` : ''}
                   </p>

@@ -138,14 +138,14 @@ export function GuestLookupFields({
                 onMouseEnter={() => setHighlight(index)}
                 className={`flex flex-col gap-0.5 px-3 py-2 cursor-pointer ${index === highlight ? 'bg-secondary/10' : ''}`}
               >
-                <span className="flex items-center gap-2 text-small font-semibold text-secondary">
+                <span className="flex items-center gap-2 text-small font-semibold text-surface">
                   {guest.name}
                   {guest.vipLevel ? <StatusTag value="vip" /> : null}
                 </span>
-                <span className="text-tiny text-secondary-light">{[guest.phone, guest.email].filter(Boolean).join(' · ') || 'No phone or email on file'}</span>
+                <span className="text-tiny text-surface-muted">{[guest.phone, guest.email].filter(Boolean).join(' · ') || 'No phone or email on file'}</span>
               </li>
             ))}
-            <li role="presentation" className="px-3 pt-1.5 pb-1 text-tiny text-secondary-light border-t border-secondary/10 mt-1">
+            <li role="presentation" className="px-3 pt-1.5 pb-1 text-tiny text-surface-muted border-t border-secondary/10 mt-1">
               Not listed? Keep typing — a new guest is added with the booking.
             </li>
           </ul>
@@ -158,11 +158,11 @@ export function GuestLookupFields({
     <div className="flex flex-col gap-3">
       {linkedGuest ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-control border border-secondary/20 bg-secondary/5 px-3 py-2">
-          <p className="text-small text-secondary">
+          <p className="text-small text-surface">
             <span className="font-semibold">Returning guest:</span> {linkedGuest.name} — this booking goes on their existing profile. Change their details from
             Guest Profiles.
           </p>
-          <button type="button" onClick={onUnlink} className="text-small font-semibold text-secondary underline underline-offset-2 cursor-pointer">
+          <button type="button" onClick={onUnlink} className="text-small font-semibold text-surface underline underline-offset-2 cursor-pointer">
             Not this guest
           </button>
         </div>

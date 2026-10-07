@@ -21,7 +21,7 @@ export function ForwardButton({ label = 'Forward' }: { label?: string }) {
     <button
       type="button"
       onClick={() => router.forward()}
-      className="inline-flex w-fit items-center gap-1.5 text-small font-semibold text-secondary-light hover:text-secondary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
+      className="inline-flex w-fit items-center gap-1.5 text-small font-semibold text-surface-muted hover:text-surface cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
     >
       {label}
       <ArrowRightIcon className="size-3.5" />

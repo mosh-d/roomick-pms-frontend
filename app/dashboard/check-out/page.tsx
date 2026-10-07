@@ -88,18 +88,18 @@ export default function CheckOutFlowPage() {
       <PageHeader icon={<HotelCheckOutIcon className="size-8" />} title="Check-Out Flow" subtitle="Settle up and release the room" />
 
       {checkedOutName ? (
-        <p className="text-body font-semibold text-primary-dark">
+        <p className="text-body font-semibold text-surface">
           {checkedOutName} is checked out. The room is now vacant and marked dirty for housekeeping.
         </p>
       ) : null}
 
       <Section label="Select Guest">
         {inHouseQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading in-house guests…</p>
+          <p className="text-body text-surface-muted">Loading in-house guests…</p>
         ) : inHouseQuery.isError ? (
           <p className="text-body text-red-600">Could not load in-house guests. Please try refreshing.</p>
         ) : options.length === 0 ? (
-          <p className="text-body text-primary-dark/70">No guests are currently in-house.</p>
+          <p className="text-body text-surface-muted">No guests are currently in-house.</p>
         ) : (
           <>
             <Select
@@ -130,10 +130,10 @@ export default function CheckOutFlowPage() {
             ) : null}
 
             {selected && owed > 0 ? (
-              <p className="text-small text-primary-dark">
+              <p className="text-small text-surface">
                 This guest still owes a balance. Checking out is still allowed — it becomes a City Ledger receivable — but
                 you can{' '}
-                <Link href={`/dashboard/billing/${folio?.id}`} className="font-semibold text-primary-text underline">
+                <Link href={`/dashboard/billing/${folio?.id}`} className="font-semibold text-surface-accent underline">
                   settle it in the folio
                 </Link>{' '}
                 first.
@@ -169,8 +169,8 @@ export default function CheckOutFlowPage() {
 function Row({ label, value, emphasis }: { label: string; value: string; emphasis?: 'owed' }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-small text-secondary-light">{label}</span>
-      <span className={`text-body font-semibold ${emphasis === 'owed' ? 'text-red-600' : 'text-secondary'}`}>{value}</span>
+      <span className="text-small text-surface-muted">{label}</span>
+      <span className={`text-body font-semibold ${emphasis === 'owed' ? 'text-red-600' : 'text-surface'}`}>{value}</span>
     </div>
   );
 }

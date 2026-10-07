@@ -42,7 +42,7 @@ function RoleLabel({ name, isSystem }: { name: string; isSystem: boolean }) {
   return (
     <span>
       {name}
-      {isSystem ? <span className="text-tiny text-secondary-light"> · built-in</span> : null}
+      {isSystem ? <span className="text-tiny text-surface-muted"> · built-in</span> : null}
     </span>
   );
 }
@@ -112,7 +112,7 @@ function PermissionMatrixSection({ auth }: { auth: AuthOpts }) {
   return (
     <Section label="Roles & Permissions">
       <div className="flex flex-col gap-3">
-        <p className="text-small text-secondary">
+        <p className="text-small text-surface">
           The six built-in roles cover the usual jobs. Create a custom role for anything else — a night auditor, a revenue manager — and tick exactly what it
           may do. Staff are given a role per property under Manager Dashboard → Staff.
         </p>
@@ -147,7 +147,7 @@ function PermissionMatrixSection({ auth }: { auth: AuthOpts }) {
 
         {selectedRole ? (
           <Card tone="secondary" className="overflow-x-auto">
-            <p className="text-small text-secondary pb-2">
+            <p className="text-small text-surface pb-2">
               <span className="font-semibold">
                 <RoleLabel name={selectedRole.name} isSystem={selectedRole.isSystem} />
               </span>{' '}
@@ -158,9 +158,9 @@ function PermissionMatrixSection({ auth }: { auth: AuthOpts }) {
             <table className="w-full min-w-[34rem] text-small" id="permission-matrix">
               <thead>
                 <tr>
-                  <th className="text-left py-1.5 pr-4 font-semibold text-secondary">Area</th>
+                  <th className="text-left py-1.5 pr-4 font-semibold text-surface">Area</th>
                   {actions.map((action) => (
-                    <th key={action} className="text-center py-1.5 px-3 font-semibold text-secondary capitalize">
+                    <th key={action} className="text-center py-1.5 px-3 font-semibold text-surface capitalize">
                       {action}
                     </th>
                   ))}
@@ -195,11 +195,11 @@ function PermissionMatrixSection({ auth }: { auth: AuthOpts }) {
             ) : null}
           </Card>
         ) : (
-          <p className="text-small text-secondary-light">Choose a role to see what it can do.</p>
+          <p className="text-small text-surface-muted">Choose a role to see what it can do.</p>
         )}
 
         {catalogue ? (
-          <p className="text-tiny text-secondary-light" id="undelegatable">
+          <p className="text-tiny text-surface-muted" id="undelegatable">
             No custom role can be given: {catalogue.undelegatable.join(', ').toLowerCase()}. Those stay with the owner and manager roles, so a role can never
             widen its own access.
           </p>
@@ -336,16 +336,16 @@ function TwoStepSignInSection() {
   return (
     <Section label="Two-Step Sign-In">
       <Card tone="secondary" className="flex flex-col gap-2">
-        <p className="text-small text-secondary">
+        <p className="text-small text-surface">
           Anyone can add a code from an authenticator app to their sign-in: click your name at the top right, then My Account. Owners and managers especially
           should — their accounts can see guest data and change who has access.
         </p>
-        <p className="text-small text-secondary">
+        <p className="text-small text-surface">
           Someone who has lost their phone signs in with one of their recovery codes. If those are gone too, an owner can reset their two-step sign-in from
           Manager Dashboard → Staff Management.
         </p>
         <div>
-          <Link href="/dashboard/account" className="text-small font-semibold text-primary-text hover:underline">
+          <Link href="/dashboard/account" className="text-small font-semibold text-surface underline underline-offset-2">
             Set up mine →
           </Link>
         </div>
@@ -356,7 +356,7 @@ function TwoStepSignInSection() {
 
 function AuditDiff({ before, after }: { before: unknown; after: unknown }) {
   const [open, setOpen] = useState(false);
-  if (before === null && after === null) return <span className="text-secondary-light">—</span>;
+  if (before === null && after === null) return <span className="text-surface-muted">—</span>;
   return (
     <div>
       <button type="button" onClick={() => setOpen((o) => !o)} className="text-tiny text-accent-dark underline cursor-pointer">
@@ -407,13 +407,13 @@ function AuditLogSection({ auth }: { auth: AuthOpts }) {
         </div>
 
         {query.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading audit log…</p>
+          <p className="text-body text-surface-muted">Loading audit log…</p>
         ) : (
           <>
             <Card tone="secondary">
               <Table columns={columns} rows={query.data?.rows ?? []} emptyMessage="No audit log entries match these filters." exportFileName="audit-logs" />
             </Card>
-            <div className="flex items-center justify-between text-small text-secondary-light">
+            <div className="flex items-center justify-between text-small text-surface-muted">
               <span>
                 Page {page} of {totalPages} — {query.data?.total ?? 0} total entries
               </span>
@@ -548,14 +548,14 @@ function GdprSection({ auth }: { auth: AuthOpts }) {
     <Section label="GDPR Compliance">
       <div className="flex flex-col gap-4">
         <Card tone="accent" className="flex flex-col gap-3">
-          <p className="text-small font-semibold text-primary-dark">File a new request</p>
+          <p className="text-small font-semibold text-surface">File a new request</p>
           {!selectedGuest ? (
             <>
               <Input id="gdpr-guest-search" label="Find a guest" placeholder="Guest name or email" value={guestSearch} onChange={(e) => setGuestSearch(e.target.value)} />
               {guestSearch.trim() && (
                 <Card tone="secondary" className="flex flex-col gap-1 max-h-48 overflow-y-auto">
                   {(guestSearchQuery.data ?? []).length === 0 ? (
-                    <p className="text-small text-secondary-light">No matching guests.</p>
+                    <p className="text-small text-surface-muted">No matching guests.</p>
                   ) : (
                     (guestSearchQuery.data ?? []).map((g) => (
                       <button key={g.id} type="button" onClick={() => { setSelectedGuest(g); setGuestSearch(''); }} className="text-left rounded-control px-2 py-1 hover:bg-secondary-light/20">
@@ -569,7 +569,7 @@ function GdprSection({ auth }: { auth: AuthOpts }) {
           ) : (
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <p className="font-semibold text-primary-dark">{selectedGuest.name}</p>
+                <p className="font-semibold text-surface">{selectedGuest.name}</p>
                 <Button size="sm" variant="outline" onClick={() => setSelectedGuest(null)}>
                   Change guest
                 </Button>
@@ -587,14 +587,14 @@ function GdprSection({ auth }: { auth: AuthOpts }) {
         </Card>
 
         {requestsQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading requests…</p>
+          <p className="text-body text-surface-muted">Loading requests…</p>
         ) : (
           <Card tone="secondary">
             <Table columns={columns} rows={requestsQuery.data ?? []} emptyMessage="No GDPR requests filed yet." exportFileName="gdpr-requests" />
           </Card>
         )}
         {eraseError ? <p className="text-small text-red-600">{eraseError}</p> : null}
-        <p className="text-tiny text-secondary-light">
+        <p className="text-tiny text-surface-muted">
           <span className="font-semibold">Erase Guest Data</span> carries out an erasure request: the guest&apos;s name, contact details, ID document and photo,
           registration-card details and signature, notes, preferences and the text of their messages are erased for good. Their stays, bills and payments stay — the
           financial record you&apos;re required to keep — under &ldquo;Erased guest&rdquo;. It waits while they have a stay booked or still owe money.

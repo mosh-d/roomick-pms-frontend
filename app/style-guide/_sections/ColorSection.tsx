@@ -40,8 +40,8 @@ function Swatch({ name, className, hex }: { name: string; className: string; hex
   return (
     <div className="flex flex-col gap-1.5">
       <div className={`h-16 rounded-card ${className}`} />
-      <span className="text-small font-semibold text-secondary">{name}</span>
-      {hex ? <span className="text-tiny text-secondary-light">{hex}</span> : null}
+      <span className="text-small font-semibold text-surface">{name}</span>
+      {hex ? <span className="text-tiny text-surface-muted">{hex}</span> : null}
     </div>
   );
 }
@@ -49,10 +49,10 @@ function Swatch({ name, className, hex }: { name: string; className: string; hex
 export function ColorSection() {
   return (
     <section className="flex flex-col gap-6">
-      <h2 className="text-header font-bold text-secondary">Color</h2>
+      <h2 className="text-header font-bold text-surface">Color</h2>
 
       <div>
-        <h3 className="text-subheader font-semibold text-secondary mb-3">Base palette</h3>
+        <h3 className="text-subheader font-semibold text-surface mb-3">Base palette</h3>
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
           {BASE_SWATCHES.map((swatch) => (
             <Swatch key={swatch.name} {...swatch} />
@@ -61,12 +61,12 @@ export function ColorSection() {
       </div>
 
       <div>
-        <h3 className="text-subheader font-semibold text-secondary mb-3">
+        <h3 className="text-subheader font-semibold text-surface mb-3">
           Accessibility extension — <code className="text-tiny">primary-text</code>
         </h3>
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 items-start">
           <Swatch name="primary-text" className="bg-primary-text" hex="#8C6D00" />
-          <p className="col-span-2 sm:col-span-4 text-small text-secondary-light self-center">
+          <p className="col-span-2 sm:col-span-4 text-small text-surface-muted self-center">
             Raw <code>primary</code> gold measures ~2.45:1 on white (fails WCAG AA for text).{' '}
             <code>primary-text</code> measures ~4.9:1 — used for small gold text (Accent/Small Accent roles, VIP
             badge label) instead of raw <code>primary</code>.
@@ -75,7 +75,7 @@ export function ColorSection() {
       </div>
 
       <div>
-        <h3 className="text-subheader font-semibold text-secondary mb-3">Status colors</h3>
+        <h3 className="text-subheader font-semibold text-surface mb-3">Status colors</h3>
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
           {STATUS_SWATCHES.map((swatch) => (
             <Swatch key={swatch.name} {...swatch} />
@@ -84,7 +84,7 @@ export function ColorSection() {
       </div>
 
       <div>
-        <h3 className="text-subheader font-semibold text-secondary mb-3">
+        <h3 className="text-subheader font-semibold text-surface mb-3">
           Card-nesting opacity mechanic — <code className="text-tiny">1 − 0.95^N</code>
         </h3>
         <div className="flex flex-wrap gap-6 items-start">
@@ -100,7 +100,7 @@ export function ColorSection() {
               // before the dark-variant fix.
               return (
                 <div className={`${CARD_TONE_CLASSES.secondary} border rounded-card p-4`}>
-                  <span className="text-tiny text-secondary block mb-2">
+                  <span className="text-tiny text-surface block mb-2">
                     depth {depth} — {effectiveTint(depth).toFixed(1)}%
                   </span>
                   {renderLevel(depth + 1)}
@@ -110,12 +110,12 @@ export function ColorSection() {
             return renderLevel(1);
           })()}
           <div className={`${CARD_TONE_CLASSES.primary} border rounded-card p-4`}>
-            <span className="text-tiny text-secondary block mb-2">
+            <span className="text-tiny text-surface block mb-2">
               mixed tone — primary/5 (the one tone that doesn&apos;t use the dark-variant formula — see
               CARD_TONE_CLASSES)
             </span>
             <div className={`${CARD_TONE_CLASSES.secondary} border rounded-card p-4`}>
-              <span className="text-tiny text-secondary">secondary/5 nested inside</span>
+              <span className="text-tiny text-surface">secondary/5 nested inside</span>
             </div>
           </div>
         </div>

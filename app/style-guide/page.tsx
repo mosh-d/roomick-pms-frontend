@@ -16,8 +16,8 @@ export default function StyleGuidePage() {
   return (
     <Container className="py-12 flex flex-col gap-16">
       <div>
-        <h1 className="text-title font-bold text-secondary">Roomick style guide</h1>
-        <p className="text-body text-secondary-light mt-2 max-w-prose">
+        <h1 className="text-title font-bold text-surface">Roomick style guide</h1>
+        <p className="text-body text-surface-muted mt-2 max-w-prose">
           Live reference for design-system/ — every token, component, and state rendered for visual verification.
         </p>
       </div>

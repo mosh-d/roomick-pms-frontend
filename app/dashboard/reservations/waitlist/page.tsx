@@ -82,7 +82,7 @@ export default function WaitlistManagementPage() {
       <PageHeader icon={<WaitlistIcon className="size-8" />} title="Waitlist Management" subtitle="Future bookings, earliest availability" />
 
       {waitlistQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading waitlist…</p>
+        <p className="text-body text-surface-muted">Loading waitlist…</p>
       ) : waitlistQuery.isError ? (
         <p className="text-body text-red-600">Could not load the waitlist. Please try refreshing.</p>
       ) : (

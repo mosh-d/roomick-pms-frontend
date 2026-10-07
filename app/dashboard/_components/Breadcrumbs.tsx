@@ -73,11 +73,11 @@ export function Breadcrumbs({ branches }: { branches: Array<{ id: string; name: 
               ) : null}
               <li className="flex items-center gap-1 min-w-0">
                 {isCurrent || !level.href ? (
-                  <span aria-current={isCurrent ? 'page' : undefined} className="truncate max-w-64 font-semibold text-primary-dark">
+                  <span aria-current={isCurrent ? 'page' : undefined} className="truncate max-w-64 font-semibold text-surface">
                     {level.label}
                   </span>
                 ) : (
-                  <Link href={level.href} className="truncate max-w-56 text-primary-text hover:underline underline-offset-2 cursor-pointer">
+                  <Link href={level.href} className="truncate max-w-56 text-surface-accent hover:underline underline-offset-2 cursor-pointer">
                     {level.label}
                   </Link>
                 )}
@@ -166,7 +166,7 @@ function CrumbMenu({ label, kind, options }: { label: string; kind: string; opti
           setOpenedAt(pathname);
           setOpen((o) => !o);
         }}
-        className="flex items-center rounded-control p-0.5 text-primary-dark/60 hover:text-primary-dark hover:bg-primary-light/40 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className="flex items-center rounded-control p-0.5 text-surface-muted hover:text-surface hover:bg-primary-light/40 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         <ChevronUpDownIcon className="size-3.5" />
       </button>

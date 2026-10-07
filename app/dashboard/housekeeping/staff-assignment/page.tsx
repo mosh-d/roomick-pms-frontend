@@ -61,11 +61,11 @@ export default function StaffAssignmentPage() {
 
       <Section label="Housekeepers">
         {housekeepersQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading housekeepers…</p>
+          <p className="text-body text-surface-muted">Loading housekeepers…</p>
         ) : (housekeepersQuery.data ?? []).length === 0 ? (
-          <p className="text-body text-primary-dark/70">No housekeepers are on staff at this branch yet.</p>
+          <p className="text-body text-surface-muted">No housekeepers are on staff at this branch yet.</p>
         ) : (
-          <p className="text-body text-primary-dark/80">
+          <p className="text-body text-surface/80">
             {idleHousekeepers.length} idle · {(housekeepersQuery.data ?? []).length - idleHousekeepers.length} currently cleaning
           </p>
         )}
@@ -73,14 +73,14 @@ export default function StaffAssignmentPage() {
 
       <Section label="Rooms Ready for Cleaning">
         {pendingQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading rooms…</p>
+          <p className="text-body text-surface-muted">Loading rooms…</p>
         ) : unassigned.length === 0 ? (
-          <p className="text-body text-primary-dark/70">Nothing unassigned right now.</p>
+          <p className="text-body text-surface-muted">Nothing unassigned right now.</p>
         ) : (
           <div className="flex flex-col gap-3">
             {unassigned.map((task) => (
               <Card key={task.id} tone="secondary" className="flex items-center justify-between gap-4">
-                <span className="text-body font-semibold text-secondary">Room {task.room.number}</span>
+                <span className="text-body font-semibold text-surface">Room {task.room.number}</span>
                 <div className="flex items-center gap-3 w-72">
                   <div className="flex-1">
                     <Select

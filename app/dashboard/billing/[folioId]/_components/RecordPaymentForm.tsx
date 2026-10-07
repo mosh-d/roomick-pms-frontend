@@ -109,7 +109,7 @@ export function RecordPaymentForm({
         <button
           type="button"
           onClick={() => setValue('amount', owed, { shouldValidate: true })}
-          className="self-start text-small font-semibold text-primary-text hover:underline cursor-pointer"
+          className="self-start text-small font-semibold text-surface-accent hover:underline cursor-pointer"
         >
           Pay full balance ({formatMoney(balanceDue, currencySymbol)})
         </button>

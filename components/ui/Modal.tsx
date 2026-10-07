@@ -90,17 +90,17 @@ export function Modal({
         aria-modal="true"
         aria-labelledby="modal-title"
         tabIndex={-1}
-        className="w-full max-w-md rounded-card bg-white/90 backdrop-blur-sm border border-white shadow-xl p-6 flex flex-col gap-4 focus:outline-none"
+        className="surface-page w-full max-w-md rounded-card bg-white/90 backdrop-blur-sm border border-white shadow-xl p-6 flex flex-col gap-4 focus:outline-none"
       >
         <div className="flex items-center justify-between gap-4">
-          <h2 id="modal-title" className="text-header font-bold text-secondary">
+          <h2 id="modal-title" className="text-header font-bold text-surface">
             {title}
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="text-secondary-light hover:text-secondary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+            className="text-surface-muted hover:text-surface cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
           >
             <XIcon className="size-5" />
           </button>

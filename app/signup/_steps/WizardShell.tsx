@@ -104,14 +104,14 @@ export function WizardShell({
         <div className="flex items-center gap-3 text-small min-w-0">
           <a
             href={landingUrl}
-            className="font-display text-header font-bold text-primary-text shrink-0 hover:brightness-110 transition-[filter]"
+            className="font-display text-header font-bold text-surface-accent shrink-0 hover:brightness-110 transition-[filter]"
           >
             Roomick
           </a>
           <span className="text-accent shrink-0">/</span>
-          <span className="text-secondary-light shrink-0">Organization Onboarding</span>
+          <span className="text-surface-muted shrink-0">Organization Onboarding</span>
           <span className="text-accent shrink-0">/</span>
-          <span className="font-semibold text-secondary truncate">{currentLabel}</span>
+          <span className="font-semibold text-surface truncate">{currentLabel}</span>
         </div>
         {/* `/login`, not `/` — `/` now redirects to the dashboard, which
             bounces an unauthenticated visitor straight back to `/login`
@@ -120,7 +120,7 @@ export function WizardShell({
             a redirect they'd have no way to interpret. */}
         <Link
           href="/login"
-          className="shrink-0 text-small font-semibold text-secondary border border-accent/40 rounded-control px-4 py-2 hover:bg-accent/10 transition-colors"
+          className="shrink-0 text-small font-semibold text-surface border border-accent/40 rounded-control px-4 py-2 hover:bg-accent/10 transition-colors"
         >
           Cancel
         </Link>
@@ -140,7 +140,7 @@ export function WizardShell({
                 >
                   {index + 1}
                 </span>
-                <span className={`text-small ${isCurrent ? 'font-semibold text-secondary' : 'text-secondary-light'}`}>
+                <span className={`text-small ${isCurrent ? 'font-semibold text-surface' : 'text-surface-muted'}`}>
                   {phase.label}
                 </span>
               </>
@@ -275,7 +275,7 @@ function BranchTree({
                 <button
                   type="button"
                   onClick={() => onSelectBuildings?.(branch.localId)}
-                  className="inline-flex items-center gap-1 text-tiny font-semibold text-primary-text hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control px-3 py-1"
+                  className="inline-flex items-center gap-1 text-tiny font-semibold text-surface-accent hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control px-3 py-1"
                 >
                   <PlusIcon className="size-3" /> Add building
                 </button>
@@ -287,7 +287,7 @@ function BranchTree({
       <button
         type="button"
         onClick={onAddBranch}
-        className="inline-flex items-center gap-1 text-tiny font-semibold text-primary-text hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control px-3 py-1"
+        className="inline-flex items-center gap-1 text-tiny font-semibold text-surface-accent hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control px-3 py-1"
       >
         <PlusIcon className="size-3" /> Add branch
       </button>
@@ -329,14 +329,14 @@ function TreeRow({
   return (
     <div
       className={`flex items-center justify-between gap-2 rounded-control px-3 py-1.5 text-tiny ${
-        active ? 'bg-primary text-white font-semibold' : emphasize ? 'text-secondary' : 'text-secondary-light'
+        active ? 'bg-primary text-white font-semibold' : emphasize ? 'text-surface' : 'text-surface-muted'
       }`}
     >
       <button
         type="button"
         onClick={onClick}
         className={`flex-1 text-left cursor-pointer truncate focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control ${
-          active ? '' : 'hover:text-secondary'
+          active ? '' : 'hover:text-surface'
         }`}
       >
         {label}
@@ -347,7 +347,7 @@ function TreeRow({
           onClick={onRemove}
           aria-label={`Remove ${label}`}
           className={`shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full ${
-            active ? 'text-secondary/70 hover:text-secondary' : 'text-secondary-light hover:text-secondary'
+            active ? 'text-surface/70 hover:text-surface' : 'text-surface-muted hover:text-surface'
           }`}
         >
           <XIcon className="size-3" />

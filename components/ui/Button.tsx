@@ -43,8 +43,8 @@ const variantClasses: Record<ButtonVariant, Record<ButtonTone, string>> = {
     // Brightening the fill pushed white text's already-marginal contrast
     // even lower, so hover also switches text to `secondary` (near-black) —
     // verified visually, not just by the numbers.
-    onLight: 'bg-primary text-white hover:brightness-125 hover:text-secondary disabled:opacity-50',
-    onDark: 'bg-primary text-white hover:brightness-125 hover:text-secondary disabled:opacity-50',
+    onLight: 'bg-primary text-white hover:brightness-125 hover:text-surface disabled:opacity-50',
+    onDark: 'bg-primary text-white hover:brightness-125 hover:text-surface disabled:opacity-50',
   },
   secondary: {
     // Much bigger brightness delta than primary's (200 vs 125): `secondary`
@@ -64,7 +64,7 @@ const variantClasses: Record<ButtonVariant, Record<ButtonTone, string>> = {
     onLight:
       'border border-black text-black bg-transparent hover:bg-black hover:text-white disabled:border-accent disabled:text-accent',
     onDark:
-      'border border-white text-white bg-transparent hover:bg-white hover:text-secondary disabled:border-accent disabled:text-accent',
+      'border border-white text-white bg-transparent hover:bg-white hover:text-surface disabled:border-accent disabled:text-accent',
   },
   // Not in the reference imagery — this app's own addition for "confirm a
   // destructive action" (e.g. deleting a branch), first needed once real

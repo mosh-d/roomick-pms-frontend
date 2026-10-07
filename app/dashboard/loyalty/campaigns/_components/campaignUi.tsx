@@ -27,8 +27,8 @@ export function DeliveryNotice({ auth }: { auth: AuthOpts }) {
   if (!delivery.data || delivery.data.deliversExternally) return null;
   return (
     <Card tone="accent" className="flex flex-col gap-1">
-      <p className="text-small font-semibold text-primary-dark">No email provider is connected yet</p>
-      <p className="text-small text-primary-dark/80">
+      <p className="text-small font-semibold text-surface">No email provider is connected yet</p>
+      <p className="text-small text-surface/80">
         Campaigns can be built, tested and sent, and every message is recorded against the guest — but it goes to the server log, not to anyone’s inbox,
         until an email provider is connected. Until then no guest receives it, so opens and clicks won’t come in.
       </p>

@@ -119,7 +119,7 @@ export function StaffInviteStep({ onBack, onNext }: { onBack: () => void; onNext
                   type="button"
                   onClick={() => remove(index)}
                   aria-label="Remove invite row"
-                  className="mb-2 text-secondary-light hover:text-secondary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+                  className="mb-2 text-surface-muted hover:text-surface cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
                 >
                   <XIcon className="size-4" />
                 </button>
@@ -131,7 +131,7 @@ export function StaffInviteStep({ onBack, onNext }: { onBack: () => void; onNext
         <button
           type="button"
           onClick={() => append({ email: '', roleId: '' })}
-          className="inline-flex items-center gap-1 self-start text-body font-semibold text-primary-text hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
+          className="inline-flex items-center gap-1 self-start text-body font-semibold text-surface-accent hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
         >
           <PlusIcon className="size-4" /> Add
         </button>
@@ -150,7 +150,7 @@ export function StaffInviteStep({ onBack, onNext }: { onBack: () => void; onNext
             patch({ staffInvites: [], invitedStaff: [] });
             onNext();
           }}
-          className="text-body text-secondary-light hover:text-secondary underline cursor-pointer"
+          className="text-body text-surface-muted hover:text-surface underline cursor-pointer"
         >
           Skip for now
         </button>

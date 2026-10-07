@@ -126,14 +126,14 @@ export default function CorporateAccountsPage() {
       />
 
       <Section label="Companies">
-        <p className="text-small text-primary-dark/75">
+        <p className="text-small text-surface-muted">
           Book a company&apos;s people under it from Walk-In Booking or Create Reservation — it&apos;s offered automatically when the guest&apos;s email is on one of
           the company&apos;s domains. A contracted rate is a negotiated rate plan from Rate Resolver; a company with none still gets any corporate discount a
           property runs.
         </p>
         {error ? <p className="text-small text-red-600">{error}</p> : null}
         {accountsQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading companies…</p>
+          <p className="text-body text-surface-muted">Loading companies…</p>
         ) : (
           <Card tone="secondary">
             <Table columns={columns} rows={accounts} emptyMessage="No company accounts yet." exportFileName="corporate-accounts" />
@@ -178,11 +178,11 @@ function AccountDetail({ accountId, auth, onClose }: { accountId: string; auth: 
   return (
     <Section label={detail ? detail.name : 'Company'}>
       {detailQuery.isLoading || !detail ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : (
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="flex flex-col gap-1 text-small text-primary-dark">
+            <div className="flex flex-col gap-1 text-small text-surface">
               <p>
                 <span className="font-semibold">Contracted rate:</span> {contractLabel(detail)}
               </p>
@@ -195,11 +195,11 @@ function AccountDetail({ accountId, auth, onClose }: { accountId: string; auth: 
             </Button>
           </div>
           <Card tone="secondary">
-            <p className="text-small font-bold text-secondary mb-2">Travelers</p>
+            <p className="text-small font-bold text-surface mb-2">Travelers</p>
             <Table columns={travelerColumns} rows={detail.travelers.map((t) => ({ ...t, id: t.guest.id }))} emptyMessage="Nobody has stayed under this company yet." />
           </Card>
           <Card tone="secondary">
-            <p className="text-small font-bold text-secondary mb-2">Latest stays</p>
+            <p className="text-small font-bold text-surface mb-2">Latest stays</p>
             <Table columns={stayColumns} rows={detail.recentStays} emptyMessage="No stays yet." />
           </Card>
         </div>

@@ -47,7 +47,7 @@ export default function ListingPage() {
       {listing.isError ? (
         <p className="text-small text-red-600">{errorText(listing.error, 'Couldn’t load this integration.')}</p>
       ) : !listing.data ? (
-        <p className="text-small text-secondary">Loading…</p>
+        <p className="text-small text-surface">Loading…</p>
       ) : (
         // Keyed on the integration only: switching it on refetches the listing,
         // and remounting then would drop the "it's on" confirmation.
@@ -69,7 +69,7 @@ function ListingContent({ listing, auth, branchId }: { listing: ListingDetail; a
         <div className="flex flex-wrap items-center gap-3">
           <ListingStateBadge state={state} />
           {state === 'on' && listing.connection ? (
-            <span className="text-small text-secondary">Switched on {new Date(listing.connection.enabledAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+            <span className="text-small text-surface">Switched on {new Date(listing.connection.enabledAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
           ) : null}
           {state === 'on' ? (
             <Button
@@ -89,15 +89,15 @@ function ListingContent({ listing, auth, branchId }: { listing: ListingDetail; a
             </Button>
           ) : null}
         </div>
-        <p className="text-body text-secondary">{listing.summary}</p>
-        <p className="text-small text-secondary/80">{listing.howItWorks}</p>
+        <p className="text-body text-surface">{listing.summary}</p>
+        <p className="text-small text-surface/80">{listing.howItWorks}</p>
         {state === 'coming_later' && listing.waitingOn ? (
-          <p className="text-small text-secondary" id="listing-waiting-on">
+          <p className="text-small text-surface" id="listing-waiting-on">
             <span className="font-semibold">Not available yet.</span> Waiting on: {listing.waitingOn}
           </p>
         ) : null}
         {listing.connection?.lastRunSummary ? (
-          <p className="text-tiny text-secondary/70">
+          <p className="text-tiny text-surface/70">
             Last run {listing.connection.lastRunAt ? new Date(listing.connection.lastRunAt).toLocaleString() : ''}: {listing.connection.lastRunSummary}
           </p>
         ) : null}
@@ -191,7 +191,7 @@ function AccountingSetup({ listing, config, auth }: { listing: ListingDetail; co
         </div>
 
         <fieldset className="flex flex-col gap-1">
-          <legend className="text-small font-semibold text-secondary pb-1">Revenue by department</legend>
+          <legend className="text-small font-semibold text-surface pb-1">Revenue by department</legend>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1">
             {setup.departments.map((dept) => (
               <Input key={dept.key} id={`acct-revenue-${dept.key}`} label={dept.label} value={draft.accounts.revenue[dept.key] ?? ''} onChange={(e) => setAccount('revenue', dept.key, e.target.value)} />
@@ -200,7 +200,7 @@ function AccountingSetup({ listing, config, auth }: { listing: ListingDetail; co
         </fieldset>
 
         <fieldset className="flex flex-col gap-1">
-          <legend className="text-small font-semibold text-secondary pb-1">Money received, by payment method</legend>
+          <legend className="text-small font-semibold text-surface pb-1">Money received, by payment method</legend>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1">
             {setup.methods.map((method) => (
               <Input
@@ -269,7 +269,7 @@ function ExportSection({ provider, name, auth, branchId }: { provider: string; n
   return (
     <Section label="Export">
       <Card className="flex flex-col gap-3">
-        {!branchId ? <p className="text-small text-secondary">Choose a property first — each property exports its own journals.</p> : null}
+        {!branchId ? <p className="text-small text-surface">Choose a property first — each property exports its own journals.</p> : null}
         <div className="grid grid-cols-1 sm:grid-cols-[10rem_10rem_auto_auto] gap-3 items-end">
           <Input id="export-from" label="From" type="date" value={range.from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} />
           <Input id="export-to" label="To" type="date" value={range.to} onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} />
@@ -290,7 +290,7 @@ function ExportSection({ provider, name, auth, branchId }: { provider: string; n
             Download CSV
           </Button>
         </div>
-        <p className="text-tiny text-secondary/70">
+        <p className="text-tiny text-surface/70">
           Up to 31 days at a time, both days included. Charges belong to the day of the stay they’re for, so a correction changes that day’s journal: export
           days once they’re settled, and export a corrected day again to replace it.
         </p>
@@ -302,22 +302,22 @@ function ExportSection({ provider, name, auth, branchId }: { provider: string; n
 
         {data ? (
           data.journals.length === 0 ? (
-            <p className="text-small text-secondary" id="export-preview">
+            <p className="text-small text-surface" id="export-preview">
               Nothing was charged or paid at {data.property} in that range.
             </p>
           ) : (
             <div className="flex flex-col gap-4" id="export-preview">
-              <p className="text-small text-secondary">
+              <p className="text-small text-surface">
                 {data.journals.length} {data.journals.length === 1 ? 'journal' : 'journals'}, {data.lineCount} lines, in {data.currency}. Every day balances.
               </p>
               {data.journals.map((journal) => (
                 <div key={journal.number} className="overflow-x-auto">
-                  <p className="text-small font-semibold text-secondary">
+                  <p className="text-small font-semibold text-surface">
                     {journal.date} · {journal.number}
                   </p>
-                  <table className="w-full min-w-[32rem] text-small text-secondary">
+                  <table className="w-full min-w-[32rem] text-small text-surface">
                     <thead>
-                      <tr className="text-left text-tiny text-secondary/70">
+                      <tr className="text-left text-tiny text-surface/70">
                         <th className="py-1 pr-3">Account</th>
                         <th className="py-1 pr-3">Description</th>
                         <th className="py-1 pr-3 text-right">Debit</th>
@@ -328,7 +328,7 @@ function ExportSection({ provider, name, auth, branchId }: { provider: string; n
                       {journal.lines.map((line) => (
                         <tr key={`${journal.number}-${line.account}`} className="border-t border-secondary/10">
                           <td className="py-1 pr-3">{line.account}</td>
-                          <td className="py-1 pr-3 text-secondary/80">{line.description}</td>
+                          <td className="py-1 pr-3 text-surface/80">{line.description}</td>
                           <td className="py-1 pr-3 text-right whitespace-nowrap">{line.debit === '0.00' ? '' : line.debit}</td>
                           <td className="py-1 text-right whitespace-nowrap">{line.credit === '0.00' ? '' : line.credit}</td>
                         </tr>
@@ -400,8 +400,8 @@ function ReviewSetup({ listing, config, auth, branchId }: { listing: ListingDeta
             />
           </div>
           <fieldset className="flex flex-col gap-1">
-            <legend className="text-small font-semibold text-secondary pb-1">Review page for each property</legend>
-            <p className="text-tiny text-secondary/70 pb-1">A property with no link isn’t asked for reviews. Links must start with https://.</p>
+            <legend className="text-small font-semibold text-surface pb-1">Review page for each property</legend>
+            <p className="text-tiny text-surface/70 pb-1">A property with no link isn’t asked for reviews. Links must start with https://.</p>
             {setup.properties.map((property) => (
               <Input
                 key={property.id}
@@ -434,14 +434,14 @@ function ReviewSetup({ listing, config, auth, branchId }: { listing: ListingDeta
               <p className="text-small text-red-600">{errorText(preview.error, 'Couldn’t preview it.')}</p>
             ) : preview.data ? (
               <div id="review-preview" className="flex flex-col gap-2">
-                <p className="text-small text-secondary">
+                <p className="text-small text-surface">
                   <span className="font-semibold">Subject:</span> {preview.data.subject}
                 </p>
-                <p className="text-small text-secondary whitespace-pre-wrap">{preview.data.body}</p>
+                <p className="text-small text-surface whitespace-pre-wrap">{preview.data.body}</p>
                 {!preview.data.reviewUrl ? <p className="text-small text-amber-700">This property has no review page yet, so its guests aren’t asked.</p> : null}
               </div>
             ) : (
-              <p className="text-small text-secondary">{branchId ? 'Loading…' : 'Choose a property to preview.'}</p>
+              <p className="text-small text-surface">{branchId ? 'Loading…' : 'Choose a property to preview.'}</p>
             )}
           </Card>
         </Section>

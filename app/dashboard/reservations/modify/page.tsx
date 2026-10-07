@@ -162,9 +162,9 @@ export default function ModifyReservationPage() {
 
       <Section label="Reservation Search">
         {confirmedQuery.isLoading || waitlistedQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading reservations…</p>
+          <p className="text-body text-surface-muted">Loading reservations…</p>
         ) : reservationOptions.length === 0 ? (
-          <p className="text-body text-primary-dark/70">No confirmed or waitlisted reservations to modify.</p>
+          <p className="text-body text-surface-muted">No confirmed or waitlisted reservations to modify.</p>
         ) : (
           <Select
             id="modify-reservation"
@@ -214,7 +214,7 @@ export default function ModifyReservationPage() {
           </Section>
 
           {formError ? <p className="text-small text-red-600">{formError}</p> : null}
-          {success ? <p className="text-small font-semibold text-primary-dark">Changes saved.</p> : null}
+          {success ? <p className="text-small font-semibold text-surface">Changes saved.</p> : null}
 
           <Button type="submit" loading={isSubmitting || modifyMutation.isPending} className="self-start">
             Save Changes
@@ -230,7 +230,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
       <span className="text-small text-accent-dark">{label}</span>
-      <span className="text-body font-semibold text-primary-dark">{value}</span>
+      <span className="text-body font-semibold text-surface">{value}</span>
     </div>
   );
 }

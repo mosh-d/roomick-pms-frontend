@@ -12,8 +12,8 @@ import { EyeIcon, EyeOffIcon, InfoCircleIcon } from './Icons';
  * non-interactive" token, on a field you're meant to type into) — caught
  * live, fixed in one place instead of three separate ones this time.
  */
-export const FIELD_PLACEHOLDER_CLASS = 'placeholder:text-secondary-light';
-export const FIELD_UNDERLINE_CLASS = 'border-secondary-light/40 focus:border-secondary';
+export const FIELD_PLACEHOLDER_CLASS = 'placeholder:text-surface-muted';
+export const FIELD_UNDERLINE_CLASS = 'border-surface-muted/40 focus:border-surface';
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
@@ -42,8 +42,9 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
  * a generic bordered-box input: an underline (bottom border only, no full
  * box) beneath the value, with the info icon on its own row below that —
  * not floating inside the field. On focus, the whole label+field+icon
- * group gets a light secondary-tint background (`focus-within`, not a
- * ring) and the underline becomes solid secondary — visible on "Last Name"
+ * group gets a light tint of the surface's own muted text colour
+ * (`focus-within`, not a ring) and the underline becomes the surface's
+ * solid text colour — visible on "Last Name"
  * in the reference's Owner Account Form.
  *
  * The `-mx-3`/`px-3` pairing is a deliberate zero-layout-shift trick: the
@@ -74,13 +75,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined;
 
   return (
-    <div className="flex flex-col gap-1 rounded-control px-3 -mx-3 py-2 transition-colors focus-within:bg-secondary-light/15">
-      <label htmlFor={fieldId} className="text-small font-semibold text-secondary">
+    <div className="flex flex-col gap-1 rounded-control px-3 -mx-3 py-2 transition-colors focus-within:bg-surface-muted/10">
+      <label htmlFor={fieldId} className="text-small font-semibold text-surface">
         {label}
       </label>
       <div className="relative flex items-center">
         {prefix ? (
-          <span className="pb-1 pr-1.5 text-body text-secondary-light shrink-0" aria-hidden="true">
+          <span className="pb-1 pr-1.5 text-body text-surface-muted shrink-0" aria-hidden="true">
             {prefix}
           </span>
         ) : null}
@@ -100,7 +101,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           {...rest}
         />
         {suffix ? (
-          <span className="pb-1 pl-1.5 text-body text-secondary-light shrink-0" aria-hidden="true">
+          <span className="pb-1 pl-1.5 text-body text-surface-muted shrink-0" aria-hidden="true">
             {suffix}
           </span>
         ) : null}
@@ -109,7 +110,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             type="button"
             onClick={() => setRevealed((r) => !r)}
             aria-label={revealed ? 'Hide password' : 'Show password'}
-            className="absolute right-0 text-accent-dark hover:text-secondary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
+            className="absolute right-0 text-accent-dark hover:text-surface cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
           >
             {revealed ? <EyeOffIcon /> : <EyeIcon />}
           </button>

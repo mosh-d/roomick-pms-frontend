@@ -58,11 +58,11 @@ export function HubCard({
     <>
       <div className="flex items-center gap-2">
         {icon ? (
-          <span className="text-secondary shrink-0" aria-hidden>
+          <span className="text-surface shrink-0" aria-hidden>
             {icon}
           </span>
         ) : null}
-        <span className="text-body font-bold text-secondary">{title}</span>
+        <span className="text-body font-bold text-surface">{title}</span>
       </div>
       {/* Full-strength `secondary`, not `-light` — pixel-sampled against
           the reference (ref p10): the description's peak ink color lands
@@ -72,11 +72,11 @@ export function HubCard({
           lighter color token. The stats line below, by contrast, pixel-
           samples to an exact match for `secondary-light` (`#A698B2`) — a
           real, different, genuinely lighter color, not a weight illusion. */}
-      <p className="text-small text-secondary pb-2 border-b border-secondary/20">{description}</p>
+      <p className="text-small text-surface pb-2 border-b border-secondary/20">{description}</p>
       {stats && stats.length > 0 ? (
         <div className="flex flex-col gap-1">
           {stats.map((stat) => (
-            <span key={stat} className="text-small text-secondary-light">
+            <span key={stat} className="text-small text-surface-muted">
               {stat}
             </span>
           ))}

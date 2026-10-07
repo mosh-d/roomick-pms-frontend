@@ -22,17 +22,17 @@ const cardClasses = `text-left rounded-card border ${CARD_TONE_CLASSES.secondary
 function FeatureCardContent({ icon, title, description, stats }: FeatureCardContentProps) {
   return (
     <>
-      <span className="flex items-center gap-2 text-body font-bold text-secondary">
-        <span aria-hidden="true" className="text-secondary">
+      <span className="flex items-center gap-2 text-body font-bold text-surface">
+        <span aria-hidden="true" className="text-surface">
           {icon}
         </span>
         {title}
       </span>
-      <span className="text-small text-secondary-light border-b border-accent/20 pb-2">{description}</span>
+      <span className="text-small text-surface-muted border-b border-accent/20 pb-2">{description}</span>
       {stats && stats.length > 0 ? (
         <div className="flex flex-col gap-1">
           {stats.map((stat) => (
-            <span key={stat} className="text-small text-secondary-light">
+            <span key={stat} className="text-small text-surface-muted">
               {stat}
             </span>
           ))}

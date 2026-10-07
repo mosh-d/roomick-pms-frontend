@@ -57,7 +57,7 @@ export default function PublicBookingPage() {
   if (propertyQuery.isLoading) {
     return (
       <Container className="max-w-4xl py-16">
-        <p className="text-body text-secondary-light">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       </Container>
     );
   }
@@ -65,8 +65,8 @@ export default function PublicBookingPage() {
   if (propertyQuery.isError || !propertyQuery.data) {
     return (
       <Container className="max-w-4xl py-16 flex flex-col gap-3">
-        <h1 className="font-display text-h2 text-secondary">Property not found</h1>
-        <p className="text-body text-secondary-light">
+        <h1 className="font-display text-h2 text-surface">Property not found</h1>
+        <p className="text-body text-surface-muted">
           This booking link isn&rsquo;t active. It may have been taken down, or the address may be mistyped — please check the link with the property directly.
         </p>
       </Container>
@@ -79,9 +79,9 @@ export default function PublicBookingPage() {
     <Container className="max-w-4xl py-10 flex flex-col gap-8">
       <header className="flex flex-col gap-1">
         <p className="text-small font-semibold uppercase tracking-wide text-accent-dark">{property.brandName}</p>
-        <h1 className="font-display text-h1 text-secondary">{property.name}</h1>
-        {formatAddress(property.address) ? <p className="text-body text-secondary-light">{formatAddress(property.address)}</p> : null}
-        <p className="text-small text-secondary-light">
+        <h1 className="font-display text-h1 text-surface">{property.name}</h1>
+        {formatAddress(property.address) ? <p className="text-body text-surface-muted">{formatAddress(property.address)}</p> : null}
+        <p className="text-small text-surface-muted">
           Check-in from {property.checkInTime} · Check-out by {property.checkOutTime}
         </p>
       </header>
@@ -109,42 +109,42 @@ function BookingConfirmed({
   return (
     <Section label="Booking Confirmed">
       <Card tone="accent" className="flex flex-col gap-3">
-        <p className="text-body text-primary-dark">
+        <p className="text-body text-surface">
           Thank you, {confirmation.guestName} — your stay at {property.name} is confirmed.
         </p>
-        <p className="font-display text-h2 text-secondary">{confirmation.confirmationNumber}</p>
-        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-small text-secondary">
+        <p className="font-display text-h2 text-surface">{confirmation.confirmationNumber}</p>
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-small text-surface">
           <div>
-            <dt className="text-secondary-light">Room</dt>
+            <dt className="text-surface-muted">Room</dt>
             <dd className="font-semibold">{confirmation.roomTypeName}</dd>
           </div>
           <div>
-            <dt className="text-secondary-light">Total</dt>
+            <dt className="text-surface-muted">Total</dt>
             <dd className="font-semibold">
               {confirmation.currency} {confirmation.totalRate}
             </dd>
           </div>
           <div>
-            <dt className="text-secondary-light">Check-in</dt>
+            <dt className="text-surface-muted">Check-in</dt>
             <dd className="font-semibold">
               {new Date(confirmation.checkInDate).toLocaleDateString()} from {property.checkInTime}
             </dd>
           </div>
           <div>
-            <dt className="text-secondary-light">Check-out</dt>
+            <dt className="text-surface-muted">Check-out</dt>
             <dd className="font-semibold">
               {new Date(confirmation.checkOutDate).toLocaleDateString()} by {property.checkOutTime}
             </dd>
           </div>
         </dl>
-        <p className="text-small text-primary-dark/70">
+        <p className="text-small text-surface-muted">
           Payment is taken at the property on arrival. Please quote your confirmation number when you check in.
         </p>
-        <p className="text-small text-primary-dark/70">Cancellation policy: {property.cancellationPolicy.summary}</p>
+        <p className="text-small text-surface-muted">Cancellation policy: {property.cancellationPolicy.summary}</p>
         {/* The only discovery path for the lookup page — no confirmation email
             is sent yet, so if a guest doesn't note this down here, they have
             no way back to their booking. */}
-        <p className="text-small text-primary-dark/70">
+        <p className="text-small text-surface-muted">
           Keep this confirmation number safe — you can view this booking again at{' '}
           <Link href={`/book/${slug}/manage`} className="underline font-semibold">
             Manage your booking
@@ -231,9 +231,9 @@ function BookingFlow({
 
       <Section label="Choose a Room">
         {roomTypesQuery.isLoading ? (
-          <p className="text-body text-secondary-light">Loading rooms…</p>
+          <p className="text-body text-surface-muted">Loading rooms…</p>
         ) : (roomTypesQuery.data ?? []).length === 0 ? (
-          <p className="text-body text-secondary-light">This property has no rooms listed for online booking yet.</p>
+          <p className="text-body text-surface-muted">This property has no rooms listed for online booking yet.</p>
         ) : (
           <div className="flex flex-col gap-3">
             {(roomTypesQuery.data ?? []).map((roomType) => (
@@ -348,26 +348,26 @@ function RoomTypeCard({
     <Card tone={selected ? 'accent' : 'secondary'} className="flex flex-wrap items-start justify-between gap-4">
       {roomType.photoUrls.length > 0 ? <RoomPhotos photoUrls={roomType.photoUrls} roomName={roomType.name} /> : null}
       <div className="flex flex-col gap-1 min-w-48">
-        <p className="text-body font-bold text-secondary">{roomType.name}</p>
-        <p className="text-small text-secondary-light">
+        <p className="text-body font-bold text-surface">{roomType.name}</p>
+        <p className="text-small text-surface-muted">
           {[roomType.bedType, roomType.sizeM2 ? `${roomType.sizeM2} m²` : null, `Sleeps ${capacity}`].filter(Boolean).join(' · ')}
         </p>
-        {roomType.amenities.length > 0 ? <p className="text-tiny text-secondary-light">{roomType.amenities.join(' · ')}</p> : null}
+        {roomType.amenities.length > 0 ? <p className="text-tiny text-surface-muted">{roomType.amenities.join(' · ')}</p> : null}
       </div>
       <div className="flex flex-col items-end gap-2">
-        <p className="text-small text-secondary-light">
+        <p className="text-small text-surface-muted">
           from{' '}
-          <span className="text-body font-bold text-secondary">
+          <span className="text-body font-bold text-surface">
             {currency} {roomType.baseRate}
           </span>{' '}
           / night
         </p>
         {available === null ? (
-          <p className="text-tiny text-secondary-light">Checking availability…</p>
+          <p className="text-tiny text-surface-muted">Checking availability…</p>
         ) : soldOut ? (
           <p className="text-tiny text-red-600">Not available for these dates</p>
         ) : (
-          <p className="text-tiny text-secondary-light">
+          <p className="text-tiny text-surface-muted">
             {available} room{available === 1 ? '' : 's'} left
           </p>
         )}
@@ -448,7 +448,7 @@ function GuestDetailsSection({
         <Input id="guest-phone" label="Phone (optional)" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} />
         <Input id="guest-requests" label="Special Requests (optional)" value={specialRequests} onChange={(e) => setSpecialRequests(e.target.value)} />
       </div>
-      <label className="flex items-start gap-2 text-small text-secondary cursor-pointer">
+      <label className="flex items-start gap-2 text-small text-surface cursor-pointer">
         <input id="marketing-opt-in" type="checkbox" checked={marketingOptIn} onChange={(e) => setMarketingOptIn(e.target.checked)} className="size-4 mt-0.5 accent-secondary" />
         Email me offers and news from this property. I can unsubscribe at any time.
       </label>
@@ -460,19 +460,19 @@ function GuestDetailsSection({
         <Button type="button" size="sm" variant="outline" onClick={() => setAppliedPromo(promoCode)} disabled={!promoCode.trim() || promoCode === appliedPromo}>
           Apply
         </Button>
-        {appliedPromo ? <p className="text-small text-secondary-light">Applied: {appliedPromo}</p> : null}
+        {appliedPromo ? <p className="text-small text-surface-muted">Applied: {appliedPromo}</p> : null}
       </div>
 
       {/* Every figure here is the backend's own resolved quote — this page
           never multiplies a nightly rate by a night count itself. */}
       <Card tone="accent" className="flex flex-col gap-2 max-w-md">
-        <p className="text-small font-semibold text-primary-dark">Price</p>
+        <p className="text-small font-semibold text-surface">Price</p>
         {quoteQuery.isLoading ? (
-          <p className="text-small text-primary-dark/70">Calculating…</p>
+          <p className="text-small text-surface-muted">Calculating…</p>
         ) : quoteQuery.isError || !quoteQuery.data ? (
           <p className="text-small text-red-600">We couldn&rsquo;t price these dates. Please try different dates.</p>
         ) : (
-          <dl className="flex flex-col gap-1 text-small text-secondary">
+          <dl className="flex flex-col gap-1 text-small text-surface">
             <div className="flex justify-between">
               <dt>
                 {quoteQuery.data.currency} {quoteQuery.data.nightlyRate} × {quoteQuery.data.nights} night{quoteQuery.data.nights === 1 ? '' : 's'}
@@ -496,17 +496,17 @@ function GuestDetailsSection({
               </dd>
             </div>
             {Number(quoteQuery.data.taxIncluded) > 0 ? (
-              <p className="text-tiny text-primary-dark/70 text-right">
+              <p className="text-tiny text-surface-muted text-right">
                 Includes {quoteQuery.data.currency} {quoteQuery.data.taxIncluded} in taxes
               </p>
             ) : null}
           </dl>
         )}
-        <p className="text-tiny text-primary-dark/70">Payment is taken at the property on arrival.</p>
+        <p className="text-tiny text-surface-muted">Payment is taken at the property on arrival.</p>
         {/* The terms are stated before the guest commits — and flagged when the stay starts so soon that the free
             window has already closed, so a booking made tonight for tomorrow isn't a surprise charge. */}
         {quoteQuery.data ? (
-          <p className={`text-tiny ${quoteQuery.data.cancellation.freeCancellationAvailable ? 'text-primary-dark/70' : 'text-red-600'}`}>
+          <p className={`text-tiny ${quoteQuery.data.cancellation.freeCancellationAvailable ? 'text-surface-muted' : 'text-red-600'}`}>
             {quoteQuery.data.cancellation.summary}
             {quoteQuery.data.cancellation.freeCancellationAvailable
               ? ''

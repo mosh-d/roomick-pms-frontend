@@ -302,7 +302,7 @@ function CancellationPolicySection({ branch, auth }: { branch: BranchDetail; aut
     <Section label="Cancellation Policy">
       <Card tone="secondary" className="flex flex-col gap-3 max-w-lg">
         {branch.cancellationPolicy ? null : (
-          <p className="text-small text-secondary">
+          <p className="text-small text-surface">
             Running on the standard default until you save your own: free cancellation until 24 hours before check-in, then the first night is charged.
           </p>
         )}
@@ -335,7 +335,7 @@ function CancellationPolicySection({ branch, auth }: { branch: BranchDetail; aut
           />
         ) : null}
         <YesNoToggle label="Guests can cancel online" name="allowOnlineCancellation" value={online ? 'yes' : 'no'} onChange={(v) => { setOnline(v === 'yes'); edited(); }} />
-        <p className="text-tiny text-secondary-light">
+        <p className="text-tiny text-surface-muted">
           Changes apply to new bookings — each booking keeps the terms it was made under. Online cancellation closes at check-in time on the arrival day; after that the no-show policy applies. Staff can always cancel from Cancel Reservation, and managers can waive the charge there.
         </p>
         {error ? <p className="text-small text-red-600">{error}</p> : null}
@@ -378,7 +378,7 @@ function BookingEngineSection({ branch, auth }: { branch: BranchDetail; auth: Au
   // arrives, without a set-state-in-effect.
   return statusQuery.isLoading ? (
     <Section label="Direct Booking Engine">
-      <p className="text-body text-primary-dark/70">Loading…</p>
+      <p className="text-body text-surface-muted">Loading…</p>
     </Section>
   ) : (
     <BookingEngineForm
@@ -438,7 +438,7 @@ function BookingEngineForm({
   return (
     <Section label="Direct Booking Engine">
       <Card tone="secondary" className="flex flex-col gap-3 max-w-2xl">
-        <p className="text-small text-secondary">
+        <p className="text-small text-surface">
           Take bookings directly from your own website with no channel commission. Guests book at a public address without needing an account, and their
           reservations arrive in Roomick exactly like a front-desk booking.
         </p>
@@ -446,7 +446,7 @@ function BookingEngineForm({
         {status.bookingEngineEnabled && liveUrl ? (
           <div className="flex flex-wrap items-center gap-2 rounded-control bg-green-700/10 px-3 py-2">
             <span className="text-small font-semibold text-green-800">Live</span>
-            <a href={liveUrl} target="_blank" rel="noreferrer" className="text-small text-secondary underline break-all">
+            <a href={liveUrl} target="_blank" rel="noreferrer" className="text-small text-surface underline break-all">
               {liveUrl}
             </a>
             <Button
@@ -461,7 +461,7 @@ function BookingEngineForm({
             </Button>
           </div>
         ) : (
-          <p className="text-small text-secondary-light">
+          <p className="text-small text-surface-muted">
             Not published — this property currently accepts no online bookings{status.slug ? `, but "${status.slug}" stays reserved for it.` : '.'}
           </p>
         )}
@@ -476,8 +476,8 @@ function BookingEngineForm({
           }}
           hint="Lowercase letters, numbers and hyphens. Guests will see this in the URL."
         />
-        <p className="text-tiny text-secondary-light break-all">
-          Will publish at <span className="font-semibold text-secondary">{bookingUrl}</span>
+        <p className="text-tiny text-surface-muted break-all">
+          Will publish at <span className="font-semibold text-surface">{bookingUrl}</span>
         </p>
 
         {error ? <p className="text-small text-red-600">{error}</p> : null}
@@ -493,7 +493,7 @@ function BookingEngineForm({
           ) : null}
         </div>
 
-        <p className="text-tiny text-secondary-light">
+        <p className="text-tiny text-surface-muted">
           Guests pay at the property on arrival — card payment at the time of booking isn&apos;t built yet. Changing the address takes the old link down
           immediately.
         </p>
@@ -564,7 +564,7 @@ function PhotoUrlListInput({ value, onChange }: { value: string[]; onChange: (ne
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-small font-semibold text-secondary">Photos (optional)</span>
+      <span className="text-small font-semibold text-surface">Photos (optional)</span>
       {rows.map((url, index) => (
         // Index key is correct here: these rows have no stable identity of
         // their own and are edited in place, so keying by value would
@@ -592,7 +592,7 @@ function PhotoUrlListInput({ value, onChange }: { value: string[]; onChange: (ne
           Add photo
         </Button>
       </div>
-      <p className="text-tiny text-secondary-light">Paste image links from wherever you already host them. The first photo is the one guests see first.</p>
+      <p className="text-tiny text-surface-muted">Paste image links from wherever you already host them. The first photo is the one guests see first.</p>
     </div>
   );
 }
@@ -667,7 +667,7 @@ function RoomTypeModalInner({
       />
       <PhotoUrlListInput value={photoUrls} onChange={setPhotoUrls} />
       {error ? <p className="text-small text-red-600">{error}</p> : null}
-      {existing ? <p className="text-tiny text-secondary-light">Changing the rate only affects future bookings — existing reservations keep their own confirmed rate.</p> : null}
+      {existing ? <p className="text-tiny text-surface-muted">Changing the rate only affects future bookings — existing reservations keep their own confirmed rate.</p> : null}
       <div className="flex items-center gap-3">
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel
@@ -711,7 +711,7 @@ function RoomTypesSection({ branchId, currency, auth }: { branchId: string; curr
           </Button>
         </div>
         {roomTypesQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading room types…</p>
+          <p className="text-body text-surface-muted">Loading room types…</p>
         ) : (
           <Card tone="secondary">
             <Table columns={columns} rows={roomTypesQuery.data ?? []} emptyMessage="No room types configured yet." exportFileName="room-types" />
@@ -758,7 +758,7 @@ export default function PropertyConfigPage() {
       {isOwner(user) ? <BrandSection auth={auth} /> : null}
 
       {branchQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading branch settings…</p>
+        <p className="text-body text-surface-muted">Loading branch settings…</p>
       ) : branchQuery.data ? (
         <>
           <BranchDetailsSection branch={branchQuery.data} auth={auth} />
@@ -776,7 +776,7 @@ export default function PropertyConfigPage() {
           <HubCard icon={<HotelCheckInIcon className="size-5" />} title="Registration Card Template" description="House rules, required fields, language" href="/dashboard/registration-cards" />
           <HubCard icon={<OverbookingIcon className="size-5" />} title="Overbooking Management" description="Per-room-type overbooking limits and alerts" href="/dashboard/overbooking" />
         </div>
-        <p className="text-tiny text-secondary-light mt-2">
+        <p className="text-tiny text-surface-muted mt-2">
           Buildings and floors can only be structured during onboarding today — editing an existing property&apos;s physical layout isn&apos;t built yet.
         </p>
       </Section>

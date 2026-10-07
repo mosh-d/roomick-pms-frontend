@@ -59,13 +59,13 @@ export default function GuestProfilesListPage() {
       <SearchInput label="Search guests by name or email" placeholder="Search guests" value={search} onChange={(v) => { setSearch(v); setPage(1); }} />
 
       {guestsQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading guests…</p>
+        <p className="text-body text-surface-muted">Loading guests…</p>
       ) : (
         <>
           <Card tone="secondary">
             <Table columns={columns} rows={guestsQuery.data?.rows ?? []} emptyMessage="No guests match that search." exportFileName="guests" />
           </Card>
-          <div className="flex items-center justify-between text-small text-secondary-light">
+          <div className="flex items-center justify-between text-small text-surface-muted">
             <span>
               Page {page} of {totalPages} — {guestsQuery.data?.total ?? 0} total guests
             </span>

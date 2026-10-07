@@ -1,12 +1,46 @@
 @import 'tailwindcss';
 @import '../design-system/tokens.css';
 
-/* Default page surface: pure white background, secondary (near-black
-   purple) body text — mirrors the brand spec's white/secondary pairing
-   rather than defaulting to Tailwind's near-black gray. */
+/* Text takes the colour family of the surface it sits on — never secondary
+   (violet) text on a gold/page surface, never bronze text in a violet card
+   (design-system/01-color.md, "Which family on which surface"). A surface
+   sets two variables; `text-surface`/`text-surface-muted` read them, and so
+   does every element that just inherits its colour. The page and gold
+   (`primary`) surfaces are the primary family; a slate (`accent`) card keeps
+   primary text with slate for muted; a violet-tinted (`secondary`) card is
+   the secondary family. `Card`/`Section` set these through
+   `CARD_TONE_CLASSES`; anything else that paints its own background names
+   its surface the same way. */
+:root,
+.surface-page,
+.surface-primary {
+  --surface-text: var(--color-primary-dark);
+  --surface-text-muted: color-mix(in srgb, var(--color-primary-dark) 70%, transparent);
+  --surface-text-accent: var(--color-primary-text);
+}
+.surface-accent {
+  --surface-text: var(--color-primary-dark);
+  --surface-text-muted: var(--color-accent-dark);
+  --surface-text-accent: var(--color-primary-text);
+}
+/* No gold in a violet card: its accent (a link, an "Add" action) is the card's own violet, set apart by weight and underline. */
+.surface-secondary {
+  --surface-text: var(--color-secondary);
+  --surface-text-muted: var(--color-secondary-light);
+  --surface-text-accent: var(--color-secondary);
+}
+.surface-page,
+.surface-primary,
+.surface-accent,
+.surface-secondary {
+  color: var(--surface-text);
+}
+
+/* Default page surface: pure white background, the page's own (primary)
+   text family. */
 body {
   background: var(--color-white);
-  color: var(--color-secondary);
+  color: var(--surface-text);
 }
 
 /* Chromium/WebKit paint a hardcoded pale-blue (or yellow) background behind
@@ -36,7 +70,7 @@ input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   transition: background-color 9999s ease-in-out 9999s, color 9999s ease-in-out 9999s;
-  -webkit-text-fill-color: var(--color-secondary);
+  -webkit-text-fill-color: var(--surface-text);
   --autofill-surface: color-mix(in srgb, var(--color-primary-light) 15%, white);
   -webkit-box-shadow: 0 0 0px 1000px var(--autofill-surface) inset;
   box-shadow: 0 0 0px 1000px var(--autofill-surface) inset;
@@ -53,7 +87,7 @@ input:-webkit-autofill:active {
    `:focus-within` can't distinguish from a real click. `:has()` can:
    explicitly force the wrapper transparent whenever it contains an
    autofilled input, regardless of the focus-within state. */
-.focus-within\:bg-secondary-light\/15:has(input:-webkit-autofill) {
+.focus-within\:bg-surface-muted\/10:has(input:-webkit-autofill) {
   background-color: transparent !important;
 }
 

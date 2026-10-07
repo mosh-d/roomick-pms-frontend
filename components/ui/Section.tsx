@@ -40,7 +40,7 @@ export function Section({
   return (
     <div className={`flex flex-col gap-3 ${className}`}>
       <div className="flex items-center gap-3">
-        <h3 className="text-tiny font-bold uppercase tracking-wide text-primary-dark/50 whitespace-nowrap">{label}</h3>
+        <h3 className="text-tiny font-bold uppercase tracking-wide text-surface-muted whitespace-nowrap">{label}</h3>
         <div className="h-px flex-1 bg-accent/30" />
       </div>
       <div className={`rounded-card border p-4 flex flex-col gap-4 ${CARD_TONE_CLASSES[tone]}`}>{children}</div>

@@ -69,7 +69,7 @@ export function RadioCard<T extends string>({
 
           const labelClasses = hasCardChrome
             ? `flex flex-1 min-w-48 flex-col gap-1 rounded-card border p-4 cursor-pointer transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 peer-disabled:opacity-50 peer-disabled:pointer-events-none ${
-                isSelected ? CARD_TONE_CLASSES[tone] : 'border-secondary-light/40'
+                isSelected ? CARD_TONE_CLASSES[tone] : 'border-surface-muted/40'
               }`
             : 'inline-flex items-center gap-2 cursor-pointer peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 rounded-control peer-disabled:opacity-50 peer-disabled:pointer-events-none';
 
@@ -95,10 +95,10 @@ export function RadioCard<T extends string>({
                   >
                     {isSelected ? <span className="size-2 rounded-full bg-secondary" /> : null}
                   </span>
-                  <span className="text-body font-semibold text-secondary">{option.title}</span>
+                  <span className="text-body font-semibold text-surface">{option.title}</span>
                 </span>
                 {option.description ? (
-                  <span className="text-small text-secondary-light pl-6">{option.description}</span>
+                  <span className="text-small text-surface-muted pl-6">{option.description}</span>
                 ) : null}
               </label>
             </div>

@@ -125,7 +125,7 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
  * plain text, never clickable (see `layout.tsx`).
  */
 function SidebarGroupLabel({ children }: { children: string }) {
-  return <h2 className="shrink-0 mt-2 first:mt-0 px-1 text-tiny font-bold uppercase tracking-wide text-primary-dark/50 whitespace-nowrap">{children}</h2>;
+  return <h2 className="shrink-0 mt-2 first:mt-0 px-1 text-tiny font-bold uppercase tracking-wide text-surface-muted whitespace-nowrap">{children}</h2>;
 }
 
 /**
@@ -149,7 +149,7 @@ function AlertsLink({ active }: { active: boolean }) {
       href="/dashboard/alerts"
       aria-current={active ? 'page' : undefined}
       className={`shrink-0 flex items-center justify-between gap-2 rounded-control px-3 py-2 text-tiny font-semibold border transition-colors ${
-        active ? 'bg-primary border-primary text-white' : 'text-primary-dark border-primary/30 hover:bg-primary-light/40'
+        active ? 'bg-primary border-primary text-white' : 'text-surface border-primary/30 hover:bg-primary-light/40'
       }`}
     >
       Alerts
@@ -178,7 +178,7 @@ function SidebarLink({ item, active }: { item: SidebarItem; active: boolean }) {
       className={`shrink-0 rounded-control border px-3 py-2 text-tiny transition-colors ${
         active
           ? 'bg-primary border-primary text-white font-semibold'
-          : 'border-primary/30 text-primary-dark font-normal hover:bg-primary-light/40'
+          : 'border-primary/30 text-surface font-normal hover:bg-primary-light/40'
       }`}
     >
       {item.label}
@@ -188,7 +188,7 @@ function SidebarLink({ item, active }: { item: SidebarItem; active: boolean }) {
 
 function InertRow({ label }: { label: string }) {
   return (
-    <div title="Not built yet" className="shrink-0 rounded-control border border-primary/20 px-3 py-2 text-tiny text-primary-dark/45 truncate">
+    <div title="Not built yet" className="shrink-0 rounded-control border border-primary/20 px-3 py-2 text-tiny text-surface-muted truncate">
       {label}
     </div>
   );

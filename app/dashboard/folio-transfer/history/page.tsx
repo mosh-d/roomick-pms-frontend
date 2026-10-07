@@ -72,7 +72,7 @@ export default function TransferHistoryPage() {
       {error ? <p className="text-small text-red-600">{error}</p> : null}
       {notice ? (
         <Card tone="secondary">
-          <p className="text-small text-secondary">{notice}</p>
+          <p className="text-small text-surface">{notice}</p>
         </Card>
       ) : null}
 
@@ -87,9 +87,9 @@ export default function TransferHistoryPage() {
         </div>
 
         {transfersQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading…</p>
+          <p className="text-body text-surface-muted">Loading…</p>
         ) : transfers.length === 0 ? (
-          <p className="text-body text-primary-dark/70">No charges have been moved between bills{from || to ? ' in these dates' : ''}.</p>
+          <p className="text-body text-surface-muted">No charges have been moved between bills{from || to ? ' in these dates' : ''}.</p>
         ) : (
           <ol className="flex flex-col gap-3" aria-label="Transfers, newest first">
             {transfers.map((t) => {
@@ -100,16 +100,16 @@ export default function TransferHistoryPage() {
                   <Card tone="secondary" className="flex flex-col gap-2">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="flex flex-col gap-1">
-                        <p className="text-small font-bold text-secondary">
+                        <p className="text-small font-bold text-surface">
                           {endName(t.sourceFolio)} → {endName(t.targetFolio)}
                         </p>
-                        <p className="text-tiny text-secondary-light">
+                        <p className="text-tiny text-surface-muted">
                           {new Date(t.createdAt).toLocaleString()} · {t.approvedByUser?.name ?? 'Unknown'} · {t.lineItemIds.length} line{t.lineItemIds.length === 1 ? '' : 's'}
                           {sameStay ? ' · within one stay' : ''}
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-body font-semibold text-secondary">{formatMoney(t.amount, symbol)}</span>
+                        <span className="text-body font-semibold text-surface">{formatMoney(t.amount, symbol)}</span>
                         {t.reversedAt ? (
                           <span className="inline-flex rounded-pill bg-primary/15 px-2 py-0.5 text-tiny font-semibold text-primary-dark">
                             Reversed{t.reversedByUser ? ` by ${t.reversedByUser.name}` : ''}
@@ -121,7 +121,7 @@ export default function TransferHistoryPage() {
                         ) : null}
                       </div>
                     </div>
-                    <p className="text-small text-secondary">Reason: {t.reason}</p>
+                    <p className="text-small text-surface">Reason: {t.reason}</p>
                   </Card>
                 </li>
               );

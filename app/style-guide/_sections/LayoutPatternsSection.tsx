@@ -82,22 +82,22 @@ export function LayoutPatternsSection() {
   return (
     <section className="flex flex-col gap-8">
       <div>
-        <h2 className="text-header font-bold text-secondary">Layout patterns</h2>
-        <p className="text-small text-secondary-light max-w-prose mt-1">
+        <h2 className="text-header font-bold text-surface">Layout patterns</h2>
+        <p className="text-small text-surface-muted max-w-prose mt-1">
           Grounded directly in Roomick-UI.pdf — Section (page structure), EntryCard (removable repeatable entries),
           FeatureCard (navigation tiles). See design-system/04-components/layout-patterns.md.
         </p>
       </div>
 
       <div className="max-w-2xl">
-        <h3 className="text-subheader font-semibold text-secondary mb-3">
+        <h3 className="text-subheader font-semibold text-surface mb-3">
           Section + EntryCard — reproducing the reference&apos;s Tax Rule Builder
         </h3>
         <TaxRuleBuilderDemo />
       </div>
 
       <div>
-        <h3 className="text-subheader font-semibold text-secondary mb-3">
+        <h3 className="text-subheader font-semibold text-surface mb-3">
           FeatureCard — reproducing the reference&apos;s Front Desk hub
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl">

@@ -132,3 +132,16 @@
   --radius-card: 0.5rem; /* cards, panels, dropzones, fieldsets — reduced twice per design review (0.75rem → 0.625rem → 0.5rem), now level with radius-control */
   --radius-pill: 999px; /* badges/status tags, and the Yes/No toggle only */
 }
+
+/* ============================================================
+ * SURFACE TEXT — the text colour of whatever surface an element sits on,
+ * resolved where it's used (`inline`), not frozen at :root. `text-surface`,
+ * `text-surface-muted`, `border-surface-muted/40` and the like follow the
+ * nearest `surface-*` (app/globals.css): bronze on the page and gold boxes,
+ * violet in a violet-tinted card.
+ * ============================================================ */
+@theme inline {
+  --color-surface: var(--surface-text);
+  --color-surface-muted: var(--surface-text-muted);
+  --color-surface-accent: var(--surface-text-accent);
+}

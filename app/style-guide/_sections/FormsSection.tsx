@@ -151,7 +151,7 @@ export function FormsSection() {
 
   return (
     <section className="flex flex-col gap-8">
-      <h2 className="text-header font-bold text-secondary">Forms</h2>
+      <h2 className="text-header font-bold text-surface">Forms</h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <Input label="Text Input" placeholder="Type here..." hint="A helper hint shown via the info icon" />
@@ -185,7 +185,7 @@ export function FormsSection() {
       </div>
 
       <div>
-        <h3 className="text-subheader font-semibold text-secondary mb-3">
+        <h3 className="text-subheader font-semibold text-surface mb-3">
           Brand mode (standalone) — wrapped in <code className="text-tiny">Section</code>, matching real usage
         </h3>
         <div className="max-w-sm">
@@ -196,8 +196,8 @@ export function FormsSection() {
       </div>
 
       <div>
-        <h3 className="text-subheader font-semibold text-secondary mb-3">ID capture — same RadioCard primitive</h3>
-        <p className="text-small text-secondary-light max-w-prose mb-3">
+        <h3 className="text-subheader font-semibold text-surface mb-3">ID capture — same RadioCard primitive</h3>
+        <p className="text-small text-surface-muted max-w-prose mb-3">
           No <code className="text-tiny">description</code> on either option ⇒ a plain radio row, with the selected
           option&apos;s content nested below in its own Card — the same rendering path as Brand Mode above, just
           different data.
@@ -219,7 +219,7 @@ export function FormsSection() {
       </div>
 
       <div>
-        <h3 className="text-subheader font-semibold text-secondary mb-3">
+        <h3 className="text-subheader font-semibold text-surface mb-3">
           Real RHF + Zod demo — schema defined once in this file
         </h3>
         <OnboardingDemoForm />

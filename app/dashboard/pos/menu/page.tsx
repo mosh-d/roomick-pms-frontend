@@ -112,23 +112,23 @@ function OutletsSection({ branchId, auth }: { branchId: string; auth: AuthOpts }
 
   return (
     <Section label="Outlets">
-      <p className="text-small text-secondary-light">
+      <p className="text-small text-surface-muted">
         An outlet&apos;s type decides how its sales show on a guest&apos;s bill and in revenue reports — food &amp; beverage, spa, laundry or other — so it
         can&apos;t be changed later. Front desk and managers can ring up at every outlet; POS staff only at the ones they&apos;re assigned to.
       </p>
-      {outletsQuery.isSuccess && outlets.length === 0 ? <p className="text-body text-primary-dark/70">No outlets yet — add the first one below.</p> : null}
+      {outletsQuery.isSuccess && outlets.length === 0 ? <p className="text-body text-surface-muted">No outlets yet — add the first one below.</p> : null}
       {listError ? <p className="text-small text-red-600">{listError}</p> : null}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {outlets.map((outlet) => (
           <Card key={outlet.id} className={`flex flex-col gap-2 ${outlet.isActive ? '' : 'opacity-70'}`}>
             <div>
-              <p className="text-body font-semibold text-secondary">{outlet.name}</p>
-              <p className="text-small text-secondary-light">
+              <p className="text-body font-semibold text-surface">{outlet.name}</p>
+              <p className="text-small text-surface-muted">
                 {OUTLET_CATEGORY_LABELS[outlet.category]} · {outlet.menuItemCount} {outlet.menuItemCount === 1 ? 'item' : 'items'}
                 {outlet.isActive ? '' : ' · Inactive'}
               </p>
             </div>
-            <p className="text-small text-secondary">
+            <p className="text-small text-surface">
               POS staff: {outlet.assignedStaff && outlet.assignedStaff.length > 0 ? outlet.assignedStaff.map((s) => s.name).join(', ') : 'none assigned'}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -153,7 +153,7 @@ function OutletsSection({ branchId, auth }: { branchId: string; auth: AuthOpts }
       </div>
 
       <Card tone="primary" className="flex flex-col gap-2">
-        <p className="text-body font-semibold text-secondary">Add an outlet</p>
+        <p className="text-body font-semibold text-surface">Add an outlet</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input name="outletName" label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Poolside Bar" maxLength={150} />
           <Select name="outletCategory" label="Type" options={CATEGORY_OPTIONS} value={category} onChange={setCategory} />
@@ -236,9 +236,9 @@ function AssignStaffDialog({ outlet, branchId, auth, onClose }: { outlet: Outlet
 
   return (
     <Modal open onClose={onClose} title={`Staff at ${outlet.name}`}>
-      {staffQuery.isLoading ? <p className="text-body text-primary-dark/70">Loading staff…</p> : null}
+      {staffQuery.isLoading ? <p className="text-body text-surface-muted">Loading staff…</p> : null}
       {staffQuery.isSuccess && posStaff.length === 0 ? (
-        <p className="text-body text-secondary">No one at this branch has the POS staff role yet — give it to them in Staff Management first.</p>
+        <p className="text-body text-surface">No one at this branch has the POS staff role yet — give it to them in Staff Management first.</p>
       ) : null}
       <div className="flex flex-col gap-2 max-h-[50vh] overflow-y-auto">
         {posStaff.map((member) => (
@@ -249,8 +249,8 @@ function AssignStaffDialog({ outlet, branchId, auth, onClose }: { outlet: Outlet
               onChange={(e) => setChanged((current) => ({ ...current, [member.id]: e.target.checked }))}
               className="size-4 accent-secondary"
             />
-            <span className="text-body text-secondary">{member.name}</span>
-            <span className="text-small text-secondary-light">{member.email}</span>
+            <span className="text-body text-surface">{member.name}</span>
+            <span className="text-small text-surface-muted">{member.email}</span>
           </label>
         ))}
       </div>
@@ -279,7 +279,7 @@ function MenuSection({ branchId, supervisor, auth }: { branchId: string; supervi
     <Section label="Menu">
       {outletsQuery.isError ? <p className="text-body text-red-600">{errorText(outletsQuery.error, "Couldn't load the outlets.")}</p> : null}
       {outletsQuery.isSuccess && outlets.length === 0 ? (
-        <p className="text-body text-primary-dark/70">{supervisor ? 'Add an outlet above to start its menu.' : 'You aren’t assigned to an outlet yet.'}</p>
+        <p className="text-body text-surface-muted">{supervisor ? 'Add an outlet above to start its menu.' : 'You aren’t assigned to an outlet yet.'}</p>
       ) : null}
       {outlets.length > 1 ? (
         <div className="max-w-sm">
@@ -333,13 +333,13 @@ function OutletMenuEditor({ outletId, supervisor, auth }: { outletId: string; su
 
   return (
     <div className="flex flex-col gap-4">
-      {menuQuery.isLoading ? <p className="text-body text-primary-dark/70">Loading the menu…</p> : null}
-      {menu && items.length === 0 ? <p className="text-body text-primary-dark/70">Nothing on {menu.outlet.name}&apos;s menu yet.</p> : null}
+      {menuQuery.isLoading ? <p className="text-body text-surface-muted">Loading the menu…</p> : null}
+      {menu && items.length === 0 ? <p className="text-body text-surface-muted">Nothing on {menu.outlet.name}&apos;s menu yet.</p> : null}
       {error ? <p className="text-small text-red-600">{error}</p> : null}
 
       {categories.map((category) => (
         <div key={category} className="flex flex-col gap-2">
-          <h3 className="text-small font-bold uppercase tracking-wide text-secondary-light">{category}</h3>
+          <h3 className="text-small font-bold uppercase tracking-wide text-surface-muted">{category}</h3>
           <ul className="flex flex-col gap-2">
             {items
               .filter((item) => item.category === category)
@@ -347,11 +347,11 @@ function OutletMenuEditor({ outletId, supervisor, auth }: { outletId: string; su
                 <li key={item.id}>
                   <Card className={`flex flex-wrap items-center justify-between gap-3 ${item.isAvailable ? '' : 'opacity-80'}`}>
                     <div className="min-w-0">
-                      <p className="text-body font-semibold text-secondary">
-                        {item.name} <span className="font-normal text-secondary-light">{formatMoney(item.price, symbol)}</span>
+                      <p className="text-body font-semibold text-surface">
+                        {item.name} <span className="font-normal text-surface-muted">{formatMoney(item.price, symbol)}</span>
                         {item.isAvailable ? null : <span className="ml-2 rounded-pill bg-red-100 px-2 py-0.5 text-tiny font-semibold text-red-800">86&apos;d</span>}
                       </p>
-                      {item.modifiers && item.modifiers.length > 0 ? <p className="text-tiny text-secondary-light">{describeChoices(item.modifiers)}</p> : null}
+                      {item.modifiers && item.modifiers.length > 0 ? <p className="text-tiny text-surface-muted">{describeChoices(item.modifiers)}</p> : null}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <Button
@@ -383,7 +383,7 @@ function OutletMenuEditor({ outletId, supervisor, auth }: { outletId: string; su
 
       {supervisor ? (
         <Card tone="primary" className="flex flex-col gap-3">
-          <p className="text-body font-semibold text-secondary">Add an item</p>
+          <p className="text-body font-semibold text-surface">Add an item</p>
           <MenuItemForm key={addFormKey} idPrefix="new-item" outletId={outletId} categories={categories} auth={auth} onSaved={() => setAddFormKey((k) => k + 1)} />
         </Card>
       ) : null}
@@ -398,7 +398,7 @@ function OutletMenuEditor({ outletId, supervisor, auth }: { outletId: string; su
 
       {removing ? (
         <Modal open onClose={() => setRemoving(null)} title={`Remove ${removing.name}?`}>
-          <p className="text-body text-secondary">It comes off the menu for good. Past orders keep their own record of it, price and all.</p>
+          <p className="text-body text-surface">It comes off the menu for good. Past orders keep their own record of it, price and all.</p>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setRemoving(null)}>
               Keep it
@@ -518,7 +518,7 @@ function ModifierBuilder({ idPrefix, groups, onChange }: { idPrefix: string; gro
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-small font-semibold text-secondary">Choices</p>
+        <p className="text-small font-semibold text-surface">Choices</p>
         <Button
           type="button"
           size="sm"
@@ -528,7 +528,7 @@ function ModifierBuilder({ idPrefix, groups, onChange }: { idPrefix: string; gro
           Add a choice
         </Button>
       </div>
-      {groups.length === 0 ? <p className="text-tiny text-secondary-light">None. Add one for a size, a doneness or extras — each option can add to the price.</p> : null}
+      {groups.length === 0 ? <p className="text-tiny text-surface-muted">None. Add one for a size, a doneness or extras — each option can add to the price.</p> : null}
       {groups.map((group, gi) => (
         <Card key={gi} className="flex flex-col gap-2">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
@@ -540,7 +540,7 @@ function ModifierBuilder({ idPrefix, groups, onChange }: { idPrefix: string; gro
               value={group.selection}
               onChange={(value) => setGroup(gi, { selection: value === 'multi' ? 'multi' : 'single' })}
             />
-            <label className="flex items-center gap-2 pb-3 text-small text-secondary cursor-pointer">
+            <label className="flex items-center gap-2 pb-3 text-small text-surface cursor-pointer">
               <input type="checkbox" checked={group.required} onChange={(e) => setGroup(gi, { required: e.target.checked })} className="size-4 accent-secondary" />
               Required
             </label>

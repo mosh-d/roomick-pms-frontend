@@ -96,7 +96,7 @@ export function BuildingsFloorsForm({ onBack, onNext }: { onBack: () => void; on
                   type="button"
                   onClick={() => remove(index)}
                   aria-label="Remove building"
-                  className="mt-6 text-secondary-light hover:text-secondary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+                  className="mt-6 text-surface-muted hover:text-surface cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
                 >
                   <XIcon className="size-4" />
                 </button>
@@ -159,7 +159,7 @@ export function BuildingsFloorsForm({ onBack, onNext }: { onBack: () => void; on
       <button
         type="button"
         onClick={() => append({ name: '', isMultiFloor: false, floorCount: 1, views: [] })}
-        className="inline-flex items-center gap-1 self-start text-body font-semibold text-primary-text hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
+        className="inline-flex items-center gap-1 self-start text-body font-semibold text-surface-accent hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
       >
         <PlusIcon className="size-4" /> Add building
       </button>

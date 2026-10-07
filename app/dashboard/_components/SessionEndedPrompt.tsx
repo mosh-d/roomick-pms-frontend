@@ -47,10 +47,10 @@ export function SessionEndedPrompt({ onSignIn }: { onSignIn: () => void }) {
         <span className="flex size-14 items-center justify-center rounded-full bg-primary-light/40 text-primary-dark">
           <LockIcon className="size-7" />
         </span>
-        <h2 id="session-ended-title" className="font-display text-header font-bold text-primary-dark">
+        <h2 id="session-ended-title" className="font-display text-header font-bold text-surface">
           Your session has ended
         </h2>
-        <p id="session-ended-body" className="text-body text-primary-dark/75">
+        <p id="session-ended-body" className="text-body text-surface-muted">
           You&apos;ve been signed out after an hour away, so nothing on this page can be saved until you sign in again. Anything you had typed and not yet
           saved will need to be entered again.
         </p>

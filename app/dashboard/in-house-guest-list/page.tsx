@@ -80,10 +80,10 @@ export default function InHouseGuestListPage() {
       align: 'right',
       render: (r) => {
         const folio = folioByReservation.get(r.id);
-        if (!folio) return <span className="text-secondary-light">—</span>;
+        if (!folio) return <span className="text-surface-muted">—</span>;
         const owed = Number(folio.balanceDue);
         return (
-          <span className={owed > 0 ? 'font-semibold text-red-600' : owed < 0 ? 'font-semibold text-green-700' : 'text-secondary-light'}>
+          <span className={owed > 0 ? 'font-semibold text-red-600' : owed < 0 ? 'font-semibold text-green-700' : 'text-surface-muted'}>
             {formatMoney(folio.balanceDue, currencySymbolFor(folio.currency))}
           </span>
         );
@@ -120,7 +120,7 @@ export default function InHouseGuestListPage() {
       <SearchInput label="Search in-house guests by name or room" placeholder="Search by guest name" value={search} onChange={setSearch} />
 
       {inHouseQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading guests…</p>
+        <p className="text-body text-surface-muted">Loading guests…</p>
       ) : inHouseQuery.isError ? (
         <p className="text-body text-red-600">Could not load guests. Please try refreshing.</p>
       ) : (

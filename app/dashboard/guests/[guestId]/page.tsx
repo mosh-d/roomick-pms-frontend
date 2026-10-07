@@ -34,7 +34,7 @@ const VIP_LEVELS = [0, 1, 2, 3, 4, 5];
 function VipLevelSelector({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-small font-semibold text-secondary">VIP Level</label>
+      <label className="text-small font-semibold text-surface">VIP Level</label>
       <div className="flex gap-1.5">
         {VIP_LEVELS.map((level) => (
           <button
@@ -42,7 +42,7 @@ function VipLevelSelector({ value, onChange }: { value: number; onChange: (v: nu
             type="button"
             onClick={() => onChange(level)}
             className={`size-8 rounded-control border text-small font-semibold transition-colors cursor-pointer ${
-              level <= value ? 'bg-primary border-primary text-white' : 'border-secondary-light/40 text-secondary-light hover:bg-secondary-light/20'
+              level <= value ? 'bg-primary border-primary text-white' : 'border-surface-muted/40 text-surface-muted hover:bg-secondary-light/20'
             }`}
           >
             {level}
@@ -172,13 +172,13 @@ function NotesFeedSection({ guest, auth }: { guest: GuestProfileDetail; auth: Au
           </div>
         </Card>
         {guest.notesFeed.length === 0 ? (
-          <p className="text-small text-secondary-light">No notes yet.</p>
+          <p className="text-small text-surface-muted">No notes yet.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {guest.notesFeed.map((note) => (
               <Card key={note.id} tone="secondary" className="flex flex-col gap-1">
-                <p className="text-body text-secondary">{note.body}</p>
-                <p className="text-tiny text-secondary-light">
+                <p className="text-body text-surface">{note.body}</p>
+                <p className="text-tiny text-surface-muted">
                   {note.author?.name ?? 'System'} — {new Date(note.createdAt).toLocaleString()}
                 </p>
               </Card>
@@ -228,7 +228,7 @@ function LoyaltySection({ guestId, auth, canAdjust }: { guestId: string; auth: A
   if (!loyalty) {
     return (
       <Section label="Loyalty">
-        <p className="text-body text-primary-dark/70">{loyaltyQuery.isError ? 'Couldn’t load loyalty.' : 'Loading…'}</p>
+        <p className="text-body text-surface-muted">{loyaltyQuery.isError ? 'Couldn’t load loyalty.' : 'Loading…'}</p>
       </Section>
     );
   }
@@ -241,7 +241,7 @@ function LoyaltySection({ guestId, auth, canAdjust }: { guestId: string; auth: A
       <Card tone="accent" className="flex flex-col gap-3 max-w-2xl">
         {!loyalty.enrolledAt ? (
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-body text-primary-dark">
+            <p className="text-body text-surface">
               {loyalty.programActive ? 'Not a member yet — they join on their own at their next check-out, or now.' : 'Not a member. The loyalty programme is switched off.'}
             </p>
             {loyalty.programActive ? (
@@ -254,26 +254,26 @@ function LoyaltySection({ guestId, auth, canAdjust }: { guestId: string; auth: A
           <>
             <div className="flex flex-wrap gap-x-8 gap-y-2">
               <div>
-                <p className="text-tiny text-primary-dark/70">Tier</p>
-                <p className="text-body font-semibold text-primary-dark">{tierName ?? 'No tier yet'}</p>
+                <p className="text-tiny text-surface-muted">Tier</p>
+                <p className="text-body font-semibold text-surface">{tierName ?? 'No tier yet'}</p>
               </div>
               <div>
-                <p className="text-tiny text-primary-dark/70">Points</p>
-                <p className="text-body font-semibold text-primary-dark">
+                <p className="text-tiny text-surface-muted">Points</p>
+                <p className="text-body font-semibold text-surface">
                   {loyalty.balance.toLocaleString()}
                   {loyalty.redeemableValue && loyalty.balance > 0 ? (
-                    <span className="font-normal text-primary-dark/70"> · worth {formatMoney(loyalty.redeemableValue, `${loyalty.currency} `)}</span>
+                    <span className="font-normal text-surface-muted"> · worth {formatMoney(loyalty.redeemableValue, `${loyalty.currency} `)}</span>
                   ) : null}
                 </p>
               </div>
               <div>
-                <p className="text-tiny text-primary-dark/70">Lifetime Points</p>
-                <p className="text-body font-semibold text-primary-dark">{loyalty.lifetimePoints.toLocaleString()}</p>
+                <p className="text-tiny text-surface-muted">Lifetime Points</p>
+                <p className="text-body font-semibold text-surface">{loyalty.lifetimePoints.toLocaleString()}</p>
               </div>
             </div>
             {loyalty.nextTier ? (
               <div>
-                <p className="text-tiny text-primary-dark/70">
+                <p className="text-tiny text-surface-muted">
                   {loyalty.nextTier.pointsToGo.toLocaleString()} points to {loyalty.nextTier.name}
                 </p>
                 <div className="mt-1 h-2 rounded-pill bg-secondary/10" role="progressbar" aria-label={`Progress to ${loyalty.nextTier.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
@@ -282,15 +282,15 @@ function LoyaltySection({ guestId, auth, canAdjust }: { guestId: string; auth: A
               </div>
             ) : null}
             {loyalty.tier && loyalty.tier.benefits.length > 0 ? (
-              <p className="text-small text-secondary">Benefits: {loyalty.tier.benefits.map(benefitLabel).join(', ')}</p>
+              <p className="text-small text-surface">Benefits: {loyalty.tier.benefits.map(benefitLabel).join(', ')}</p>
             ) : null}
-            {!loyalty.programActive ? <p className="text-tiny text-secondary-light">The programme is switched off — nothing is earned or redeemed until it’s back on.</p> : null}
+            {!loyalty.programActive ? <p className="text-tiny text-surface-muted">The programme is switched off — nothing is earned or redeemed until it’s back on.</p> : null}
           </>
         )}
 
         {loyalty.transactions.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-small text-secondary">
+            <table className="w-full border-collapse text-small text-surface">
               <thead>
                 <tr className="text-left font-bold">
                   <th className="py-1 pr-4">Date</th>
@@ -358,13 +358,13 @@ function MarketingConsentSection({ guest, auth }: { guest: GuestProfileDetail; a
     <Section label="Marketing">
       <Card className="flex flex-col gap-3">
         {guest.marketingOptIn ? (
-          <p className="text-body text-secondary" id="marketing-consent-status">
+          <p className="text-body text-surface" id="marketing-consent-status">
             <span className="font-semibold text-green-700">Opted in</span> to offers by email
             {date(guest.marketingOptInAt) ? ` since ${date(guest.marketingOptInAt)}` : ''}
             {source ? `, through ${source}` : ''}.
           </p>
         ) : (
-          <p className="text-body text-secondary" id="marketing-consent-status">
+          <p className="text-body text-surface" id="marketing-consent-status">
             <span className="font-semibold">Not opted in.</span>{' '}
             {guest.marketingUnsubscribedAt ? `Unsubscribed on ${date(guest.marketingUnsubscribedAt)}. ` : ''}
             Campaigns never reach this guest.
@@ -383,7 +383,7 @@ function MarketingConsentSection({ guest, auth }: { guest: GuestProfileDetail; a
               <Button type="button" size="sm" variant="outline" onClick={() => change(true)} loading={setConsent.isPending}>
                 Record Consent
               </Button>
-              <span className="text-small text-secondary/70">Only when the guest has told you they want offers by email.</span>
+              <span className="text-small text-surface/70">Only when the guest has told you they want offers by email.</span>
             </>
           )}
         </div>
@@ -401,8 +401,8 @@ function GuestProfileContent({ guest, auth, canAdjustPoints }: { guest: GuestPro
       <LoyaltySection guestId={guest.id} auth={auth} canAdjust={canAdjustPoints} />
       <MarketingConsentSection guest={guest} auth={auth} />
       <Card tone="accent" className="max-w-xs">
-        <p className="text-tiny text-primary-dark/70">Total Spend</p>
-        <p className="text-header font-bold text-primary-dark">{guest.totalSpend}</p>
+        <p className="text-tiny text-surface-muted">Total Spend</p>
+        <p className="text-header font-bold text-surface">{guest.totalSpend}</p>
       </Card>
       <StayHistorySection stayHistory={guest.stayHistory} />
       <NotesFeedSection guest={guest} auth={auth} />
@@ -426,7 +426,7 @@ export default function GuestProfilePage() {
       <PageHeader icon={<GuestProfileIcon className="size-8" />} title={guestQuery.data?.name ?? 'Guest Profile'} subtitle="Preferences, loyalty, stay history, and notes" />
 
       {guestQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading guest…</p>
+        <p className="text-body text-surface-muted">Loading guest…</p>
       ) : guestQuery.isError ? (
         <p className="text-body text-red-600">Could not load this guest. Please try refreshing.</p>
       ) : guestQuery.data ? (

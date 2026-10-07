@@ -53,7 +53,7 @@ export default function CampaignPage() {
       {campaign.isError ? (
         <p className="text-small text-red-600">{errorText(campaign.error, 'Couldn’t load this campaign.')}</p>
       ) : !campaign.data ? (
-        <p className="text-small text-secondary">Loading…</p>
+        <p className="text-small text-surface">Loading…</p>
       ) : (
         <CampaignContent key={campaign.data.id} campaign={campaign.data} auth={auth} staffEmail={user?.email ?? ''} />
       )}
@@ -73,7 +73,7 @@ function CampaignContent({ campaign, auth, staffEmail }: { campaign: Campaign; a
         <Card className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <CampaignStatusBadge status={campaign.status} />
-            <span className="text-small text-secondary">
+            <span className="text-small text-surface">
               {campaign.sentAt ? `Sent ${formatWhen(campaign.sentAt)}` : campaign.scheduledAt ? `Scheduled for ${formatWhen(campaign.scheduledAt)}` : 'Not scheduled'}
             </span>
           </div>
@@ -83,11 +83,11 @@ function CampaignContent({ campaign, auth, staffEmail }: { campaign: Campaign; a
               {campaign.failureReason}
             </p>
           ) : null}
-          <dl className="grid grid-cols-1 sm:grid-cols-[9rem_1fr] gap-x-4 gap-y-1 text-small text-secondary">
+          <dl className="grid grid-cols-1 sm:grid-cols-[9rem_1fr] gap-x-4 gap-y-1 text-small text-surface">
             <dt className="font-semibold">Audience</dt>
             <dd>
               {campaign.segment.name}
-              <span className="text-secondary/70"> — {campaign.segment.rules.join('; ')}</span>
+              <span className="text-surface/70"> — {campaign.segment.rules.join('; ')}</span>
             </dd>
             <dt className="font-semibold">Template</dt>
             <dd>
@@ -231,9 +231,9 @@ function SendSection({ campaign, auth, staffEmail }: { campaign: Campaign; auth:
 function Stat({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
     <Card className="flex flex-col gap-0.5">
-      <p className="text-tiny text-secondary/70">{label}</p>
-      <p className="text-header font-bold text-secondary">{value}</p>
-      {detail ? <p className="text-tiny text-secondary/70">{detail}</p> : null}
+      <p className="text-tiny text-surface/70">{label}</p>
+      <p className="text-header font-bold text-surface">{value}</p>
+      {detail ? <p className="text-tiny text-surface/70">{detail}</p> : null}
     </Card>
   );
 }
@@ -250,14 +250,14 @@ function PerformanceSection({ campaign }: { campaign: Campaign }) {
         <Stat label="Unsubscribed" value={p.unsubscribed.toLocaleString()} />
         <Stat label={`Booked within ${CONVERSION_WINDOW_DAYS} days`} value={p.bookingsAfterSend === null ? '—' : p.bookingsAfterSend.toLocaleString()} />
       </div>
-      <p className="text-tiny text-secondary/70 max-w-3xl">
+      <p className="text-tiny text-surface/70 max-w-3xl">
         The open rate is a floor: many mail clients block the tracking image, and a click counts as an open. Bookings are reservations these guests made at
         this property after the send — a sign of interest, not proof the email caused them.
       </p>
       {p.byVariant.length > 1 ? (
-        <table className="w-full max-w-lg text-small text-secondary" id="campaign-ab-results">
+        <table className="w-full max-w-lg text-small text-surface" id="campaign-ab-results">
           <thead>
-            <tr className="text-left text-tiny text-secondary/70">
+            <tr className="text-left text-tiny text-surface/70">
               <th className="py-1">Variant</th>
               <th className="py-1 text-right">Recipients</th>
               <th className="py-1 text-right">Opened</th>
@@ -309,7 +309,7 @@ function RecipientsSection({ campaign }: { campaign: Campaign }) {
   return (
     <Section label="Recipients">
       {campaign.performance.recipients > campaign.recipients.length ? (
-        <p className="text-tiny text-secondary/70">
+        <p className="text-tiny text-surface/70">
           Showing the first {campaign.recipients.length} of {campaign.performance.recipients.toLocaleString()}.
         </p>
       ) : null}

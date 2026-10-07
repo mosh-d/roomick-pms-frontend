@@ -125,13 +125,13 @@ function RefundsAndCorrections() {
       {error ? <p className="text-small text-red-600">{error}</p> : null}
       {notice ? (
         <Card tone="secondary">
-          <p className="text-small text-secondary">{notice}</p>
+          <p className="text-small text-surface">{notice}</p>
         </Card>
       ) : null}
 
       <Section label="Waiting for Approval">
         {pending.length === 0 ? (
-          <p className="text-body text-primary-dark/70">No refunds waiting for a manager.</p>
+          <p className="text-body text-surface-muted">No refunds waiting for a manager.</p>
         ) : (
           <RefundList
             refunds={pending}
@@ -146,7 +146,7 @@ function RefundsAndCorrections() {
                   </Button>
                 </>
               ) : (
-                <span className="text-tiny text-secondary-light">A manager approves this</span>
+                <span className="text-tiny text-surface-muted">A manager approves this</span>
               )
             }
           />
@@ -155,7 +155,7 @@ function RefundsAndCorrections() {
 
       <Section label="Approved — Ready to Pay Out">
         {approved.length === 0 ? (
-          <p className="text-body text-primary-dark/70">Nothing approved and waiting to be handed over.</p>
+          <p className="text-body text-surface-muted">Nothing approved and waiting to be handed over.</p>
         ) : (
           <RefundList
             refunds={approved}
@@ -196,13 +196,13 @@ function RefundsAndCorrections() {
             onError={setError}
           />
         ) : folioId && folioQuery.isLoading ? (
-          <p className="text-body text-primary-dark/70">Loading…</p>
+          <p className="text-body text-surface-muted">Loading…</p>
         ) : null}
       </Section>
 
       <Section label="Recent Refunds">
         {done.length === 0 ? (
-          <p className="text-body text-primary-dark/70">No refunds paid out or turned down yet.</p>
+          <p className="text-body text-surface-muted">No refunds paid out or turned down yet.</p>
         ) : (
           <RefundList refunds={done} actions={() => null} />
         )}
@@ -247,26 +247,26 @@ function RefundList({ refunds, actions }: { refunds: Refund[]; actions: (r: Refu
             <Card tone="secondary" className="flex flex-col gap-2">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex flex-col gap-1 min-w-0">
-                  <Link href={`/dashboard/billing/${r.folioId}`} className="text-small font-bold text-secondary underline underline-offset-2">
+                  <Link href={`/dashboard/billing/${r.folioId}`} className="text-small font-bold text-surface underline underline-offset-2">
                     {billName(r.folio)}
                   </Link>
-                  <p className="text-tiny text-secondary-light">
+                  <p className="text-tiny text-surface-muted">
                     Asked {new Date(r.createdAt).toLocaleString()} by {r.requestedByUser?.name ?? 'Unknown'}
                     {r.approvedByUser ? ` · approved by ${r.approvedByUser.name}` : ''}
                     {r.processedByUser && r.processedAt ? ` · paid out by ${r.processedByUser.name}, ${new Date(r.processedAt).toLocaleString()}` : ''}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-body font-semibold text-secondary">{formatMoney(r.amount, symbol)}</span>
+                  <span className="text-body font-semibold text-surface">{formatMoney(r.amount, symbol)}</span>
                   <span className="inline-flex rounded-pill bg-primary/15 px-2 py-0.5 text-tiny font-semibold text-primary-dark">{METHOD_LABEL[r.method]}</span>
                   {r.status === 'processed' ? <span className="inline-flex rounded-pill bg-green-100 px-2 py-0.5 text-tiny font-semibold text-green-800">Paid out</span> : null}
                   {r.status === 'rejected' ? <span className="inline-flex rounded-pill bg-red-100 px-2 py-0.5 text-tiny font-semibold text-red-800">Turned down</span> : null}
                   {actions(r)}
                 </div>
               </div>
-              <p className="text-small text-secondary">Reason: {r.reason}</p>
+              <p className="text-small text-surface">Reason: {r.reason}</p>
               {r.payment ? (
-                <p className="text-tiny text-secondary-light">
+                <p className="text-tiny text-surface-muted">
                   Against the {METHOD_LABEL[r.payment.method].toLowerCase()} payment of {formatMoney(r.payment.amount, symbol)} on {new Date(r.payment.recordedAt).toLocaleDateString()}
                 </p>
               ) : null}
@@ -316,51 +316,51 @@ function BillPanel({
       <Card tone="accent" className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-4">
           <span className="text-small text-accent-dark">{balance < 0 ? 'Credit due to the guest' : 'Balance due'}</span>
-          <span className={`text-body font-semibold ${balance < 0 ? 'text-green-700' : 'text-primary-dark'}`}>{formatMoney(Math.abs(balance), symbol)}</span>
+          <span className={`text-body font-semibold ${balance < 0 ? 'text-green-700' : 'text-surface'}`}>{formatMoney(Math.abs(balance), symbol)}</span>
         </div>
         {onTheirWay > 0 ? (
           <div className="flex items-center justify-between gap-4">
             <span className="text-small text-accent-dark">Refunds already on their way</span>
-            <span className="text-body font-semibold text-primary-dark">{formatMoney(onTheirWay, symbol)}</span>
+            <span className="text-body font-semibold text-surface">{formatMoney(onTheirWay, symbol)}</span>
           </div>
         ) : null}
-        <Link href={`/dashboard/billing/${folio.id}`} className="text-tiny text-primary-dark underline underline-offset-2 self-start">
+        <Link href={`/dashboard/billing/${folio.id}`} className="text-tiny text-surface underline underline-offset-2 self-start">
           Open the bill
         </Link>
       </Card>
 
       <div className="flex flex-col gap-3">
-        <h3 className="text-body font-bold text-primary-dark">Correct a Charge</h3>
+        <h3 className="text-body font-bold text-surface">Correct a Charge</h3>
         {settled ? (
-          <p className="text-small text-primary-dark/70">This bill is settled — nothing on it can be corrected.</p>
+          <p className="text-small text-surface-muted">This bill is settled — nothing on it can be corrected.</p>
         ) : correctable.length === 0 ? (
-          <p className="text-small text-primary-dark/70">Nothing has been charged to this bill.</p>
+          <p className="text-small text-surface-muted">Nothing has been charged to this bill.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-primary/25">
-                  <th className="text-small font-bold text-primary-dark pb-2 pr-4">Date</th>
-                  <th className="text-small font-bold text-primary-dark pb-2 pr-4">Charge</th>
-                  <th className="text-small font-bold text-primary-dark pb-2 pr-4 text-right">Amount</th>
-                  <th className="text-small font-bold text-primary-dark pb-2 text-right">Action</th>
+                  <th className="text-small font-bold text-surface pb-2 pr-4">Date</th>
+                  <th className="text-small font-bold text-surface pb-2 pr-4">Charge</th>
+                  <th className="text-small font-bold text-surface pb-2 pr-4 text-right">Amount</th>
+                  <th className="text-small font-bold text-surface pb-2 text-right">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {correctable.map((li) => (
                   <tr key={li.id} className="border-b border-primary/15 last:border-0">
-                    <td className="text-small text-primary-dark py-3 pr-4 whitespace-nowrap">{li.serviceDate ? new Date(li.serviceDate).toLocaleDateString() : '—'}</td>
-                    <td className={`text-small py-3 pr-4 ${li.chargeType === 'tax' ? 'text-primary-dark/70' : 'text-primary-dark'}`}>{li.description}</td>
-                    <td className="text-small text-primary-dark py-3 pr-4 text-right whitespace-nowrap">{formatMoney(li.amount, symbol)}</td>
+                    <td className="text-small text-surface py-3 pr-4 whitespace-nowrap">{li.serviceDate ? new Date(li.serviceDate).toLocaleDateString() : '—'}</td>
+                    <td className={`text-small py-3 pr-4 ${li.chargeType === 'tax' ? 'text-surface-muted' : 'text-surface'}`}>{li.description}</td>
+                    <td className="text-small text-surface py-3 pr-4 text-right whitespace-nowrap">{formatMoney(li.amount, symbol)}</td>
                     <td className="py-3 text-right">
                       {correctedIds.has(li.id) ? (
-                        <span className="text-tiny text-secondary-light">Corrected</span>
+                        <span className="text-tiny text-surface-muted">Corrected</span>
                       ) : canCorrect ? (
                         <Button type="button" size="sm" variant="outline" onClick={() => setCorrecting(li)}>
                           Correct
                         </Button>
                       ) : (
-                        <span className="text-tiny text-secondary-light">Manager or accountant</span>
+                        <span className="text-tiny text-surface-muted">Manager or accountant</span>
                       )}
                     </td>
                   </tr>
@@ -372,9 +372,9 @@ function BillPanel({
       </div>
 
       <div className="flex flex-col gap-3">
-        <h3 className="text-body font-bold text-primary-dark">Refund the Credit</h3>
+        <h3 className="text-body font-bold text-surface">Refund the Credit</h3>
         {refundable <= 0 ? (
-          <p className="text-small text-primary-dark/70">
+          <p className="text-small text-surface-muted">
             {balance < 0
               ? 'All of the credit already has a refund on its way.'
               : "Nothing to refund — the guest hasn't paid more than they owe. If a charge shouldn't be there, correct it first; any payment it covered then shows here as credit."}
@@ -461,7 +461,7 @@ function RefundForm({
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-small text-primary-dark/70">Up to {formatMoney(refundable, symbol)} can be refunded.</p>
+      <p className="text-small text-surface-muted">Up to {formatMoney(refundable, symbol)} can be refunded.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
         <CurrencyInput label="Amount" name="refundAmount" value={amount} onChange={setAmount} hint={`The whole credit is ${formatMoney(refundable, symbol)}`} />
         <Select id="refund-payment" name="paymentId" label="Against payment (optional)" options={paymentOptions} value={paymentId} onChange={setPaymentId} />
@@ -504,7 +504,7 @@ function CorrectDialog({
   return (
     <Modal open={item !== null} onClose={onCancel} title="Correct this charge?">
       {item ? (
-        <p className="text-body text-secondary-light">
+        <p className="text-body text-surface-muted">
           &ldquo;{item.description}&rdquo; — {formatMoney(item.amount, symbol)}
           {tax !== 0 ? ` and its ${formatMoney(tax, symbol)} tax` : ''} come off the bill. The charge stays on the record beside its correction.
         </p>
@@ -536,7 +536,7 @@ function RejectDialog({ refund, onCancel, onConfirm }: { refund: Refund | null; 
   return (
     <Modal open={refund !== null} onClose={onCancel} title="Turn this refund down?">
       {refund ? (
-        <p className="text-body text-secondary-light">
+        <p className="text-body text-surface-muted">
           {formatMoney(refund.amount, currencySymbolFor(refund.currency))} for {refund.folio.guest.name} — nothing is paid out, and the credit stays on the bill.
         </p>
       ) : null}

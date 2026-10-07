@@ -177,8 +177,8 @@ function SignupPageInner() {
   if (mode === null) {
     return (
       <Container className="max-w-xl py-16">
-        <h1 className="text-title font-bold text-secondary mb-2">Create your Roomick account</h1>
-        <p className="text-body text-secondary-light mb-8">
+        <h1 className="text-title font-bold text-surface mb-2">Create your Roomick account</h1>
+        <p className="text-body text-surface-muted mb-8">
           Try it out risk-free, or get started for real — same setup either way.
         </p>
         <RadioCard
@@ -223,8 +223,8 @@ function SignupPageInner() {
       onSelectStaffInvite={() => goTo('staff-invite')}
     >
       <Container className="max-w-xl py-0">
-        <h1 className="text-title font-bold text-secondary mb-2">Create your Roomick account</h1>
-        <p className="text-body text-secondary-light mb-8">{STEP_LABELS[step]}</p>
+        <h1 className="text-title font-bold text-surface mb-2">Create your Roomick account</h1>
+        <p className="text-body text-surface-muted mb-8">{STEP_LABELS[step]}</p>
 
         {step === 'register' ? (
           <RegisterForm
@@ -294,7 +294,7 @@ function CompleteStep() {
 
   return (
     <Section label="Setup complete">
-      <p className="text-body text-secondary">
+      <p className="text-body text-surface">
         <span className="font-semibold">{owner?.groupName}</span> is ready — {branches.length} branch
         {branches.length === 1 ? '' : 'es'}, {branches.reduce((sum, b) => sum + b.roomTypes.length, 0)} room type
         {branches.reduce((sum, b) => sum + b.roomTypes.length, 0) === 1 ? '' : 's'}, and {roomCount} room
@@ -309,7 +309,7 @@ function CompleteStep() {
           resetWizard();
           clearAuth();
         }}
-        className="text-body text-secondary-light hover:text-secondary underline cursor-pointer self-start"
+        className="text-body text-surface-muted hover:text-surface underline cursor-pointer self-start"
       >
         Start a new signup
       </button>

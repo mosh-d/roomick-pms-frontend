@@ -43,7 +43,7 @@ export function CompanyField({
         onChange={(value) => onChange(value || null)}
         hint="Books the stay under the company, at its contracted rate."
       />
-      {suggested ? <p className="text-tiny text-primary-dark/70">Offered because the guest&apos;s email is on one of {suggested.name}&apos;s domains.</p> : null}
+      {suggested ? <p className="text-tiny text-surface-muted">Offered because the guest&apos;s email is on one of {suggested.name}&apos;s domains.</p> : null}
     </div>
   );
 }

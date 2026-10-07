@@ -125,18 +125,18 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
             type="button"
             disabled={reviewIndex === 0}
             onClick={() => setReviewIndex((i) => i - 1)}
-            className="text-body font-semibold text-primary-text hover:underline disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            className="text-body font-semibold text-surface-accent hover:underline disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
           >
             ← Previous branch
           </button>
-          <span className="text-small text-secondary-light">
+          <span className="text-small text-surface-muted">
             Branch {reviewIndex + 1} of {branches.length}
           </span>
           <button
             type="button"
             disabled={reviewIndex === branches.length - 1}
             onClick={() => setReviewIndex((i) => i + 1)}
-            className="text-body font-semibold text-primary-text hover:underline disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            className="text-body font-semibold text-surface-accent hover:underline disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
           >
             Next branch →
           </button>
@@ -163,7 +163,7 @@ export function ReviewStep({ onBack, onFinish }: { onBack: () => void; onFinish:
         <Section label="Buildings" tone="accent">
           {branch.buildings.map((building) => (
             <div key={building.localId} className="flex flex-col gap-2">
-              <span className="text-small font-semibold text-secondary">{building.name || 'Untitled building'}</span>
+              <span className="text-small font-semibold text-surface">{building.name || 'Untitled building'}</span>
               {building.floors.map((floor) => {
                 const roomsOnFloor = branch.rooms.filter((r) => r.floorLocalId === floor.localId);
                 const floorLabel = `Floor ${floor.floorNumber}`;
@@ -386,8 +386,8 @@ function TaxRuleRows({ label, rules, symbol }: { label: string; rules: TaxRuleDr
       <span className="text-small text-accent-dark">{label}</span>
       {rules.map((rule) => (
         <div key={rule.localId} className="flex items-center justify-between gap-4 pl-4">
-          <span className="text-small font-semibold text-secondary">{rule.name}</span>
-          <span className="text-small text-secondary text-right">{describeTaxRuleDraft(rule, symbol)}</span>
+          <span className="text-small font-semibold text-surface">{rule.name}</span>
+          <span className="text-small text-surface text-right">{describeTaxRuleDraft(rule, symbol)}</span>
         </div>
       ))}
     </div>
@@ -399,7 +399,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
       <span className="text-small text-accent-dark">{label}</span>
-      <span className="text-body font-semibold text-secondary">{value}</span>
+      <span className="text-body font-semibold text-surface">{value}</span>
     </div>
   );
 }
@@ -444,7 +444,7 @@ function RoomChip({
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
         onClick={() => setOpen((o) => !o)}
-        className="rounded-pill bg-accent-dark/10 border border-accent-dark/20 px-3 py-1 text-small font-semibold text-secondary cursor-pointer hover:bg-accent-dark/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className="rounded-pill bg-accent-dark/10 border border-accent-dark/20 px-3 py-1 text-small font-semibold text-surface cursor-pointer hover:bg-accent-dark/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         {room.number}
       </button>
@@ -478,7 +478,7 @@ function RoomDetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
       <span className="text-tiny text-accent-dark">{label}</span>
-      <span className="text-small font-semibold text-secondary">{value}</span>
+      <span className="text-small font-semibold text-surface">{value}</span>
     </div>
   );
 }

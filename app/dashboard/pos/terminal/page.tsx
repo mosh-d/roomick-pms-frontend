@@ -60,8 +60,8 @@ function settledText(order: PosOrder): string {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-tiny text-primary-dark/70">{label}</p>
-      <p className="text-body font-semibold text-primary-dark">{value}</p>
+      <p className="text-tiny text-surface-muted">{label}</p>
+      <p className="text-body font-semibold text-surface">{value}</p>
     </div>
   );
 }
@@ -96,7 +96,7 @@ export default function PosTerminalPage() {
       {outletsQuery.isSuccess && outlets.length === 0 ? (
         <Card tone="accent">
           {supervisor ? (
-            <p className="text-body text-primary-dark">
+            <p className="text-body text-surface">
               No outlets are open yet.{' '}
               <Link href="/dashboard/pos/menu" className="font-semibold underline">
                 Set one up in Menu Management
@@ -104,7 +104,7 @@ export default function PosTerminalPage() {
               .
             </p>
           ) : (
-            <p className="text-body text-primary-dark">You aren&apos;t assigned to an outlet yet — ask a manager to add you in Menu Management.</p>
+            <p className="text-body text-surface">You aren&apos;t assigned to an outlet yet — ask a manager to add you in Menu Management.</p>
           )}
         </Card>
       ) : null}
@@ -169,9 +169,9 @@ function OutletTerminal({ outlet, branchId, auth }: { outlet: Outlet; branchId: 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
       <Section label={`${outlet.name} — Menu`} className="lg:col-span-3">
-        {menuQuery.isLoading ? <p className="text-body text-primary-dark/70">Loading the menu…</p> : null}
+        {menuQuery.isLoading ? <p className="text-body text-surface-muted">Loading the menu…</p> : null}
         {menuQuery.isError ? <p className="text-body text-red-600">{errorText(menuQuery.error, "Couldn't load the menu.")}</p> : null}
-        {menu && items.length === 0 ? <p className="text-body text-primary-dark/70">This outlet&apos;s menu is empty — add items in Menu Management.</p> : null}
+        {menu && items.length === 0 ? <p className="text-body text-surface-muted">This outlet&apos;s menu is empty — add items in Menu Management.</p> : null}
 
         {categories.length > 0 ? (
           <div role="tablist" aria-label="Menu categories" className="flex flex-wrap gap-2">
@@ -203,10 +203,10 @@ function OutletTerminal({ outlet, branchId, auth }: { outlet: Outlet; branchId: 
                 onClick={() => pick(item)}
                 className="flex flex-col items-start gap-1 rounded-card border border-secondary/20 bg-secondary/5 p-3 text-left cursor-pointer transition-colors hover:bg-secondary/10 active:bg-secondary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-secondary/5"
               >
-                <span className="text-body font-semibold text-secondary">{item.name}</span>
-                <span className="text-small text-secondary-light">{formatMoney(item.price, symbol)}</span>
+                <span className="text-body font-semibold text-surface">{item.name}</span>
+                <span className="text-small text-surface-muted">{formatMoney(item.price, symbol)}</span>
                 {!item.isAvailable ? <span className="text-tiny font-semibold uppercase text-red-700">86&apos;d</span> : null}
-                {item.isAvailable && (item.modifiers ?? []).length > 0 ? <span className="text-tiny text-secondary-light">Has choices</span> : null}
+                {item.isAvailable && (item.modifiers ?? []).length > 0 ? <span className="text-tiny text-surface-muted">Has choices</span> : null}
               </button>
             ))}
         </div>
@@ -228,10 +228,10 @@ function OutletTerminal({ outlet, branchId, auth }: { outlet: Outlet; branchId: 
         />
         {lastOrder ? (
           <Card tone="primary" className="flex flex-col gap-2">
-            <p className="text-body font-semibold text-secondary">
+            <p className="text-body font-semibold text-surface">
               Order #{lastOrder.orderNo} — {formatMoney(lastOrder.total, symbol)}
             </p>
-            <p className="text-small text-secondary-light">{settledText(lastOrder)}</p>
+            <p className="text-small text-surface-muted">{settledText(lastOrder)}</p>
             <div>
               <Button type="button" size="sm" variant="outline" onClick={() => printReceipt(lastOrder)}>
                 Print receipt
@@ -329,7 +329,7 @@ function OrderPanel({
   return (
     <Card className="flex flex-col gap-4">
       {basket.length === 0 ? (
-        <p className="text-body text-primary-dark/70">Tap an item to start an order.</p>
+        <p className="text-body text-surface-muted">Tap an item to start an order.</p>
       ) : (
         <ul className="flex flex-col divide-y divide-secondary/10">
           {basket.map((entry, index) => {
@@ -338,13 +338,13 @@ function OrderPanel({
             return (
               <li key={entry.key} className="flex items-start justify-between gap-3 py-2">
                 <div className="min-w-0">
-                  <p className="text-body font-semibold text-secondary">{entry.name}</p>
-                  {entry.choiceLabels.length > 0 ? <p className="text-tiny text-secondary-light">{entry.choiceLabels.join(', ')}</p> : null}
+                  <p className="text-body font-semibold text-surface">{entry.name}</p>
+                  {entry.choiceLabels.length > 0 ? <p className="text-tiny text-surface-muted">{entry.choiceLabels.join(', ')}</p> : null}
                   <div className="mt-1 flex items-center gap-2">
                     <Button type="button" size="sm" variant="outline" aria-label={`One less ${entry.name}`} onClick={() => onQty(entry.key, entry.qty - 1)}>
                       −
                     </Button>
-                    <span className="w-6 text-center text-small font-semibold text-secondary" aria-label={`${entry.name} quantity`}>
+                    <span className="w-6 text-center text-small font-semibold text-surface" aria-label={`${entry.name} quantity`}>
                       {entry.qty}
                     </span>
                     <Button type="button" size="sm" variant="outline" aria-label={`One more ${entry.name}`} onClick={() => onQty(entry.key, entry.qty + 1)}>
@@ -352,7 +352,7 @@ function OrderPanel({
                     </Button>
                   </div>
                 </div>
-                <span className="text-body text-secondary whitespace-nowrap">{current ? formatMoney(current.lineTotal, symbol) : '…'}</span>
+                <span className="text-body text-surface whitespace-nowrap">{current ? formatMoney(current.lineTotal, symbol) : '…'}</span>
               </li>
             );
           })}
@@ -360,20 +360,20 @@ function OrderPanel({
       )}
 
       <dl className={`flex flex-col gap-1 border-t border-secondary/20 pt-3 ${repricing ? 'opacity-50' : ''}`} aria-busy={repricing}>
-        <div className="flex justify-between text-small text-secondary">
+        <div className="flex justify-between text-small text-surface">
           <dt>Subtotal</dt>
           <dd>{quote ? formatMoney(quote.subtotal, symbol) : '—'}</dd>
         </div>
-        <div className="flex justify-between text-small text-secondary">
+        <div className="flex justify-between text-small text-surface">
           <dt>Tax</dt>
           <dd>{quote ? formatMoney(quote.taxTotal, symbol) : '—'}</dd>
         </div>
-        <div className="flex justify-between text-header font-bold text-secondary">
+        <div className="flex justify-between text-header font-bold text-surface">
           <dt>Total</dt>
           <dd>{quote ? total : '—'}</dd>
         </div>
         {quote && Number(quote.taxIncluded) > 0 ? (
-          <div className="flex justify-between text-small text-secondary-light">
+          <div className="flex justify-between text-small text-surface-muted">
             <dt>Includes tax of</dt>
             <dd>{formatMoney(quote.taxIncluded, symbol)}</dd>
           </div>
@@ -386,7 +386,7 @@ function OrderPanel({
       ) : null}
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="text-small font-semibold text-secondary">Paid by</legend>
+        <legend className="text-small font-semibold text-surface">Paid by</legend>
         <div className="flex flex-wrap gap-2">
           {(['room', 'cash', 'card'] as const).map((option) => (
             <Button
@@ -424,14 +424,14 @@ function OrderPanel({
           </form>
           {guest ? (
             <Card tone={guest.billClosed ? 'accent' : 'primary'}>
-              <p className="text-body font-semibold text-secondary">{guest.guestName}</p>
-              <p className="text-small text-secondary-light">
+              <p className="text-body font-semibold text-surface">{guest.guestName}</p>
+              <p className="text-small text-surface-muted">
                 Room {guest.roomNumber} · leaving {new Date(guest.checkOutDate).toLocaleDateString(undefined, { timeZone: 'UTC' })}
               </p>
               {guest.billClosed ? (
                 <p className="text-small text-red-600">This guest&apos;s bill is settled and closed — the front desk has to reopen it first. Take cash or card instead.</p>
               ) : (
-                <p className="text-tiny text-secondary-light">Check the name with the guest before charging.</p>
+                <p className="text-tiny text-surface-muted">Check the name with the guest before charging.</p>
               )}
             </Card>
           ) : null}
@@ -492,9 +492,9 @@ function ModifierPicker({
       <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
         {groups.map((group) => (
           <fieldset key={group.name} className="flex flex-col gap-2">
-            <legend className="text-small font-semibold text-secondary">
+            <legend className="text-small font-semibold text-surface">
               {group.name}{' '}
-              <span className="font-normal text-secondary-light">
+              <span className="font-normal text-surface-muted">
                 {group.selection === 'single' ? 'Choose one' : 'Choose any'}
                 {group.required ? ' · required' : ''}
               </span>
@@ -504,7 +504,7 @@ function ModifierPicker({
                 key={option.label}
                 className="flex items-center justify-between gap-3 rounded-control border border-secondary/20 px-3 py-2 cursor-pointer hover:bg-secondary/5"
               >
-                <span className="flex items-center gap-2 text-body text-secondary">
+                <span className="flex items-center gap-2 text-body text-surface">
                   <input
                     type={group.selection === 'single' ? 'radio' : 'checkbox'}
                     name={`${item.id}-${group.name}`}
@@ -514,7 +514,7 @@ function ModifierPicker({
                   />
                   {option.label}
                 </span>
-                {option.price > 0 ? <span className="text-small text-secondary-light">+{formatMoney(option.price, symbol)}</span> : null}
+                {option.price > 0 ? <span className="text-small text-surface-muted">+{formatMoney(option.price, symbol)}</span> : null}
               </label>
             ))}
           </fieldset>
@@ -546,23 +546,23 @@ function TodaysOrders({ outletId, supervisor, auth }: { outletId: string; superv
           {day.summary.voidCount > 0 ? <Stat label="Voided" value={String(day.summary.voidCount)} /> : null}
         </Card>
       ) : null}
-      {day && day.orders.length === 0 ? <p className="text-body text-primary-dark/70">No orders yet today.</p> : null}
+      {day && day.orders.length === 0 ? <p className="text-body text-surface-muted">No orders yet today.</p> : null}
       <ul className="flex flex-col gap-2">
         {(day?.orders ?? []).map((order) => (
           <li key={order.id}>
             <Card className={`flex flex-wrap items-center justify-between gap-3 ${order.voidedAt ? 'opacity-60' : ''}`}>
               <div className="min-w-0">
-                <p className="text-body font-semibold text-secondary">
+                <p className="text-body font-semibold text-surface">
                   #{order.orderNo} · {formatMoney(order.total, symbol)}
                   {order.voidedAt ? <span className="ml-2 rounded-pill bg-red-100 px-2 py-0.5 text-tiny font-semibold text-red-800">Void</span> : null}
                 </p>
-                <p className="text-small text-secondary-light">
+                <p className="text-small text-surface-muted">
                   {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {order.items.map((l) => `${l.qty}× ${l.name}`).join(', ')} ·{' '}
                   {settledText(order)}
                   {order.tableNumber ? ` · Table ${order.tableNumber}` : ''}
                   {order.cashierName ? ` · ${order.cashierName}` : ''}
                 </p>
-                {order.voidReason ? <p className="text-tiny text-secondary-light">Voided: {order.voidReason}</p> : null}
+                {order.voidReason ? <p className="text-tiny text-surface-muted">Voided: {order.voidReason}</p> : null}
               </div>
               <div className="flex gap-2">
                 <Button type="button" size="sm" variant="outline" onClick={() => printReceipt(order)}>
@@ -607,7 +607,7 @@ function VoidOrderDialog({ order, outletId, auth, symbol, onClose }: { order: Po
 
   return (
     <Modal open onClose={onClose} title={`Void order #${order.orderNo}`}>
-      <p className="text-body text-secondary">{consequence}</p>
+      <p className="text-body text-surface">{consequence}</p>
       <Textarea name="voidReason" label="Reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Rung up on the wrong table" maxLength={500} />
       {error ? <p className="text-small text-red-600">{error}</p> : null}
       <div className="flex justify-end gap-2">

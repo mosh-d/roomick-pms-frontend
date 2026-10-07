@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/Button';
 export function ButtonsSection() {
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-header font-bold text-secondary">Buttons</h2>
-      <p className="text-small text-secondary-light max-w-prose">
+      <h2 className="text-header font-bold text-surface">Buttons</h2>
+      <p className="text-small text-surface-muted max-w-prose">
         3 variants × default / hover (mouse over to check) / disabled, matching the reference image&apos;s 3×3
         grid.
       </p>

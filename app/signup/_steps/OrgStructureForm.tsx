@@ -62,14 +62,14 @@ export function OrgStructureForm({ onNext }: { onNext: () => void }) {
       </Section>
 
       <Section label="Tax Rule Builder">
-        <p className="text-small text-secondary-light">
+        <p className="text-small text-surface-muted">
           The taxes your branches charge — VAT, a service charge, a city tax. Each branch uses these unless you give it its own in Branch Setup, and you can
           change them any time later in Property Config. Leave this empty if you don&apos;t charge any.
         </p>
         <TaxRuleBuilder idPrefix="brand-tax" rules={brandTaxRules} onChange={(rules) => patch({ brandTaxRules: rules })} showErrors={attempted} />
       </Section>
 
-      {!brandMode ? <p className="text-small text-secondary-light">Choose a structure to continue.</p> : null}
+      {!brandMode ? <p className="text-small text-surface-muted">Choose a structure to continue.</p> : null}
       {attempted && !taxRulesReady ? <p className="text-small text-red-600">Finish or remove the tax rules marked above to continue.</p> : null}
 
       <Button type="button" onClick={handleContinue} disabled={!brandMode}>

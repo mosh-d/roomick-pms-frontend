@@ -95,7 +95,7 @@ export function Table<T extends { id: string }>({
   }
 
   if (rows.length === 0) {
-    return <p className="text-body text-secondary-light">{emptyMessage}</p>;
+    return <p className="text-body text-surface-muted">{emptyMessage}</p>;
   }
 
   return (
@@ -108,18 +108,18 @@ export function Table<T extends { id: string }>({
                 <th
                   key={col.key}
                   aria-sort={sort?.key === col.key ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}
-                  className={`text-small font-bold text-secondary pb-2 pr-4 whitespace-nowrap ${col.align === 'right' ? 'text-right' : 'text-left'}`}
+                  className={`text-small font-bold text-surface pb-2 pr-4 whitespace-nowrap ${col.align === 'right' ? 'text-right' : 'text-left'}`}
                 >
                   {col.sortValue ? (
                     <button
                       type="button"
                       onClick={() => toggleSort(col.key)}
-                      className={`inline-flex items-center gap-1.5 cursor-pointer hover:text-primary-text transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control ${
+                      className={`inline-flex items-center gap-1.5 cursor-pointer hover:text-surface-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control ${
                         col.align === 'right' ? 'flex-row-reverse' : ''
                       }`}
                     >
                       {col.label}
-                      <SortIcon className={`size-3 shrink-0 ${sort?.key === col.key ? 'text-primary-text' : 'text-accent-dark'}`} />
+                      <SortIcon className={`size-3 shrink-0 ${sort?.key === col.key ? 'text-surface-accent' : 'text-accent-dark'}`} />
                     </button>
                   ) : (
                     col.label
@@ -132,7 +132,7 @@ export function Table<T extends { id: string }>({
             {visibleRows.map((row) => (
               <tr key={row.id} className="border-b border-secondary/10 last:border-0">
                 {columns.map((col) => (
-                  <td key={col.key} className={`text-small text-secondary py-3 pr-4 ${col.align === 'right' ? 'text-right' : 'text-left'}`}>
+                  <td key={col.key} className={`text-small text-surface py-3 pr-4 ${col.align === 'right' ? 'text-right' : 'text-left'}`}>
                     {col.render(row)}
                   </td>
                 ))}
@@ -151,11 +151,11 @@ export function Table<T extends { id: string }>({
                 aria-label="Previous page"
                 disabled={safePage === 0}
                 onClick={() => setPage(safePage - 1)}
-                className="text-secondary disabled:opacity-30 disabled:cursor-default cursor-pointer hover:text-primary-text transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
+                className="text-surface disabled:opacity-30 disabled:cursor-default cursor-pointer hover:text-surface-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
               >
                 <ArrowLeftIcon className="size-4" />
               </button>
-              <span className="text-small text-secondary tabular-nums">
+              <span className="text-small text-surface tabular-nums">
                 {safePage + 1} / {pageCount}
               </span>
               <button
@@ -163,7 +163,7 @@ export function Table<T extends { id: string }>({
                 aria-label="Next page"
                 disabled={safePage >= pageCount - 1}
                 onClick={() => setPage(safePage + 1)}
-                className="text-secondary disabled:opacity-30 disabled:cursor-default cursor-pointer hover:text-primary-text transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
+                className="text-surface disabled:opacity-30 disabled:cursor-default cursor-pointer hover:text-surface-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
               >
                 <ArrowRightIcon className="size-4" />
               </button>

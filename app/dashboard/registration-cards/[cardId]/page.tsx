@@ -87,7 +87,7 @@ export default function RegistrationCardPage() {
       />
 
       {cardQuery.isLoading ? (
-        <p className="text-body text-primary-dark/70">Loading…</p>
+        <p className="text-body text-surface-muted">Loading…</p>
       ) : cardQuery.isError || !card ? (
         <p className="text-body text-red-600">Could not load this registration card.</p>
       ) : (
@@ -115,7 +115,7 @@ export default function RegistrationCardPage() {
 
           {card.fields.houseRules ? (
             <Section label="House Rules">
-              <p className="text-body text-secondary whitespace-pre-wrap">{card.fields.houseRules}</p>
+              <p className="text-body text-surface whitespace-pre-wrap">{card.fields.houseRules}</p>
             </Section>
           ) : null}
 
@@ -126,7 +126,7 @@ export default function RegistrationCardPage() {
                   // eslint-disable-next-line @next/next/no-img-element -- a base64 data: URL, not an app asset next/image can optimize
                   <img src={card.signatureData} alt="Guest signature" className="h-24 w-auto rounded-card border border-secondary-light/40 bg-white" />
                 ) : null}
-                <p className="text-small text-secondary-light">Signed {new Date(card.signedAt).toLocaleString()}</p>
+                <p className="text-small text-surface-muted">Signed {new Date(card.signedAt).toLocaleString()}</p>
                 <Button type="button" variant="outline" onClick={() => window.print()} className="self-start print:hidden">
                   Print
                 </Button>
@@ -152,7 +152,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
       <span className="text-small text-accent-dark">{label}</span>
-      <span className="text-body font-semibold text-primary-dark">{value}</span>
+      <span className="text-body font-semibold text-surface">{value}</span>
     </div>
   );
 }
