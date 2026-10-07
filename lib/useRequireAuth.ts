@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from './store/authStore';
 import { useHasHydrated } from './useHasHydrated';
 
@@ -23,11 +23,15 @@ export function useRequireAuth() {
   const hydrated = useHasHydrated(useAuthStore);
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
+  const signedOut = useAuthStore((s) => s.signedOut);
   const router = useRouter();
+  const pathname = usePathname();
 
+  // Back to this page once signed in again (`?next=`) — except after a
+  // deliberate sign-out, when the next person at this computer starts fresh.
   useEffect(() => {
-    if (hydrated && !user) router.replace('/login');
-  }, [hydrated, user, router]);
+    if (hydrated && !user) router.replace(signedOut ? '/login' : `/login?next=${encodeURIComponent(pathname)}`);
+  }, [hydrated, user, router, signedOut, pathname]);
 
   return { ready: hydrated && !!user, user, accessToken };
 }

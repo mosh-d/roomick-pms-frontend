@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Fragment, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAlertsQuery } from '@/lib/alerts';
+import { NAV_GROUPS, activeFeatureHref } from '@/lib/navigation';
 import { useAuthStore } from '@/lib/store/authStore';
 
 /**
@@ -43,12 +44,12 @@ import { useAuthStore } from '@/lib/store/authStore';
  * active row label is `#cca000` (`primary`). See
  * `design-system/01-color.md` § "Which family on which surface".
  *
- * **Active state**: exactly one row is ever active, decided by each item's
- * own `isActive` predicate (covering its whole subtree of real sub-pages,
- * e.g. Front Desk covers `/dashboard/arrivals`, `/dashboard/check-in`, …)
- * rather than the nav comparing `pathname === href` — two entries pointing
- * at the same route both matching was a real, confirmed bug from the old
- * nested version.
+ * **Rows and active state** come from the shared map in
+ * `lib/navigation.ts` (the breadcrumb reads the same one): exactly one row is
+ * active — the feature the current page belongs to, sub-pages included
+ * (Front Desk for Arrivals, Billing & Payments for a folio) — rather than
+ * comparing `pathname === href`, where two entries pointing at the same
+ * route both matched (a real bug from the old nested version).
  *
  * **Layout**: every row is `shrink-0`. Flex children shrink by default, so
  * once the list outgrew the viewport the rows compressed into each other
@@ -57,57 +58,6 @@ import { useAuthStore } from '@/lib/store/authStore';
 interface SidebarItem {
   label: string;
   href?: string;
-  /** Defaults to an exact path match; override to cover a subtree (e.g. `/dashboard/check-in/[id]`). */
-  isActive?: (pathname: string) => boolean;
-}
-
-const leaf = (item: SidebarItem): SidebarItem => item;
-
-/**
- * OPERATIONS — ref p2's own sidebar, in that exact order. Front Desk's own
- * Check-In/Check-Out/In-House Management breakdown, and Reservations'/
- * Housekeeping's own sub-pages, are NOT repeated here — they're reachable
- * only via cards on each section's own hub page, matching the reference's
- * own single-level sidebar exactly.
- */
-const OPERATIONS_ITEMS: SidebarItem[] = [
-  leaf({ label: 'Front Desk', href: '/dashboard', isActive: (p) => p === '/dashboard' || ['/dashboard/arrivals', '/dashboard/departures', '/dashboard/check-in', '/dashboard/check-out', '/dashboard/walk-in-booking', '/dashboard/in-house-guest-list', '/dashboard/room-status-board'].some((prefix) => p.startsWith(prefix)) }),
-  leaf({ label: 'Reservations', href: '/dashboard/reservations', isActive: (p) => p.startsWith('/dashboard/reservations') && !p.startsWith('/dashboard/reservations/rate-plans') }),
-  leaf({ label: 'Housekeeping', href: '/dashboard/housekeeping' }),
-  leaf({ label: 'Billing & Payments', href: '/dashboard/billing', isActive: (p) => p.startsWith('/dashboard/billing') || p.startsWith('/dashboard/split-billing') || p.startsWith('/dashboard/night-audit') }),
-  leaf({ label: 'Folio Transfer', href: '/dashboard/folio-transfer' }),
-  leaf({ label: 'Point of Sale', href: '/dashboard/pos' }),
-  leaf({ label: 'Shift Management', href: '/dashboard/shifts' }),
-  leaf({ label: 'No-Show Handling', href: '/dashboard/no-shows' }),
-  leaf({ label: 'Guest Reg. Card', href: '/dashboard/registration-cards' }),
-  leaf({ label: 'Comms Log', href: '/dashboard/comms-log' }),
-];
-
-/** MANAGEMENT — ref p10's own sidebar, in that exact order. Nine flat peers, no "Management" hub page. */
-const MANAGEMENT_ITEMS: SidebarItem[] = [
-  leaf({ label: 'Manager Dashboard', href: '/dashboard/manager' }),
-  leaf({ label: 'Overbooking Mgmt', href: '/dashboard/overbooking' }),
-  leaf({ label: 'Rate Resolver', href: '/dashboard/reservations/rate-plans', isActive: (p) => p.startsWith('/dashboard/reservations/rate-plans') }),
-  leaf({ label: 'Guest Profiles & CRM', href: '/dashboard/guests' }),
-  leaf({ label: 'Revenue Management', href: '/dashboard/revenue' }),
-  leaf({ label: 'Sales & Events', href: '/dashboard/sales-events' }),
-  leaf({ label: 'Maintenance', href: '/dashboard/maintenance' }),
-  leaf({ label: 'Loyalty & Marketing', href: '/dashboard/loyalty' }),
-  leaf({ label: 'Reports & Analytics', href: '/dashboard/reports' }),
-];
-
-/** ADMIN — ref p22's own sidebar, in that exact order. Five flat peers, no "Admin" hub page. */
-const ADMIN_ITEMS: SidebarItem[] = [
-  leaf({ label: 'Property Config', href: '/dashboard/property-config' }),
-  leaf({ label: 'Integrations & APIs', href: '/dashboard/integrations' }),
-  leaf({ label: 'Security & Roles', href: '/dashboard/security' }),
-  leaf({ label: 'System Admin', href: '/dashboard/system-admin' }),
-  leaf({ label: 'Enterprise / HQ', href: '/dashboard/hq' }),
-];
-
-function itemIsActive(item: SidebarItem, pathname: string): boolean {
-  if (!item.href) return false;
-  return item.isActive ? item.isActive(pathname) : pathname === item.href;
 }
 
 /**
@@ -123,6 +73,10 @@ function itemIsActive(item: SidebarItem, pathname: string): boolean {
  */
 export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
   const pathname = usePathname();
+  // Exactly one row is ever active: the feature the current page belongs to
+  // on the shared map (`lib/navigation.ts`), which also covers each
+  // feature's own pages — Front Desk for Arrivals, Billing for a folio.
+  const activeHref = activeFeatureHref(pathname);
 
   useEffect(() => {
     onClose();
@@ -146,20 +100,17 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <SidebarGroupLabel>Operations</SidebarGroupLabel>
-        <AlertsLink pathname={pathname} />
-        {OPERATIONS_ITEMS.map((item) => (
-          <SidebarLink key={item.label} item={item} pathname={pathname} />
-        ))}
-
-        <SidebarGroupLabel>Management</SidebarGroupLabel>
-        {MANAGEMENT_ITEMS.map((item) => (
-          <SidebarLink key={item.label} item={item} pathname={pathname} />
-        ))}
-
-        <SidebarGroupLabel>Admin</SidebarGroupLabel>
-        {ADMIN_ITEMS.map((item) => (
-          <SidebarLink key={item.label} item={item} pathname={pathname} />
+        {NAV_GROUPS.map((group) => (
+          <Fragment key={group.label}>
+            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            {group.items.map((item) =>
+              item.href === '/dashboard/alerts' ? (
+                <AlertsLink key={item.href} active={activeHref === item.href} />
+              ) : (
+                <SidebarLink key={item.label} item={item} active={activeHref === item.href} />
+              ),
+            )}
+          </Fragment>
         ))}
       </aside>
     </>
@@ -186,13 +137,12 @@ function SidebarGroupLabel({ children }: { children: string }) {
  * it's the open page, plus a red count badge, live-polled every 60s via
  * `useAlertsQuery`.
  */
-function AlertsLink({ pathname }: { pathname: string }) {
+function AlertsLink({ active }: { active: boolean }) {
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
   const alertsQuery = useAlertsQuery(activeBranchId, { accessToken: accessToken ?? undefined, tenantId: user?.tenantId });
   const total = alertsQuery.data?.total ?? 0;
-  const active = pathname.startsWith('/dashboard/alerts');
 
   return (
     <Link
@@ -219,9 +169,8 @@ function AlertsLink({ pathname }: { pathname: string }) {
  * (none currently — every item above has a real hub page) renders as an
  * inert, non-interactive pill instead of a dead link.
  */
-function SidebarLink({ item, pathname }: { item: SidebarItem; pathname: string }) {
+function SidebarLink({ item, active }: { item: SidebarItem; active: boolean }) {
   if (!item.href) return <InertRow label={item.label} />;
-  const active = itemIsActive(item, pathname);
   return (
     <Link
       href={item.href}

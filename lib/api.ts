@@ -77,9 +77,9 @@ type ApiFetchOptions = Omit<RequestInit, 'body'> & {
  *
  * A 401 on a call that *did* carry an access token gets exactly one
  * transparent retry: refresh via `authStore.refreshAccessToken()` (which
- * exchanges the already-stored, still-live 30-day refresh token — issued
- * at login but never actually used for anything until this), then re-run
- * the original request with the new token. Real bug this fixes, not a
+ * exchanges the stored refresh token — single-use, a week's life — for a
+ * new pair), then re-run the original request with the new token. Unless
+ * the person has been idle for an hour: then the session ends instead. Real bug this fixes, not a
  * hypothetical: the access token's own TTL is 15 minutes
  * (`JWT_ACCESS_TTL=900s`), well under how long a multi-branch onboarding
  * wizard can reasonably take to fill in and review — every caller up to
@@ -104,9 +104,17 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
 
   if (response.status === 401 && accessToken && !_isRetry) {
     const { useAuthStore } = await import('./store/authStore');
-    const newToken = await useAuthStore.getState().refreshAccessToken();
-    if (newToken) {
-      return apiFetch<T>(path, { ...options, accessToken: newToken, _isRetry: true });
+    const { hasBeenIdleTooLong } = await import('./session');
+    // Renewed only for someone who's been working in the last hour — a
+    // terminal left alone that long has its session ended instead, however
+    // much the page itself has been polling (see lib/session.ts).
+    if (hasBeenIdleTooLong()) {
+      useAuthStore.getState().endSession();
+    } else {
+      const newToken = await useAuthStore.getState().refreshAccessToken();
+      if (newToken) {
+        return apiFetch<T>(path, { ...options, accessToken: newToken, _isRetry: true });
+      }
     }
   }
 

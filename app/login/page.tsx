@@ -29,6 +29,18 @@ import { useHasHydrated } from '@/lib/useHasHydrated';
  * moved to `app/dashboard/layout.tsx`, which is also where a *returning*
  * signed-in visitor's `useEffect` below sends them.
  */
+/**
+ * Where to go once signed in: back to the page a session ended on (`?next=`,
+ * set by the dashboard's auth gate), or the dashboard. Only ever a dashboard
+ * path — never somewhere a crafted link could send a freshly signed-in user.
+ * Read from `window.location` inside handlers and effects, so the page needs
+ * no Suspense boundary for `useSearchParams`.
+ */
+function afterSignIn(): string {
+  const next = new URLSearchParams(window.location.search).get('next');
+  return next && /^\/dashboard(\/|$|\?)/.test(next) && !next.startsWith('//') ? next : '/dashboard';
+}
+
 export default function LoginPage() {
   const router = useRouter();
   // See useHasHydrated.ts — without this, a reload with an existing
@@ -37,6 +49,8 @@ export default function LoginPage() {
   const authHydrated = useHasHydrated(useAuthStore);
   const login = useAuthStore((state) => state.login);
   const user = useAuthStore((state) => state.user);
+  const sessionEnded = useAuthStore((state) => state.sessionEnded);
+  const leaveEndedSession = useAuthStore((state) => state.leaveEndedSession);
   const [formError, setFormError] = useState<string | null>(null);
   // Set once the password is right on an account with two-step sign-in on.
   const [challengeToken, setChallengeToken] = useState<string | null>(null);
@@ -47,8 +61,15 @@ export default function LoginPage() {
   } = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema), mode: 'onTouched' });
 
   useEffect(() => {
-    if (authHydrated && user) router.replace('/dashboard');
-  }, [authHydrated, user, router]);
+    if (!authHydrated || !user) return;
+    // A session that ended while you were on another page (the signup
+    // wizard, say) isn't one to be sent on with — forget it and sign in.
+    if (sessionEnded) {
+      void leaveEndedSession();
+      return;
+    }
+    router.replace(afterSignIn());
+  }, [authHydrated, user, router, sessionEnded, leaveEndedSession]);
 
   async function onSubmit(values: LoginFormValues) {
     setFormError(null);
@@ -58,7 +79,7 @@ export default function LoginPage() {
         setChallengeToken(result.challengeToken);
         return;
       }
-      router.replace('/dashboard');
+      router.replace(afterSignIn());
     } catch (error) {
       if (error instanceof ApiError && error.isCode('EMAIL_NOT_VERIFIED')) {
         setFormError('Verify your email before logging in.');
@@ -144,7 +165,7 @@ function SecondStep({ challengeToken, onExpired }: { challengeToken: string; onE
     setSubmitting(true);
     try {
       const result = await verifyMfa(challengeToken, code);
-      router.replace(result.secondFactor === 'recovery' ? `/dashboard/account?recoveryUsed=${result.recoveryCodesLeft}` : '/dashboard');
+      router.replace(result.secondFactor === 'recovery' ? `/dashboard/account?recoveryUsed=${result.recoveryCodesLeft}` : afterSignIn());
     } catch (err) {
       if (err instanceof ApiError && err.isCode('TOKEN_INVALID')) {
         onExpired(err.message);

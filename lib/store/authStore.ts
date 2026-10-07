@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { apiFetch } from '../api';
+import { announceSessionEnded, clearIdleClock, hasBeenIdleTooLong, startIdleClock } from '../session';
 
 export interface AuthUser {
   id: string;
@@ -54,8 +55,34 @@ interface AuthState {
    * means every other stored credential is stale too.
    */
   refreshAccessToken: () => Promise<string | null>;
+  /**
+   * The session ended mid-work — idle for an hour, or renewal refused. Kept
+   * in memory only (never persisted): the page stays on screen under the
+   * "session has ended" prompt instead of vanishing, and the next load
+   * starts signed out regardless.
+   */
+  sessionEnded: boolean;
+  /** Set by `logout()` only, so the sign-in page a sign-out lands on doesn't carry `?next=` — the next person at this computer shouldn't be taken to where the last one was. */
+  signedOut: boolean;
+  endSession: () => void;
+  /** Signing out: ends the session on the server too (best effort), then forgets it here. */
+  logout: () => Promise<void>;
+  /** Forgets the session after it ended — the "Sign in again" on the ended prompt; the sign-in page then brings you back here. */
+  leaveEndedSession: () => Promise<void>;
   clear: () => void;
 }
+
+/** Best effort: the server ends the session behind a refresh token. A failure changes nothing — the browser forgets it either way. */
+async function revokeOnServer(refreshToken: string | null): Promise<void> {
+  if (!refreshToken) return;
+  try {
+    await apiFetch('/auth/logout', { method: 'POST', body: { refreshToken } });
+  } catch {
+    // Offline, or already over.
+  }
+}
+
+const SIGNED_OUT = { accessToken: null, refreshToken: null, user: null, activeBranchId: null };
 
 /**
  * The first real Zustand store in this app (installed since Phase 1, unused
@@ -97,7 +124,10 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: result.refreshToken,
           user: result.user,
           activeBranchId: null,
+          sessionEnded: false,
+          signedOut: false,
         });
+        startIdleClock();
         return result;
       },
       async verifyMfa(challengeToken, code) {
@@ -110,7 +140,10 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: result.refreshToken,
           user: result.user,
           activeBranchId: null,
+          sessionEnded: false,
+          signedOut: false,
         });
+        startIdleClock();
         return result;
       },
       async refreshAccessToken() {
@@ -124,12 +157,59 @@ export const useAuthStore = create<AuthState>()(
           set({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
           return result.accessToken;
         } catch {
-          set({ accessToken: null, refreshToken: null, user: null });
+          // A refresh token works once now. Another tab may have just
+          // renewed with this same one — if it stored a newer pair, carry on
+          // with that instead of ending a session that's still alive.
+          await useAuthStore.persist.rehydrate();
+          const latest = get();
+          if (latest.refreshToken && latest.refreshToken !== refreshToken && latest.accessToken) return latest.accessToken;
+          get().endSession();
           return null;
         }
       },
-      clear: () => set({ accessToken: null, refreshToken: null, user: null, activeBranchId: null }),
+      sessionEnded: false,
+      signedOut: false,
+      endSession: () => {
+        if (get().sessionEnded) return;
+        set({ sessionEnded: true });
+        announceSessionEnded();
+      },
+      async logout() {
+        const { refreshToken } = get();
+        set({ ...SIGNED_OUT, sessionEnded: false, signedOut: true });
+        clearIdleClock();
+        await revokeOnServer(refreshToken);
+      },
+      async leaveEndedSession() {
+        const { refreshToken } = get();
+        set({ ...SIGNED_OUT, sessionEnded: false, signedOut: false });
+        clearIdleClock();
+        await revokeOnServer(refreshToken);
+      },
+      clear: () => {
+        set({ ...SIGNED_OUT, sessionEnded: false });
+        clearIdleClock();
+      },
     }),
-    { name: 'roomick-auth' },
+    {
+      name: 'roomick-auth',
+      // Only the session itself is saved — never whether it ended or was signed out, which belong to this page load.
+      partialize: (state) => ({
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+        user: state.user,
+        activeBranchId: state.activeBranchId,
+      }),
+      // Opening Roomick after an hour or more away is the same as being idle
+      // that long mid-work: the session is over before anything can renew it
+      // (the Five Clover PMS's rule — a session from the day before used to
+      // open straight in). Silent here; the sign-in page is where you land.
+      onRehydrateStorage: () => (state) => {
+        if (!state?.user || !hasBeenIdleTooLong()) return;
+        const { refreshToken } = state;
+        state.clear();
+        void revokeOnServer(refreshToken);
+      },
+    },
   ),
 );

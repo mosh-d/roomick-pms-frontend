@@ -2,133 +2,15 @@
 
 import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
 import { useRequireAuth } from '@/lib/useRequireAuth';
+import { hasBeenIdleTooLong, markActivity } from '@/lib/session';
 import { useMyBranches } from '@/lib/dashboardBranches';
 import { useAuthStore } from '@/lib/store/authStore';
 import { MenuIcon } from '@/components/ui/Icons';
 import { BranchPicker } from './_components/BranchPicker';
+import { Breadcrumbs } from './_components/Breadcrumbs';
+import { SessionEndedPrompt } from './_components/SessionEndedPrompt';
 import { Sidebar } from './_components/Sidebar';
-
-/** Route → breadcrumb title. Extend this whenever a new `/dashboard/*` page is added — it used to be a two-way ternary hardcoded to exactly `/dashboard` vs. Room Status Board, which would have silently mislabeled every route added since. */
-const ROUTE_TITLES: Record<string, string> = {
-  '/dashboard': 'Front Desk',
-  '/dashboard/alerts': 'Alerts',
-  '/dashboard/manager': 'Manager Dashboard',
-  '/dashboard/security': 'Security & Roles',
-  '/dashboard/property-config': 'Property Config',
-  '/dashboard/maintenance': 'Maintenance',
-  '/dashboard/guests': 'Guest Profiles & CRM',
-  '/dashboard/revenue': 'Revenue Management',
-  '/dashboard/sales-events': 'Sales & Events',
-  '/dashboard/loyalty': 'Loyalty & Marketing',
-  '/dashboard/loyalty/campaigns': 'Email Campaigns',
-  '/dashboard/integrations': 'Integrations & APIs',
-  '/dashboard/account': 'My Account',
-  '/dashboard/integrations/marketplace': 'Integrations Marketplace',
-  '/dashboard/system-admin': 'System Admin',
-  '/dashboard/hq': 'Enterprise / HQ',
-  '/dashboard/folio-transfer': 'Folio Transfer',
-  '/dashboard/pos': 'Point of Sale',
-  '/dashboard/pos/terminal': 'POS Terminal',
-  '/dashboard/pos/menu': 'Menu Management',
-  '/dashboard/room-status-board': 'Room Status Board',
-  '/dashboard/arrivals': 'Arrivals Dashboard',
-  '/dashboard/departures': 'Departures Dashboard',
-  '/dashboard/in-house-guest-list': 'In-House Guest List',
-  '/dashboard/walk-in-booking': 'Walk-In Booking',
-  '/dashboard/check-in': 'Check-In Flow',
-  '/dashboard/check-out': 'Check-Out Flow',
-  '/dashboard/billing': 'Billing and Payments',
-  '/dashboard/night-audit': 'Night Audit',
-  '/dashboard/split-billing': 'Split Billing',
-  '/dashboard/no-shows': 'No-Show Handling',
-  '/dashboard/registration-cards': 'Guest Registration Card',
-  '/dashboard/shifts': 'Shift Management',
-  '/dashboard/comms-log': 'Guest Communications Log',
-  '/dashboard/reports': 'Reports & Analytics',
-  '/dashboard/reports/operational': 'Operational Reports',
-  '/dashboard/reservations': 'Reservations',
-  '/dashboard/reservations/availability-calendar': 'Availability Calendar',
-  '/dashboard/reservations/create': 'Create Reservation',
-  '/dashboard/reservations/modify': 'Modify Reservation',
-  '/dashboard/reservations/cancel': 'Cancel Reservation',
-  '/dashboard/reservations/waitlist': 'Waitlist Management',
-  '/dashboard/reservations/rate-plans': 'Rate Resolver',
-  '/dashboard/overbooking': 'Overbooking Management',
-  '/dashboard/housekeeping': 'Housekeeping',
-  '/dashboard/housekeeping/task-board': 'Task Board',
-  '/dashboard/housekeeping/staff-assignment': 'Staff Assignment',
-  '/dashboard/housekeeping/inspection-workflow': 'Inspection Workflow',
-  '/dashboard/housekeeping/room-blocking': 'Room Blocking / OOO',
-};
-
-function pageTitleFor(pathname: string): string {
-  if (pathname.startsWith('/dashboard/check-in/')) return 'Check-In Flow';
-  if (pathname.startsWith('/dashboard/billing/')) return 'Guest Folio';
-  if (pathname.startsWith('/dashboard/registration-cards/')) return 'Guest Registration Card';
-  if (pathname.startsWith('/dashboard/guests/')) return 'Guest Profile';
-  if (pathname.startsWith('/dashboard/loyalty/campaigns/')) return 'Email Campaign';
-  if (pathname.startsWith('/dashboard/integrations/marketplace/')) return 'Integration';
-  return ROUTE_TITLES[pathname] ?? '';
-}
-
-/**
- * The breadcrumb's leading segment — which of the three architecture-map
- * groups (Operations / Management / Admin) a route belongs to. Always
- * plain text, never a link — pixel-checked against the reference: every
- * one of its screenshots shows "Operations", "Management", or "Admin" as
- * dim, non-interactive text, exactly like `Sidebar.tsx`'s own
- * `SidebarGroupLabel` for the same three names. There is no "Management"
- * or "Admin" hub page to link to any more — the reference never has one;
- * MANAGEMENT and ADMIN are pure section labels over a flat list of peer
- * pages, same as OPERATIONS always was.
- *
- * The breadcrumb's own SECOND segment is always the current page's own
- * title (`pageTitleFor`) — including on a section's own hub page itself
- * (e.g. Front Desk's hub reads "Operations / Front Desk", never collapsed
- * to "Operations" alone). An earlier version collapsed to one segment
- * when `pathname === section.href`; the reference never does this.
- *
- * `/dashboard/reservations/rate-plans` MUST be listed before the plain
- * `/dashboard/reservations` prefix below — `Array.find` takes the first
- * match, and every `/reservations/*` route otherwise matches that broader
- * prefix first.
- */
-type Group = 'Operations' | 'Management' | 'Admin' | 'Account';
-const GROUP_PREFIXES: Array<{ prefix: string; group: Group }> = [
-  { prefix: '/dashboard/alerts', group: 'Operations' },
-  { prefix: '/dashboard/reservations/rate-plans', group: 'Management' },
-  { prefix: '/dashboard/reservations', group: 'Operations' },
-  { prefix: '/dashboard/housekeeping', group: 'Operations' },
-  { prefix: '/dashboard/billing', group: 'Operations' },
-  { prefix: '/dashboard/split-billing', group: 'Operations' },
-  { prefix: '/dashboard/night-audit', group: 'Operations' },
-  { prefix: '/dashboard/folio-transfer', group: 'Operations' },
-  { prefix: '/dashboard/pos', group: 'Operations' },
-  { prefix: '/dashboard/shifts', group: 'Operations' },
-  { prefix: '/dashboard/no-shows', group: 'Operations' },
-  { prefix: '/dashboard/registration-cards', group: 'Operations' },
-  { prefix: '/dashboard/comms-log', group: 'Operations' },
-  { prefix: '/dashboard/manager', group: 'Management' },
-  { prefix: '/dashboard/overbooking', group: 'Management' },
-  { prefix: '/dashboard/guests', group: 'Management' },
-  { prefix: '/dashboard/revenue', group: 'Management' },
-  { prefix: '/dashboard/sales-events', group: 'Management' },
-  { prefix: '/dashboard/maintenance', group: 'Management' },
-  { prefix: '/dashboard/loyalty', group: 'Management' },
-  { prefix: '/dashboard/reports', group: 'Management' },
-  { prefix: '/dashboard/property-config', group: 'Admin' },
-  { prefix: '/dashboard/integrations', group: 'Admin' },
-  { prefix: '/dashboard/security', group: 'Admin' },
-  { prefix: '/dashboard/system-admin', group: 'Admin' },
-  { prefix: '/dashboard/hq', group: 'Admin' },
-  { prefix: '/dashboard/account', group: 'Account' },
-];
-
-function groupFor(pathname: string): Group {
-  return GROUP_PREFIXES.find((s) => pathname.startsWith(s.prefix))?.group ?? 'Operations';
-}
 
 /**
  * The auth gate + branch resolution + shared shell for every authenticated
@@ -154,18 +36,60 @@ function groupFor(pathname: string): Group {
  *    the shared shell (property/user name, Log out) wraps `children`.
  */
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const router = useRouter();
-  const pathname = usePathname();
   const { ready, user, accessToken } = useRequireAuth();
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
   const setActiveBranchId = useAuthStore((s) => s.setActiveBranchId);
-  const clear = useAuthStore((s) => s.clear);
+  const logout = useAuthStore((s) => s.logout);
+  const sessionEnded = useAuthStore((s) => s.sessionEnded);
+  const endSession = useAuthStore((s) => s.endSession);
+  const leaveEndedSession = useAuthStore((s) => s.leaveEndedSession);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
+  // `useRequireAuth` takes it from here: a sign-out lands on a clean sign-in page.
   function handleLogout() {
-    clear();
-    router.replace('/login');
+    void logout();
   }
+
+  // An hour with nobody at the screen ends the session where it stands
+  // (lib/session.ts): checked every half minute and the moment the tab is
+  // looked at again, not left to whichever request next needs a renewal.
+  // Only a click or a key counts as someone being here — throttled to one
+  // stamp a minute — and one that arrives after the hour ran out ends the
+  // session rather than reviving it.
+  useEffect(() => {
+    if (!ready) return;
+    let lastStamp = 0;
+    const lapsed = () => {
+      if (!hasBeenIdleTooLong()) return false;
+      endSession();
+      return true;
+    };
+    const touched = () => {
+      if (lapsed()) return;
+      const now = Date.now();
+      if (now - lastStamp < 60_000) return;
+      lastStamp = now;
+      markActivity();
+    };
+    const visibility = () => {
+      if (document.visibilityState === 'visible') lapsed();
+    };
+    lapsed();
+    const timer = window.setInterval(lapsed, 30_000);
+    window.addEventListener('pointerdown', touched, { passive: true });
+    window.addEventListener('keydown', touched, { passive: true });
+    window.addEventListener('focus', lapsed);
+    window.addEventListener('pageshow', lapsed);
+    document.addEventListener('visibilitychange', visibility);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('pointerdown', touched);
+      window.removeEventListener('keydown', touched);
+      window.removeEventListener('focus', lapsed);
+      window.removeEventListener('pageshow', lapsed);
+      document.removeEventListener('visibilitychange', visibility);
+    };
+  }, [ready, endSession]);
 
   const branchesQuery = useMyBranches(ready ? user : null, {
     accessToken: accessToken ?? undefined,
@@ -214,8 +138,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   // one tick rather than flash the shell with a stale/empty branch name.
   if (!activeBranchId) return null;
 
-  const activeBranchName = branches?.find((b) => b.id === activeBranchId)?.name;
-  const group = groupFor(pathname);
 
   // `h-screen` + `overflow-hidden` (not `min-h-screen`) — same reasoning as
   // `WizardShell.tsx`'s identical shell: the browser window itself never
@@ -233,20 +155,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           >
             <MenuIcon className="size-5" />
           </button>
-          {/* Roomick / branch / section are dropped below `sm` — the current page name is the one thing that must survive at a phone's width; the header's own overflow-hidden clips anything that still doesn't fit rather than letting it overlap the right-hand controls the way the un-hidden trail used to. */}
-          <div className="flex items-center gap-3 text-small min-w-0 overflow-hidden">
-            <span className="hidden sm:inline font-display text-header font-bold text-primary-text shrink-0">Roomick</span>
-            {activeBranchName ? (
-              <>
-                <span className="hidden sm:inline text-accent shrink-0">/</span>
-                <span className="hidden sm:inline text-primary-text shrink-0">{activeBranchName}</span>
-              </>
-            ) : null}
-            <span className="hidden sm:inline text-accent shrink-0">/</span>
-            <span className="hidden sm:inline text-primary-text shrink-0">{group}</span>
-            <span className="hidden sm:inline text-accent shrink-0">/</span>
-            <span className="font-semibold text-primary-dark truncate">{pageTitleFor(pathname)}</span>
-          </div>
+          <Link href="/dashboard" className="font-display text-header font-bold text-primary-text shrink-0">
+            Roomick
+          </Link>
+          {/* The trail is wide-screen only (see Breadcrumbs) — below `lg` the bar keeps just the logo. */}
+          <span aria-hidden className="hidden lg:inline text-accent shrink-0">
+            /
+          </span>
+          <Breadcrumbs branches={branches ?? []} />
         </div>
         <div className="flex items-center gap-4 shrink-0 text-small">
           {/* Everyone's way to their own sign-in settings — two-step sign-in lives there. */}
@@ -262,9 +178,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </button>
         </div>
       </header>
+      {/* Over the page rather than instead of it: the page stays where it was, and signing back in returns to it. */}
+      {sessionEnded ? <SessionEndedPrompt onSignIn={() => void leaveEndedSession()} /> : null}
       <div className="flex flex-1 min-h-0">
         <Sidebar mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        {/* `relative` keeps every absolutely-positioned element on a page —
+            the visually-hidden radios behind each radio group (`sr-only` is
+            `position: absolute`) — inside this scroll box. Without it they
+            sit relative to the viewport instead: one far down a long form
+            stretched the window itself, and scrolling ran on past the page
+            into blank space. */}
+        <main className="relative flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
   );

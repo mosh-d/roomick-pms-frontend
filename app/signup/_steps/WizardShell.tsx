@@ -190,7 +190,10 @@ export function WizardShell({
           })}
         </aside>
 
-        <main className="flex-1 overflow-y-auto px-6 py-10">{children}</main>
+        {/* `relative`: see the dashboard layout's own `main` — without it, a
+            visually-hidden radio (`sr-only` is `position: absolute`) far down
+            the form escapes this scroll box and stretches the page itself. */}
+        <main className="relative flex-1 overflow-y-auto px-6 py-10">{children}</main>
       </div>
     </div>
   );

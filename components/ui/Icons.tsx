@@ -39,6 +39,7 @@ import {
   FiCamera,
   FiRefreshCw,
   FiSettings,
+  FiLock,
 } from 'react-icons/fi';
 import {
   FaPlaneArrival,
@@ -101,11 +102,22 @@ import {
   FaCodeBranch,
   FaSignature,
 } from 'react-icons/fa';
+import { LuChevronsUpDown } from 'react-icons/lu';
 
 type IconProps = { className?: string };
 
 export function ChevronDownIcon({ className = 'size-4' }: IconProps) {
   return <FiChevronDown className={className} aria-hidden="true" />;
+}
+
+/** The "your session has ended" prompt. */
+export function LockIcon({ className = 'size-4' }: IconProps) {
+  return <FiLock className={className} aria-hidden="true" />;
+}
+
+/** The breadcrumb's "other choices at this level" control — the up-and-down chevrons a selector shows. */
+export function ChevronUpDownIcon({ className = 'size-4' }: IconProps) {
+  return <LuChevronsUpDown className={className} aria-hidden="true" />;
 }
 
 export function XIcon({ className = 'size-4' }: IconProps) {
