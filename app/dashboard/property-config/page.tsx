@@ -15,6 +15,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { PropertyConfigIcon, HotelCheckInIcon, OverbookingIcon } from '@/components/ui/Icons';
 import { HubCard } from '../_components/HubCard';
 import { TaxRulesSection } from './_components/TaxRulesSection';
+import { RoomsLayoutSection } from './_components/RoomsLayoutSection';
 import {
   useBrandsQuery,
   useUpdateBrandMutation,
@@ -770,15 +771,13 @@ export default function PropertyConfigPage() {
       ) : null}
 
       <RoomTypesSection branchId={activeBranchId} currency={branchQuery.data?.currency} auth={auth} />
+      <RoomsLayoutSection branchId={activeBranchId} auth={auth} />
 
       <Section label="More Settings">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <HubCard icon={<HotelCheckInIcon className="size-5" />} title="Registration Card Template" description="House rules, required fields, language" href="/dashboard/registration-cards" />
           <HubCard icon={<OverbookingIcon className="size-5" />} title="Overbooking Management" description="Per-room-type overbooking limits and alerts" href="/dashboard/overbooking" />
         </div>
-        <p className="text-tiny text-surface-muted mt-2">
-          Buildings and floors can only be structured during onboarding today — editing an existing property&apos;s physical layout isn&apos;t built yet.
-        </p>
       </Section>
     </Container>
   );
