@@ -132,6 +132,7 @@ export const NAV_GROUPS: NavGroup[] = [
         children: [
           { label: 'Operational Reports', href: '/dashboard/reports/operational' },
           { label: 'Financial Reports', href: '/dashboard/reports/financial' },
+          { label: 'Custom Report Builder', href: '/dashboard/reports/custom' },
         ],
       },
     ],

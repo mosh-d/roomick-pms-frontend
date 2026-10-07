@@ -143,12 +143,21 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
  * `<a href>` alone can't carry the Authorization/X-Tenant-ID headers these
  * routes require.
  */
-export async function downloadFile(path: string, filename: string, { accessToken, tenantId }: { accessToken?: string; tenantId?: string }): Promise<void> {
+export async function downloadFile(
+  path: string,
+  filename: string,
+  { accessToken, tenantId }: { accessToken?: string; tenantId?: string },
+  /** A file built from a request body (the Custom Report Builder's CSV) is a POST. */
+  post?: { body: unknown },
+): Promise<void> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: post ? 'POST' : 'GET',
     headers: {
       ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...(post ? { 'Content-Type': 'application/json' } : {}),
     },
+    body: post ? JSON.stringify(post.body) : undefined,
   });
   if (!response.ok) {
     const problem = (await response.json().catch(() => null)) as { code?: string; detail?: string } | null;
