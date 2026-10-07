@@ -2500,3 +2500,59 @@ Up from 16.3.2 (and `eslint-config-next` with it), clearing the three critical N
   - Erase Guest Data asks first and shows why an in-house guest can't be erased;
   - a click stamps the idle clock; an hour idle brings the prompt, which Escape and clicks can't dismiss; Sign in again goes to `/login?next=/dashboard/maintenance` and back there after signing in; reopening after an hour lands on sign-in; Log out lands on sign-in without `next`;
   - zero console errors.
+
+## Phase 83 — Rounding up: company bookings, Folio Transfer, refunds, room moves, group check-in, Rooms & Layout, financial and custom reports, Integrations, and text that matches its surface (2026-10-07)
+
+The owner asked for every piece of work that doesn't need their accounts to be finished before they start the integrations. Every inert card left on the Billing, Front Desk, Guest Profiles, Reports and Admin hubs that could be built without an outside account now is. The backend's notes for the same date cover the rules underneath.
+
+### Company bookings
+- **Guest Profiles & CRM → Corporate Accounts**: companies with their contact, contracted rate plan and whether they're active.
+- **Create Reservation and Walk-In Booking** take a company (`_components/CompanyField.tsx`): the booking is priced at its contracted rate and keeps the company through modify and extend.
+
+### Folio Transfer
+- **Transfer Charges**: pick a bill, tick charges (or move everything), pick any open bill at the property to move them to. A charge's tax and any correction go with it; payments stay.
+- **Create Secondary Folio** for a payer name or a company.
+- **Transfer History**: every move at the property, with **Reverse** for 24 hours (owner or manager).
+
+### Refunds & Corrections
+Billing → Refunds & Corrections: correct a charge (a manager's job), ask for a refund against the bill's credit, approve or turn it down (manager), pay it out — the list says who asked, approved and paid.
+
+### Room Move & Upgrade, and the manual override at check-in
+- **Room Move & Upgrade**: an in-house guest, a free room (`_components/RoomPicker.tsx`), and the price both ways for the nights left — keep the booked rate or charge the new room type's — with a reason.
+- **Check-In → Manual room override** opens every free room, any type, or one still being cleaned, with a reason.
+
+### Arrivals, In-House, Alerts, HQ
+A VIP badge beside the guest's name (`_components/GuestNameCell.tsx`) and the group on Arrivals and the In-House list; a **Maintenance** tab on Alerts for urgent work orders still open; **Work Here** on each HQ branch row switches to it.
+
+### Group Check-In
+Pick a group, give each guest a room, optionally put the group's room nights on one **master bill** for the organiser; everyone is checked in, or no one is.
+
+### Text takes the colour of its surface
+The owner had asked before, and found it again on Group Check-In: violet text inside gold cards. It's now a system rule rather than page-by-page care:
+- Each surface class (`surface-page`, `surface-primary`, `surface-accent`, `surface-secondary`, `app/globals.css`) sets `--surface-text`, `--surface-text-muted` and `--surface-text-accent`; `text-surface`, `text-surface-muted`, `text-surface-accent` and `border-surface-muted/40` read them (`design-system/tokens.css`).
+- Card tones, the Modal panel, the page body, and the Input/Select placeholders and underlines all name their surface, so a form inside a gold card is gold-family throughout. An element that paints its own background (a white code box) names `surface-page`.
+- About 117 files moved onto the rule; `design-system/01-color.md` explains it. A browser audit of every page compares each text's colour family with the surface under it: none differ.
+
+### Rooms & Layout in Property Config
+Add buildings, floors and rooms after onboarding; rename, renumber, retype, move or remove — with the reason shown inside the dialog when it's refused (a booked room type would be left short).
+
+### Financial Reports and the Custom Report Builder
+- **Financial Reports**: revenue by department and money in and back out per day, week or month, payment methods, the tax summary by rule; CSV or XML.
+- **Custom Report Builder**: a dataset, its columns, filters, grouping with totals, sorting; run it, download it as CSV (`downloadFile` can POST now), save it under a name, load or delete saved ones.
+
+### Guest Messages knows when email reaches the guest
+The hint by the reply box said email wasn't delivered, always. It now asks the server (`GET /comms/delivery`): once SMTP is set up it says the email goes out within a minute; SMS still says it's recorded only.
+
+### Integrations & APIs
+- **API Keys**: a name, a **Can read** checklist (the same areas as custom roles), and a branch. The key is shown once; the list says what each reads, its branch and when it was last used. **Edit Access** changes what it reads without changing the key; **Revoke** asks first. "How another system calls the API" gives the API address, the account ID (with Copy), the headers, a curl example and a link to the API reference.
+- **Webhooks**: an endpoint, a **Send when** checklist of the ten events, and a branch; the signing secret is shown once. Each webhook shows what's waiting and what failed this week; **Send Test** answers with what the endpoint said, **Deliveries** lists the last 50 with **Retry**, and **Switch Off / On**. "What a delivery looks like" explains the JSON, the retry schedule and the signature, with a Node.js check.
+
+### On a phone
+A pass at 390×844 over Front Desk, Check-In (list and guest), Check-Out and every Housekeeping page, as the desk and a housekeeper: no sideways scroll, nothing past the screen edge. Back, Forward and "or upload a photo instead" were 14px-tall tap targets; they now have a thumb-sized hit area (`py-3 -my-3`, so nothing moves). A desk user checked a guest in and a housekeeper started and finished a room, by tapping, end to end.
+
+### Counts read "1 room"
+Hub cards said "1 rooms ready for cleaning", "1 guests departing today", "(1 nights)"; they singularise now, as Billing and Guests already did.
+
+### Verified
+- **Checks:** `npx tsc --noEmit` clean; `eslint` clean on everything changed (the existing React Compiler note about `watch()` in the modify form aside).
+- **Browser**, against real Postgres: each page above had its own run during the work. For the last pieces: Integrations 12/12 — the how-to's address and account ID, a key made with two areas ticked and shown once, Edit Access, Revoke, a webhook's secret shown once, Send Test answered 200, the delivery log, switching off and on, no colour mismatches, no sideways scroll at 390px, no console errors; the phone pass and the two tap-through flows (4/4).
