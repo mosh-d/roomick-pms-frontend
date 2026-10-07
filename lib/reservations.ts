@@ -272,9 +272,42 @@ export function useCreateWalkInMutation(branchId: string, { accessToken, tenantI
 export function useCheckInMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ reservationId, roomId, idDocument }: { reservationId: string; roomId?: string; idDocument?: IdDocumentInput }) =>
-      apiFetch<ReservationSummary>(`/reservations/${reservationId}/check-in`, { method: 'POST', accessToken, tenantId, body: { roomId, idDocument } }),
+    mutationFn: ({ reservationId, roomId, idDocument, overrideReason }: { reservationId: string; roomId?: string; idDocument?: IdDocumentInput; overrideReason?: string }) =>
+      apiFetch<ReservationSummary>(`/reservations/${reservationId}/check-in`, { method: 'POST', accessToken, tenantId, body: { roomId, idDocument, overrideReason } }),
     onSuccess: () => invalidateAfterLifecycleChange(queryClient, branchId),
+  });
+}
+
+/** Mirrors `ReservationsService.roomMoveQuote` — the nights not yet on the bill, at the booked rate and at the new type's. */
+export interface RoomMoveQuote {
+  nightsLeft: number;
+  firstNight: string | null;
+  /** Moving on arrival day: tonight was billed at check-in, at the old rate. */
+  tonightAlreadyBilled: boolean;
+  currentNightly: string;
+  keepTotal: string;
+  newNightly: string;
+  newTotal: string;
+}
+
+export function useRoomMoveQuoteQuery(reservationId: string | null, roomTypeId: string | null, { accessToken, tenantId }: AuthOpts) {
+  return useQuery({
+    queryKey: ['room-move-quote', reservationId, roomTypeId] as const,
+    queryFn: () => apiFetch<RoomMoveQuote>(`/reservations/${reservationId}/room-move-quote?roomTypeId=${roomTypeId}`, { accessToken, tenantId }),
+    enabled: reservationId !== null && roomTypeId !== null,
+    staleTime: 0,
+  });
+}
+
+export function useMoveRoomMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ reservationId, ...body }: { reservationId: string; roomId: string; reason: string; chargeNewRate: boolean }) =>
+      apiFetch<ReservationSummary>(`/reservations/${reservationId}/move-room`, { method: 'PATCH', accessToken, tenantId, body }),
+    onSuccess: () => {
+      invalidateAfterLifecycleChange(queryClient, branchId);
+      queryClient.invalidateQueries({ queryKey: ['folios', branchId] });
+    },
   });
 }
 

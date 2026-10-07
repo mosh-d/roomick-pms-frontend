@@ -24,9 +24,8 @@ import { HubCard } from './_components/HubCard';
 /**
  * Front Desk hub (Roomick-UI.pdf page 10) — the actual `/dashboard`
  * landing page. Three sections (Check-In, Check-Out, In-House Management),
- * each a row of cards. Only "Room Status Board" is real today — see
- * `HubCard.tsx`'s own header comment for why the rest render inert rather
- * than omitted or linked nowhere.
+ * each a row of cards. Manual Room Override opens Check-In Flow on every
+ * free room; Room Upgrade is Room Move, for a guest already in the house.
  */
 export default function FrontDeskHubPage() {
   const user = useAuthStore((s) => s.user);
@@ -92,7 +91,12 @@ export default function FrontDeskHubPage() {
             description="Room assignment for an arriving guest"
             href="/dashboard/check-in"
           />
-          <HubCard icon={<ManualRoomOverrideIcon className="size-5" />} title="Manual Room Override" description="Receptionist selects room manually" />
+          <HubCard
+            icon={<ManualRoomOverrideIcon className="size-5" />}
+            title="Manual Room Override"
+            description="Receptionist selects room manually"
+            href="/dashboard/check-in?override=1"
+          />
           <HubCard
             icon={<WalkInIcon className="size-5" />}
             title="Walk-In Booking"
@@ -117,7 +121,7 @@ export default function FrontDeskHubPage() {
             description="Release a departing guest's room"
             href="/dashboard/check-out"
           />
-          <HubCard icon={<RoomUpgradeIcon className="size-5" />} title="Room Upgrade" description="Switch guest to a higher room category" />
+          <HubCard icon={<RoomUpgradeIcon className="size-5" />} title="Room Upgrade" description="Switch guest to a higher room category" href="/dashboard/room-move" />
         </div>
       </Section>
 

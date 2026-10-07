@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { Card } from '@/components/ui/Card';
@@ -21,9 +21,22 @@ import { useAuthStore } from '@/lib/store/authStore';
  * nav items shared a route and both rendered active — ambiguous. The
  * per-row "Check-In" button on Arrivals still leads to the same place; this
  * is the direct path for someone who came straight to the nav item.
+ *
+ * `?override=1` (the Front Desk hub's Manual Room Override card) carries
+ * through, so the guest's room selection opens on every free room.
  */
 export default function CheckInFlowIndexPage() {
+  return (
+    // useSearchParams needs a Suspense boundary under the App Router.
+    <Suspense fallback={null}>
+      <CheckInFlowIndex />
+    </Suspense>
+  );
+}
+
+function CheckInFlowIndex() {
   const router = useRouter();
+  const override = useSearchParams().get('override') === '1';
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
@@ -84,7 +97,7 @@ export default function CheckInFlowIndexPage() {
             <Button
               type="button"
               disabled={!selectedId}
-              onClick={() => router.push(`/dashboard/check-in/${selectedId}`)}
+              onClick={() => router.push(`/dashboard/check-in/${selectedId}${override ? '?override=1' : ''}`)}
               className="self-start"
             >
               Continue to Room Selection

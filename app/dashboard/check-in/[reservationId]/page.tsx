@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { Suspense, useMemo, useState } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { Button } from '@/components/ui/Button';
@@ -13,9 +13,10 @@ import { BackButton } from '@/components/ui/BackButton';
 import { ForwardButton } from '@/components/ui/ForwardButton';
 import { HotelCheckInIcon } from '@/components/ui/Icons';
 import { useReservationQuery, useCheckInMutation } from '@/lib/reservations';
-import { useRoomsQuery } from '@/lib/rooms';
+import { useRoomsQuery, type RoomWithDetails } from '@/lib/rooms';
 import { groupRoomsByFloor } from '@/lib/groupRoomsByFloor';
 import { RoomGrid } from '../../_components/RoomGrid';
+import { RoomPicker, isReady } from '../../_components/RoomPicker';
 import { ApiError, apiFetch } from '@/lib/api';
 import type { IdDocType, IdDocumentInput } from '@/lib/guests';
 import { COUNTRIES } from '@/lib/countries';
@@ -37,9 +38,26 @@ const ID_DOC_TYPE_OPTIONS: SelectOption[] = [
  * exactly as `room-status-board/page.tsx` composes them, filtered to
  * vacant/clean-or-inspected rooms of the reservation's own room type — the
  * same client-side filter, no new backend endpoint needed for the list.
+ *
+ * **Manual Room Override** (ref: "Receptionist selects room manually"):
+ * every free room, any type, floor or cleaning state, through the same
+ * filters as Room Move. A room of another type, or one still being cleaned,
+ * needs the reason — kept in the audit log. Another type moves the stay to
+ * it at the booked rate (the backend pins it). `?override=1` (the Front
+ * Desk card) opens straight into it.
  */
 export default function CheckInFlowPage() {
+  return (
+    // useSearchParams needs a Suspense boundary under the App Router.
+    <Suspense fallback={null}>
+      <CheckInFlow />
+    </Suspense>
+  );
+}
+
+function CheckInFlow() {
   const params = useParams<{ reservationId: string }>();
+  const search = useSearchParams();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -47,6 +65,9 @@ export default function CheckInFlowPage() {
   const auth = { accessToken: accessToken ?? undefined, tenantId: user?.tenantId };
 
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [overrideMode, setOverrideMode] = useState(search.get('override') === '1');
+  const [overrideRoom, setOverrideRoom] = useState<RoomWithDetails | null>(null);
+  const [overrideReason, setOverrideReason] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
 
   const [idDocType, setIdDocType] = useState<string | null>(null);
@@ -74,10 +95,18 @@ export default function CheckInFlowPage() {
 
   const buildings = useMemo(() => groupRoomsByFloor(readyRooms), [readyRooms]);
 
+  const chosenRoomId = overrideMode ? (overrideRoom?.id ?? null) : selectedRoomId;
+  /** Another type, or not ready yet — what the override is for, and what needs a reason. */
+  const needsReason = Boolean(overrideMode && overrideRoom && reservation && (overrideRoom.roomType.id !== reservation.roomType.id || !isReady(overrideRoom)));
+
   if (!activeBranchId) return null;
 
   async function handleConfirm() {
-    if (!selectedRoomId) return;
+    if (!chosenRoomId) return;
+    if (needsReason && !overrideReason.trim()) {
+      setActionError('Give the reason for the override — it goes in the audit log.');
+      return;
+    }
     setActionError(null);
 
     // Both-or-neither: a type with no number (or vice versa) can't produce
@@ -99,7 +128,12 @@ export default function CheckInFlowPage() {
     }
 
     try {
-      await checkInMutation.mutateAsync({ reservationId: params.reservationId, roomId: selectedRoomId, idDocument });
+      await checkInMutation.mutateAsync({
+        reservationId: params.reservationId,
+        roomId: chosenRoomId,
+        idDocument,
+        overrideReason: needsReason ? overrideReason.trim() : undefined,
+      });
       // Check-in auto-generates the registration card server-side (ref:
       // "auto-generated when check-in is triggered") — send the agent
       // straight there to have the guest sign, rather than back to a list.
@@ -146,8 +180,48 @@ export default function CheckInFlowPage() {
           </Section>
 
           <Section label="Room Selection">
-            {buildings.length === 0 ? (
-              <p className="text-body text-primary-dark/70">No ready rooms of this type — nothing vacant and clean/inspected right now.</p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-small text-primary-dark/70">
+                {overrideMode
+                  ? `Manual override — any free room. Another type than ${reservation.roomType.name}, or a room still being cleaned, needs a reason.`
+                  : `Ready ${reservation.roomType.name} rooms.`}
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setOverrideMode((on) => !on);
+                  setOverrideRoom(null);
+                  setSelectedRoomId(null);
+                }}
+              >
+                {overrideMode ? 'Back to ready rooms' : 'Manual room override'}
+              </Button>
+            </div>
+            {overrideMode ? (
+              <>
+                <RoomPicker rooms={roomsQuery.data ?? []} initialTypeId={reservation.roomType.id} selectedRoomId={overrideRoom?.id ?? null} onSelect={setOverrideRoom} />
+                {overrideRoom ? (
+                  <p className="text-small text-primary-dark">
+                    Room {overrideRoom.number} — {overrideRoom.roomType.name}
+                    {overrideRoom.roomType.id !== reservation.roomType.id ? ` (booked: ${reservation.roomType.name}; the guest keeps the booked rate)` : ''}
+                    {isReady(overrideRoom) ? '' : ` — ${overrideRoom.cleanlinessStatus.replace('_', ' ')}, not ready yet`}
+                  </p>
+                ) : null}
+                {needsReason ? (
+                  <Input
+                    name="overrideReason"
+                    label="Override reason"
+                    value={overrideReason}
+                    onChange={(e) => setOverrideReason(e.target.value)}
+                    maxLength={300}
+                    hint="Required — kept in the audit log"
+                  />
+                ) : null}
+              </>
+            ) : buildings.length === 0 ? (
+              <p className="text-body text-primary-dark/70">No ready rooms of this type — nothing vacant and clean/inspected right now. Use the manual room override to choose another.</p>
             ) : (
               <RoomGrid buildings={buildings} selectedRoomId={selectedRoomId} onSelectRoom={setSelectedRoomId} />
             )}
@@ -180,7 +254,7 @@ export default function CheckInFlowPage() {
 
           {actionError ? <p className="text-small text-red-600">{actionError}</p> : null}
 
-          <Button type="button" onClick={handleConfirm} disabled={!selectedRoomId || checkInMutation.isPending} loading={checkInMutation.isPending} className="self-start">
+          <Button type="button" onClick={handleConfirm} disabled={!chosenRoomId || checkInMutation.isPending} loading={checkInMutation.isPending} className="self-start">
             Confirm Check-In
           </Button>
         </>

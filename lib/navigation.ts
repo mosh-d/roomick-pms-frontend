@@ -42,6 +42,7 @@ export const NAV_GROUPS: NavGroup[] = [
           { label: 'Walk-In Booking', href: '/dashboard/walk-in-booking' },
           { label: 'Departures Dashboard', href: '/dashboard/departures' },
           { label: 'Check-Out Flow', href: '/dashboard/check-out' },
+          { label: 'Room Move & Upgrade', href: '/dashboard/room-move' },
           { label: 'In-House Guest List', href: '/dashboard/in-house-guest-list' },
           { label: 'Room Status Board', href: '/dashboard/room-status-board' },
         ],
