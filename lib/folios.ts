@@ -107,6 +107,17 @@ export interface TaxBreakdownRow {
 
 export type FolioFilter = 'all' | 'outstanding' | 'overdue';
 
+/** One end of a transfer, named the way the desk knows it: whose bill, which room. */
+export interface TransferEnd {
+  id: string;
+  label: string | null;
+  status: FolioStatus;
+  reservationId: string;
+  guest: { id: string; name: string };
+  reservation: { id: string; confirmationNumber: string; room: { number: string } | null };
+}
+
+/** Mirrors the backend's `TRANSFER_INCLUDE` (roomick-pms-backend/src/modules/folios/folios.service.ts). */
 export interface FolioTransfer {
   id: string;
   sourceFolioId: string;
@@ -115,6 +126,46 @@ export interface FolioTransfer {
   amount: string;
   reason: string;
   createdAt: string;
+  reversedAt: string | null;
+  sourceFolio?: TransferEnd;
+  targetFolio?: TransferEnd;
+  /** Whoever made the move. */
+  approvedByUser?: { id: string; name: string } | null;
+  reversedByUser?: { id: string; name: string } | null;
+  /** On Transfer History's rows: the branch's ISO 4217 code. */
+  currency?: string;
+}
+
+/** A transfer can be put back for a day, by a manager — the backend's own window. */
+export const TRANSFER_REVERSAL_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/** The line a tax line or correction belongs to — it only ever moves with it. `null` for a charge, and for lines posted before the links existed. */
+export function anchorOf(item: LineItem): string | null {
+  if (item.chargeType === 'tax' && item.parentLineItemId) return item.parentLineItemId;
+  return item.correctsLineItemId ?? null;
+}
+
+/**
+ * The lines that really move when `pickedIds` move: each picked charge with
+ * its tax, its correction and the correction's tax — the backend's own rule
+ * (`FoliosService.withDependents`), mirrored so a preview shows what will
+ * actually move.
+ */
+export function linesMovingWith(lineItems: LineItem[], pickedIds: Set<string>): LineItem[] {
+  const live = lineItems.filter((li) => !li.isVoid);
+  const moving = new Set(pickedIds);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const li of live) {
+      if (moving.has(li.id)) continue;
+      if ((li.parentLineItemId && moving.has(li.parentLineItemId)) || (li.correctsLineItemId && moving.has(li.correctsLineItemId))) {
+        moving.add(li.id);
+        grew = true;
+      }
+    }
+  }
+  return live.filter((li) => moving.has(li.id));
 }
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
@@ -194,10 +245,22 @@ export function useCloseFolioMutation(branchId: string, folioId: string, { acces
 }
 
 
+/** A stay's bills, main bill first (`FoliosService.listFoliosForReservation`). */
+export interface ReservationFolio {
+  id: string;
+  /** `null` on the stay's main bill. */
+  label: string | null;
+  status: FolioStatus;
+  payerName: string | null;
+  corporateAccount: { id: string; name: string } | null;
+  balanceDue: string;
+  openedAt: string | null;
+}
+
 export function useReservationFoliosQuery(reservationId: string | null, { accessToken, tenantId }: AuthOpts) {
   return useQuery({
     queryKey: ['reservation-folios', reservationId] as const,
-    queryFn: () => apiFetch<FolioDetail[]>(`/reservations/${reservationId}/folios`, { accessToken, tenantId }),
+    queryFn: () => apiFetch<ReservationFolio[]>(`/reservations/${reservationId}/folios`, { accessToken, tenantId }),
     enabled: reservationId !== null,
   });
 }
@@ -213,12 +276,70 @@ export function useTransferHistoryQuery(folioId: string | null, { accessToken, t
 export function useCreateFolioMutation(branchId: string, reservationId: string, { accessToken, tenantId }: AuthOpts) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (label: string) =>
-      apiFetch<FolioDetail>(`/reservations/${reservationId}/folios`, { method: 'POST', accessToken, tenantId, body: { label } }),
+    mutationFn: (body: { label: string; payerName?: string; corporateAccountId?: string }) =>
+      apiFetch<FolioDetail>(`/reservations/${reservationId}/folios`, { method: 'POST', accessToken, tenantId, body }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservation-folios', reservationId] });
       queryClient.invalidateQueries({ queryKey: ['folios', branchId] });
     },
+  });
+}
+
+/** Every move of charges at the branch, newest first — Transfer History. */
+export function useBranchTransfersQuery(branchId: string | null, range: { from?: string; to?: string }, { accessToken, tenantId }: AuthOpts) {
+  const params = new URLSearchParams();
+  if (range.from) params.set('from', range.from);
+  if (range.to) params.set('to', range.to);
+  return useQuery({
+    queryKey: ['branch-folio-transfers', branchId, range.from ?? null, range.to ?? null] as const,
+    queryFn: () => apiFetch<FolioTransfer[]>(`/branches/${branchId}/folio-transfers${params.size ? `?${params.toString()}` : ''}`, { accessToken, tenantId }),
+    enabled: branchId !== null,
+  });
+}
+
+/** After charges move, both bills, every balance list and every transfer list are stale. */
+function invalidateMoves(queryClient: ReturnType<typeof useQueryClient>, branchId: string, folioIds: string[]) {
+  for (const folioId of folioIds) {
+    queryClient.invalidateQueries({ queryKey: folioQueryKey(folioId) });
+    queryClient.invalidateQueries({ queryKey: ['folio-tax-breakdown', folioId] });
+  }
+  queryClient.invalidateQueries({ queryKey: ['reservation-folios'] });
+  queryClient.invalidateQueries({ queryKey: ['folios', branchId] });
+  queryClient.invalidateQueries({ queryKey: ['folio-transfers'] });
+  queryClient.invalidateQueries({ queryKey: ['branch-folio-transfers', branchId] });
+  queryClient.invalidateQueries({ queryKey: reservationsQueryKey('inHouse', branchId) });
+}
+
+/**
+ * Folio Transfer: charges (or every charge) onto another open bill. Within
+ * one stay it's the split the front desk makes; onto another stay's bill
+ * it's a transfer, which the backend only lets a manager, the owner or an
+ * accountant make.
+ */
+export function useMoveChargesMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      sourceFolioId,
+      sameStay,
+      ...body
+    }: {
+      sourceFolioId: string;
+      sameStay: boolean;
+      targetFolioId: string;
+      lineItemIds?: string[];
+      transferAll?: boolean;
+      reason: string;
+    }) => apiFetch<FolioTransfer>(`/folios/${sourceFolioId}/${sameStay ? 'split' : 'transfer'}`, { method: 'POST', accessToken, tenantId, body }),
+    onSuccess: (_data, variables) => invalidateMoves(queryClient, branchId, [variables.sourceFolioId, variables.targetFolioId]),
+  });
+}
+
+export function useReverseTransferMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (transfer: FolioTransfer) => apiFetch<FolioTransfer>(`/folio-transfers/${transfer.id}/reverse`, { method: 'POST', accessToken, tenantId }),
+    onSuccess: (_data, transfer) => invalidateMoves(queryClient, branchId, [transfer.sourceFolioId, transfer.targetFolioId]),
   });
 }
 

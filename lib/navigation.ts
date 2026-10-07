@@ -77,7 +77,15 @@ export const NAV_GROUPS: NavGroup[] = [
           { label: 'Night Audit', href: '/dashboard/night-audit' },
         ],
       },
-      { label: 'Folio Transfer', href: '/dashboard/folio-transfer' },
+      {
+        label: 'Folio Transfer',
+        href: '/dashboard/folio-transfer',
+        children: [
+          { label: 'Transfer Charges', href: '/dashboard/folio-transfer/transfer' },
+          { label: 'Create Secondary Folio', href: '/dashboard/folio-transfer/secondary-folio' },
+          { label: 'Transfer History', href: '/dashboard/folio-transfer/history' },
+        ],
+      },
       {
         label: 'Point of Sale',
         href: '/dashboard/pos',
