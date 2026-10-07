@@ -39,6 +39,7 @@ export const NAV_GROUPS: NavGroup[] = [
         children: [
           { label: 'Arrivals Dashboard', href: '/dashboard/arrivals' },
           { label: 'Check-In Flow', href: '/dashboard/check-in', detail: { prefix: '/dashboard/check-in/', label: 'Check-In' } },
+          { label: 'Group Check-In', href: '/dashboard/group-check-in' },
           { label: 'Walk-In Booking', href: '/dashboard/walk-in-booking' },
           { label: 'Departures Dashboard', href: '/dashboard/departures' },
           { label: 'Check-Out Flow', href: '/dashboard/check-out' },

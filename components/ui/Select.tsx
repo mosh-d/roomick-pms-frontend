@@ -61,6 +61,7 @@ export function Select({
   disabled = false,
   name,
   id,
+  labelHidden = false,
 }: {
   label: string;
   options: SelectOption[];
@@ -72,6 +73,8 @@ export function Select({
   disabled?: boolean;
   name?: string;
   id?: string;
+  /** Keeps the label for screen readers only — for a Select in a table cell, where the column header already says what it is. */
+  labelHidden?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [filterText, setFilterText] = useState('');
@@ -152,7 +155,7 @@ export function Select({
       ref={containerRef}
       className={`flex flex-col gap-1 rounded-control px-3 -mx-3 py-2 transition-colors ${open ? 'bg-secondary-light/15' : ''}`}
     >
-      <label htmlFor={fieldId} className="text-small font-semibold text-secondary">
+      <label htmlFor={fieldId} className={labelHidden ? 'sr-only' : 'text-small font-semibold text-secondary'}>
         {label}
       </label>
       <div className="relative flex items-center">

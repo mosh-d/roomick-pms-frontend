@@ -314,6 +314,24 @@ export function useMoveRoomMutation(branchId: string, { accessToken, tenantId }:
   });
 }
 
+export interface GroupCheckInResult {
+  checkedIn: Array<{ reservationId: string; confirmationNumber: string; guestName: string; roomNumber: string | null }>;
+  /** The group's master bill, when one was opened. */
+  masterFolioId: string | null;
+}
+
+export function useGroupCheckInMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ blockId, ...body }: { blockId: string; assignments: Array<{ reservationId: string; roomId: string }>; masterBill?: { leadReservationId: string } }) =>
+      apiFetch<GroupCheckInResult>(`/group-blocks/${blockId}/check-in`, { method: 'POST', accessToken, tenantId, body }),
+    onSuccess: () => {
+      invalidateAfterLifecycleChange(queryClient, branchId);
+      queryClient.invalidateQueries({ queryKey: ['folios', branchId] });
+    },
+  });
+}
+
 export function useCheckOutMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
   const queryClient = useQueryClient();
   return useMutation({

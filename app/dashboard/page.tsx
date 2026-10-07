@@ -98,6 +98,12 @@ export default function FrontDeskHubPage() {
             href="/dashboard/check-in?override=1"
           />
           <HubCard
+            icon={<HotelCheckInIcon className="size-5" />}
+            title="Group Check-In"
+            description="A group's arrivals into their rooms together"
+            href="/dashboard/group-check-in"
+          />
+          <HubCard
             icon={<WalkInIcon className="size-5" />}
             title="Walk-In Booking"
             description="Create reservation and check-in in one flow"
