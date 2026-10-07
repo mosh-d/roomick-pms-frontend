@@ -1,6 +1,7 @@
 'use client';
 
 import { Container } from '@/components/ui/Container';
+import { Section } from '@/components/ui/Section';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ReportsIcon, FinancialReportsIcon, CustomReportBuilderIcon } from '@/components/ui/Icons';
 import { HubCard } from '../_components/HubCard';
@@ -24,11 +25,13 @@ export default function ReportsHubPage() {
         roles="Manager · Owner · Accountant"
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <HubCard icon={<ReportsIcon className="size-5" />} title="Operational Reports" description="Occupancy, ADR, RevPAR, no-shows, cancellations" href="/dashboard/reports/operational" />
-        <HubCard icon={<FinancialReportsIcon className="size-5" />} title="Financial Reports" description="Daily revenue, tax, cash flow, monthly summary" />
-        <HubCard icon={<CustomReportBuilderIcon className="size-5" />} title="Custom Report Builder" description="Select fields, filters, groupings, save templates" />
-      </div>
+      <Section label="Reports & Analytics">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <HubCard icon={<ReportsIcon className="size-5" />} title="Operational Reports" description="Occupancy, ADR, RevPAR, no-shows, cancellations" href="/dashboard/reports/operational" />
+          <HubCard icon={<FinancialReportsIcon className="size-5" />} title="Financial Reports" description="Daily revenue, tax, cash flow, monthly summary" />
+          <HubCard icon={<CustomReportBuilderIcon className="size-5" />} title="Custom Report Builder" description="Select fields, filters, groupings, save templates" />
+        </div>
+      </Section>
     </Container>
   );
 }

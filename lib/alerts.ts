@@ -13,10 +13,17 @@ export interface AlertReservation {
   room: { number: string } | null;
 }
 
+/** An overdue checkout: still in-house past the departure date, with what their bill stands at — they owe it as a guest-ledger balance, so they aren't repeated under Overdue Balances (which is for guests who have left). */
+export interface OverdueCheckout extends AlertReservation {
+  folioId: string | null;
+  balanceDue: string;
+  currency: string;
+}
+
 /** Mirrors `AlertsService.getAlerts`'s response (roomick-pms-backend/src/modules/alerts/alerts.service.ts). Computed live on every call — nothing persisted, no dismiss/ack state; a row disappears the moment the real reservation/folio it's derived from actually changes. */
 export interface Alerts {
   missedCheckIns: AlertReservation[];
-  overdueCheckouts: AlertReservation[];
+  overdueCheckouts: OverdueCheckout[];
   overdueBalances: FolioListRow[];
   total: number;
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { Container } from '@/components/ui/Container';
+import { Section } from '@/components/ui/Section';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ReceiptIcon, SplitBillingIcon, NightAuditIcon, RefundsIcon } from '@/components/ui/Icons';
 import { useFoliosQuery } from '@/lib/folios';
@@ -34,18 +35,20 @@ export default function BillingHubPage() {
         roles="Front Desk · Accountant · Manager"
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <HubCard
-          icon={<ReceiptIcon className="size-5" />}
-          title="Guest Folio"
-          description="Live charges, line items, running balance"
-          stats={outstandingQuery.data ? [`${outstandingQuery.data.length} outstanding ${outstandingQuery.data.length === 1 ? 'folio' : 'folios'}`] : undefined}
-          href="/dashboard/billing/folios"
-        />
-        <HubCard icon={<SplitBillingIcon className="size-5" />} title="Split Billing" description="Divide charges across multiple folios" href="/dashboard/split-billing" />
-        <HubCard icon={<NightAuditIcon className="size-5" />} title="Night Audit" description="End-of-day rollover and reconciliation" href="/dashboard/night-audit" />
-        <HubCard icon={<RefundsIcon className="size-5" />} title="Refunds & Corrections" description="Process refunds with approval workflow" />
-      </div>
+      <Section label="Billing and Payments">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <HubCard
+            icon={<ReceiptIcon className="size-5" />}
+            title="Guest Folio"
+            description="Live charges, line items, running balance"
+            stats={outstandingQuery.data ? [`${outstandingQuery.data.length} outstanding ${outstandingQuery.data.length === 1 ? 'folio' : 'folios'}`] : undefined}
+            href="/dashboard/billing/folios"
+          />
+          <HubCard icon={<SplitBillingIcon className="size-5" />} title="Split Billing" description="Divide charges across multiple folios" href="/dashboard/split-billing" />
+          <HubCard icon={<NightAuditIcon className="size-5" />} title="Night Audit" description="End-of-day rollover and reconciliation" href="/dashboard/night-audit" />
+          <HubCard icon={<RefundsIcon className="size-5" />} title="Refunds & Corrections" description="Process refunds with approval workflow" />
+        </div>
+      </Section>
     </Container>
   );
 }

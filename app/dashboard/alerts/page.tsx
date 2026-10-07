@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { AlertsIcon } from '@/components/ui/Icons';
-import { useAlertsQuery, type AlertReservation } from '@/lib/alerts';
+import { useAlertsQuery, type AlertReservation, type OverdueCheckout } from '@/lib/alerts';
 import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
@@ -93,8 +93,10 @@ export default function AlertsPage() {
           emptyLabel="No overdue checkouts — every checked-in guest is within their scheduled stay."
           dateLabel="Scheduled Check-Out"
           dateOf={(r) => r.checkOutDate}
+          balanceOf={(r) => r as OverdueCheckout}
           actionLabel="Check Out"
           actionHref={() => '/dashboard/check-out'}
+          footnote="These guests are still in-house, so what they owe shows here rather than under Overdue Balances, which is for guests who have left. Each night they stay, the night audit charges it as an overstay — check them out, or extend the stay from their reservation."
         />
       ) : (
         <OverdueBalancesTable rows={alerts.overdueBalances} />
@@ -108,15 +110,21 @@ function ReservationAlertsTable({
   emptyLabel,
   dateLabel,
   dateOf,
+  balanceOf,
   actionLabel,
   actionHref,
+  footnote,
 }: {
   rows: AlertReservation[];
   emptyLabel: string;
   dateLabel: string;
   dateOf: (r: AlertReservation) => string;
+  /** Overdue checkouts only: what the guest's bill stands at. */
+  balanceOf?: (r: AlertReservation) => OverdueCheckout;
   actionLabel: string;
   actionHref: (r: AlertReservation) => string;
+  /** A line under the table, inside the section. */
+  footnote?: string;
 }) {
   if (rows.length === 0) {
     return (
@@ -136,28 +144,45 @@ function ReservationAlertsTable({
               <th className="py-2 pr-4">Confirmation #</th>
               <th className="py-2 pr-4">Room</th>
               <th className="py-2 pr-4">{dateLabel}</th>
+              {balanceOf ? <th className="py-2 pr-4 text-right">Owes</th> : null}
               <th className="py-2 pr-4" />
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
-              <tr key={r.id} className="border-t border-secondary/10 text-small text-secondary">
-                <td className="py-2 pr-4 font-semibold text-primary-dark">{r.guest.name}</td>
-                <td className="py-2 pr-4">{r.confirmationNumber}</td>
-                <td className="py-2 pr-4">{r.room ? `${r.room.number} (${r.roomType.name})` : r.roomType.name}</td>
-                <td className="py-2 pr-4">{new Date(dateOf(r)).toLocaleDateString()}</td>
-                <td className="py-2 pr-4 text-right">
-                  <Link href={actionHref(r)}>
-                    <Button type="button" size="sm">
-                      {actionLabel}
-                    </Button>
-                  </Link>
-                </td>
-              </tr>
-            ))}
+            {rows.map((r) => {
+              const bill = balanceOf?.(r);
+              const owes = bill ? Number(bill.balanceDue) : 0;
+              return (
+                <tr key={r.id} className="border-t border-secondary/10 text-small text-secondary">
+                  <td className="py-2 pr-4 font-semibold">{r.guest.name}</td>
+                  <td className="py-2 pr-4">{r.confirmationNumber}</td>
+                  <td className="py-2 pr-4">{r.room ? `${r.room.number} (${r.roomType.name})` : r.roomType.name}</td>
+                  <td className="py-2 pr-4">{new Date(dateOf(r)).toLocaleDateString()}</td>
+                  {bill ? (
+                    <td className={`py-2 pr-4 text-right whitespace-nowrap ${owes > 0 ? 'font-semibold text-red-600' : ''}`}>
+                      {bill.folioId ? (
+                        <Link href={`/dashboard/billing/${bill.folioId}`} className="underline underline-offset-2">
+                          {formatMoney(bill.balanceDue, currencySymbolFor(bill.currency))}
+                        </Link>
+                      ) : (
+                        formatMoney(bill.balanceDue, currencySymbolFor(bill.currency))
+                      )}
+                    </td>
+                  ) : null}
+                  <td className="py-2 pr-4 text-right">
+                    <Link href={actionHref(r)}>
+                      <Button type="button" size="sm">
+                        {actionLabel}
+                      </Button>
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </Card>
+      {footnote ? <p className="text-small text-primary-dark/70">{footnote}</p> : null}
     </Section>
   );
 }
@@ -187,7 +212,7 @@ function OverdueBalancesTable({ rows }: { rows: FolioListRow[] }) {
           <tbody>
             {rows.map((f) => (
               <tr key={f.id} className="border-t border-secondary/10 text-small text-secondary">
-                <td className="py-2 pr-4 font-semibold text-primary-dark">{f.guest.name}</td>
+                <td className="py-2 pr-4 font-semibold">{f.guest.name}</td>
                 <td className="py-2 pr-4">{f.reservation?.confirmationNumber ?? 'NIL'}</td>
                 <td className="py-2 pr-4">{f.reservation ? new Date(f.reservation.checkOutDate).toLocaleDateString() : 'NIL'}</td>
                 <td className="py-2 pr-4 text-right font-semibold text-red-600">{formatMoney(f.balanceDue, currencySymbolFor(f.currency))}</td>

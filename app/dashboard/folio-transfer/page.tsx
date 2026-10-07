@@ -1,6 +1,7 @@
 'use client';
 
 import { Container } from '@/components/ui/Container';
+import { Section } from '@/components/ui/Section';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { TransferChargesIcon, CreateSecondaryFolioIcon, TransferHistoryIcon } from '@/components/ui/Icons';
 import { HubCard } from '../_components/HubCard';
@@ -22,11 +23,13 @@ export default function FolioTransferPage() {
         roles="Front Desk · Accountant"
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <HubCard icon={<TransferChargesIcon className="size-5" />} title="Transfer Charges Between Folios" description="Room-to-room, guest-to-corporate, shared room split" />
-        <HubCard icon={<CreateSecondaryFolioIcon className="size-5" />} title="Create Secondary Folio" description="Guest requests split e.g. personal vs business" />
-        <HubCard icon={<TransferHistoryIcon className="size-5" />} title="Transfer History" description="Full audit trail of all folio movements" />
-      </div>
+      <Section label="Folio Transfer">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <HubCard icon={<TransferChargesIcon className="size-5" />} title="Transfer Charges Between Folios" description="Room-to-room, guest-to-corporate, shared room split" />
+          <HubCard icon={<CreateSecondaryFolioIcon className="size-5" />} title="Create Secondary Folio" description="Guest requests split e.g. personal vs business" />
+          <HubCard icon={<TransferHistoryIcon className="size-5" />} title="Transfer History" description="Full audit trail of all folio movements" />
+        </div>
+      </Section>
     </Container>
   );
 }

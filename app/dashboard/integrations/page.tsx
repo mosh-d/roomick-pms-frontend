@@ -66,15 +66,17 @@ export default function IntegrationsPage() {
     <Container className="max-w-6xl py-10 flex flex-col gap-8">
       <PageHeader title="Integrations & APIs" subtitle="Payment gateways, smart locks, webhooks, partner APIs, OTA integrations." roles="Admin · Developer" />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <HubCard icon={<PaymentGatewayIcon className="size-5" />} title="Payment Gateway" description="Stripe / Adyen / Authorize.net config" />
-        <HubCard
-          icon={<IntegrationsIcon className="size-5" />}
-          title="Integrations Marketplace"
-          description="Browse by category and switch on accounting exports, review requests and more"
-          href="/dashboard/integrations/marketplace"
-        />
-      </div>
+      <Section label="Integrations">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <HubCard icon={<PaymentGatewayIcon className="size-5" />} title="Payment Gateway" description="Stripe / Adyen / Authorize.net config" />
+          <HubCard
+            icon={<IntegrationsIcon className="size-5" />}
+            title="Integrations Marketplace"
+            description="Browse by category and switch on accounting exports, review requests and more"
+            href="/dashboard/integrations/marketplace"
+          />
+        </div>
+      </Section>
 
       <ApiKeysSection auth={auth} />
       <WebhooksSection auth={auth} />

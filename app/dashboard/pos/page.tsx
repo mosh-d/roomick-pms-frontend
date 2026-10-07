@@ -1,6 +1,7 @@
 'use client';
 
 import { Container } from '@/components/ui/Container';
+import { Section } from '@/components/ui/Section';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { PosTerminalIcon, MenuManagementIcon } from '@/components/ui/Icons';
 import { HubCard } from '../_components/HubCard';
@@ -21,20 +22,22 @@ export default function PointOfSalePage() {
         roles="F&B Staff · Spa · Laundry"
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <HubCard
-          icon={<PosTerminalIcon className="size-5" />}
-          title="POS Terminal"
-          description="Order creation and folio posting"
-          href="/dashboard/pos/terminal"
-        />
-        <HubCard
-          icon={<MenuManagementIcon className="size-5" />}
-          title="Menu Management"
-          description="Items, pricing, categories per outlet"
-          href="/dashboard/pos/menu"
-        />
-      </div>
+      <Section label="Point of Sale">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <HubCard
+            icon={<PosTerminalIcon className="size-5" />}
+            title="POS Terminal"
+            description="Order creation and folio posting"
+            href="/dashboard/pos/terminal"
+          />
+          <HubCard
+            icon={<MenuManagementIcon className="size-5" />}
+            title="Menu Management"
+            description="Items, pricing, categories per outlet"
+            href="/dashboard/pos/menu"
+          />
+        </div>
+      </Section>
     </Container>
   );
 }

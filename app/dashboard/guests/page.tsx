@@ -1,6 +1,7 @@
 'use client';
 
 import { Container } from '@/components/ui/Container';
+import { Section } from '@/components/ui/Section';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { GuestProfileIcon, CorporateAccountsIcon } from '@/components/ui/Icons';
 import { useGuestsListQuery } from '@/lib/guests';
@@ -31,16 +32,18 @@ export default function GuestCrmHubPage() {
         roles="Front Desk · Manager · CRM"
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <HubCard
-          icon={<GuestProfileIcon className="size-5" />}
-          title="Guest Profile"
-          description="Full profile: preferences, history, spend"
-          stats={guestsQuery.data ? [`${guestsQuery.data.total} ${guestsQuery.data.total === 1 ? 'guest' : 'guests'} on file`] : undefined}
-          href="/dashboard/guests/profiles"
-        />
-        <HubCard icon={<CorporateAccountsIcon className="size-5" />} title="Corporate Accounts" description="Company profiles with linked travelers" />
-      </div>
+      <Section label="Guest Profiles & CRM">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <HubCard
+            icon={<GuestProfileIcon className="size-5" />}
+            title="Guest Profile"
+            description="Full profile: preferences, history, spend"
+            stats={guestsQuery.data ? [`${guestsQuery.data.total} ${guestsQuery.data.total === 1 ? 'guest' : 'guests'} on file`] : undefined}
+            href="/dashboard/guests/profiles"
+          />
+          <HubCard icon={<CorporateAccountsIcon className="size-5" />} title="Corporate Accounts" description="Company profiles with linked travelers" />
+        </div>
+      </Section>
     </Container>
   );
 }
