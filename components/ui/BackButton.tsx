@@ -31,7 +31,7 @@ export function BackButton({ label = 'Back', fallbackHref }: { label?: string; f
     <button
       type="button"
       onClick={handleClick}
-      className="inline-flex w-fit items-center gap-1.5 text-small font-semibold text-surface-muted hover:text-surface cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
+      className="inline-flex w-fit items-center gap-1.5 py-3 -my-3 text-small font-semibold text-surface-muted hover:text-surface cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
     >
       <ArrowLeftIcon className="size-3.5" />
       {label}

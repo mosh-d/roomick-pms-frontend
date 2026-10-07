@@ -129,7 +129,7 @@ export function CameraCapture({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="text-small text-surface-muted underline hover:text-surface cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
+            className="py-3 -my-3 text-small text-surface-muted underline hover:text-surface cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-control"
           >
             or upload a photo instead
           </button>
