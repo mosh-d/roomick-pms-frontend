@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select, type SelectOption } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Table, type TableColumn } from '@/components/ui/Table';
 import { Modal } from '@/components/ui/Modal';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -22,7 +23,15 @@ import {
   type Role,
 } from '@/lib/staff';
 import { useAuditLogsQuery, type AuditLogRow } from '@/lib/auditLogs';
-import { useGdprRequestsQuery, useCreateGdprRequestMutation, useUpdateGdprStatusMutation, downloadGdprExport, type GdprRequestRow, type GdprType } from '@/lib/gdpr';
+import {
+  useGdprRequestsQuery,
+  useCreateGdprRequestMutation,
+  useUpdateGdprStatusMutation,
+  useEraseGuestMutation,
+  downloadGdprExport,
+  type GdprRequestRow,
+  type GdprType,
+} from '@/lib/gdpr';
 import { useGuestSearchQuery, type GuestSummary } from '@/lib/guests';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
@@ -440,6 +449,9 @@ function GdprSection({ auth }: { auth: AuthOpts }) {
   const requestsQuery = useGdprRequestsQuery(auth);
   const createMutation = useCreateGdprRequestMutation(auth);
   const statusMutation = useUpdateGdprStatusMutation(auth);
+  const eraseMutation = useEraseGuestMutation(auth);
+  const [erasing, setErasing] = useState<GdprRequestRow | null>(null);
+  const [eraseError, setEraseError] = useState<string | null>(null);
 
   const typeOptions: SelectOption[] = [
     { value: 'access', label: 'Access' },
@@ -506,9 +518,22 @@ function GdprSection({ auth }: { auth: AuthOpts }) {
                   Mark In Progress
                 </Button>
               ) : null}
-              <Button size="sm" variant="outline" onClick={() => statusMutation.mutate({ requestId: r.id, status: 'completed' })}>
-                Mark Completed
-              </Button>
+              {r.type === 'erasure' ? (
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => {
+                    setEraseError(null);
+                    setErasing(r);
+                  }}
+                >
+                  Erase Guest Data
+                </Button>
+              ) : (
+                <Button size="sm" variant="outline" onClick={() => statusMutation.mutate({ requestId: r.id, status: 'completed' })}>
+                  Mark Completed
+                </Button>
+              )}
               <Button size="sm" variant="danger" onClick={() => statusMutation.mutate({ requestId: r.id, status: 'rejected' })}>
                 Reject
               </Button>
@@ -568,11 +593,26 @@ function GdprSection({ auth }: { auth: AuthOpts }) {
             <Table columns={columns} rows={requestsQuery.data ?? []} emptyMessage="No GDPR requests filed yet." exportFileName="gdpr-requests" />
           </Card>
         )}
+        {eraseError ? <p className="text-small text-red-600">{eraseError}</p> : null}
         <p className="text-tiny text-secondary-light">
-          Erasure requests are tracked here but not automated — this system does not delete data across reservations/folios/audit history on its own. Mark one completed once the
-          erasure has actually been carried out through your own process.
+          <span className="font-semibold">Erase Guest Data</span> carries out an erasure request: the guest&apos;s name, contact details, ID document and photo,
+          registration-card details and signature, notes, preferences and the text of their messages are erased for good. Their stays, bills and payments stay — the
+          financial record you&apos;re required to keep — under &ldquo;Erased guest&rdquo;. It waits while they have a stay booked or still owe money.
         </p>
       </div>
+      <ConfirmDialog
+        open={erasing !== null}
+        title={erasing ? `Erase ${erasing.guest.name}?` : ''}
+        description="This can't be undone. Their name, contact details, ID document and photo, registration-card details, notes and message text are erased now. Stays, bills and payments are kept, under “Erased guest”."
+        confirmLabel={eraseMutation.isPending ? 'Erasing…' : 'Erase'}
+        onCancel={() => setErasing(null)}
+        onConfirm={() => {
+          if (!erasing) return;
+          const target = erasing;
+          setErasing(null);
+          eraseMutation.mutate(target.id, { onError: (err) => setEraseError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.') });
+        }}
+      />
     </Section>
   );
 }

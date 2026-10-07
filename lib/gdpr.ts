@@ -16,7 +16,7 @@ export interface GdprRequestRow {
   completedAt: string | null;
   exportUrl: string | null;
   notes: string | null;
-  guest: { id: string; name: string; email: string };
+  guest: { id: string; name: string; email: string | null };
 }
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
@@ -44,6 +44,19 @@ export function useUpdateGdprStatusMutation({ accessToken, tenantId }: AuthOpts)
     mutationFn: ({ requestId, ...body }: { requestId: string; status: 'in_progress' | 'completed' | 'rejected'; notes?: string }) =>
       apiFetch<GdprRequestRow>(`/gdpr/data-requests/${requestId}/status`, { method: 'PATCH', accessToken, tenantId, body }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['gdpr-requests'] }),
+  });
+}
+
+/** Carries out an erasure request — see `GdprService.eraseGuestData`: identity gone, financial record kept. The guest lists and profiles change too. */
+export function useEraseGuestMutation({ accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (requestId: string) => apiFetch<GdprRequestRow>(`/gdpr/data-requests/${requestId}/erase`, { method: 'POST', accessToken, tenantId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gdpr-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['guests-list'] });
+      queryClient.invalidateQueries({ queryKey: ['guests-search'] });
+    },
   });
 }
 
