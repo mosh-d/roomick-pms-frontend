@@ -37,3 +37,17 @@ export function isOwner(user: AuthUser | null): boolean {
   if (!user) return false;
   return user.roles.some((r) => r.role === 'owner');
 }
+
+const ROLE_LABELS: Record<string, string> = {
+  owner: 'Owner',
+  manager: 'Manager',
+  front_desk: 'Front Desk',
+  housekeeper: 'Housekeeper',
+  accountant: 'Accountant',
+  pos_staff: 'POS Staff',
+};
+
+/** A role's name as people say it — the built-in ones are stored as keys (`front_desk`), a custom role as typed. */
+export function roleLabel(name: string): string {
+  return ROLE_LABELS[name] ?? name;
+}

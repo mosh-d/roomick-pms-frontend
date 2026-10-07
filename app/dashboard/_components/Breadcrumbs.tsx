@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Fragment, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { CheckIcon, ChevronUpDownIcon } from '@/components/ui/Icons';
 import { branchSafeHref, breadcrumbTrail } from '@/lib/navigation';
+import { usePageAccess } from './PageAccess';
 import { useAuthStore } from '@/lib/store/authStore';
 
 interface MenuOption {
@@ -35,7 +36,8 @@ export function Breadcrumbs({ branches }: { branches: Array<{ id: string; name: 
   const setActiveBranchId = useAuthStore((s) => s.setActiveBranchId);
 
   const branch = branches.find((b) => b.id === activeBranchId);
-  const trail = breadcrumbTrail(pathname);
+  const { canOpen } = usePageAccess();
+  const trail = breadcrumbTrail(pathname, canOpen);
 
   const branchOptions: MenuOption[] = branches.map((b) => ({
     key: b.id,

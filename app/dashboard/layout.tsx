@@ -8,6 +8,7 @@ import { useMyBranches } from '@/lib/dashboardBranches';
 import { useAuthStore } from '@/lib/store/authStore';
 import { MenuIcon } from '@/components/ui/Icons';
 import { BranchPicker } from './_components/BranchPicker';
+import { PageAccessProvider, PageGate } from './_components/PageAccess';
 import { Breadcrumbs } from './_components/Breadcrumbs';
 import { SessionEndedPrompt } from './_components/SessionEndedPrompt';
 import { Sidebar } from './_components/Sidebar';
@@ -143,53 +144,59 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   // `WizardShell.tsx`'s identical shell: the browser window itself never
   // scrolls, header and sidebar stay visually fixed, and `main` is the only
   // part with its own `overflow-y-auto`.
+  // Which pages this person opens here (Staff Management → Page Access) shapes
+  // the sidebar and breadcrumbs, and `PageGate` keeps the rest from opening.
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
-      <header className="shrink-0 flex items-center justify-between gap-3 border-b border-accent/20 px-4 sm:px-6 py-4 print:hidden">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <button
-            type="button"
-            onClick={() => setMobileNavOpen(true)}
-            aria-label="Open navigation menu"
-            className="md:hidden shrink-0 rounded-control border border-primary/30 p-2 text-surface hover:bg-primary-light/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            <MenuIcon className="size-5" />
-          </button>
-          <Link href="/dashboard" className="font-display text-header font-bold text-surface-accent shrink-0">
-            Roomick
-          </Link>
-          {/* The trail is wide-screen only (see Breadcrumbs) — below `lg` the bar keeps just the logo. */}
-          <span aria-hidden className="hidden lg:inline text-accent shrink-0">
-            /
-          </span>
-          <Breadcrumbs branches={branches ?? []} />
+    <PageAccessProvider branchId={activeBranchId}>
+      <div className="h-screen flex flex-col overflow-hidden">
+        <header className="shrink-0 flex items-center justify-between gap-3 border-b border-accent/20 px-4 sm:px-6 py-4 print:hidden">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Open navigation menu"
+              className="md:hidden shrink-0 rounded-control border border-primary/30 p-2 text-surface hover:bg-primary-light/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <MenuIcon className="size-5" />
+            </button>
+            <Link href="/dashboard" className="font-display text-header font-bold text-surface-accent shrink-0">
+              Roomick
+            </Link>
+            {/* The trail is wide-screen only (see Breadcrumbs) — below `lg` the bar keeps just the logo. */}
+            <span aria-hidden className="hidden lg:inline text-accent shrink-0">
+              /
+            </span>
+            <Breadcrumbs branches={branches ?? []} />
+          </div>
+          <div className="flex items-center gap-4 shrink-0 text-small">
+            {/* Everyone's way to their own sign-in settings — two-step sign-in lives there. */}
+            <Link href="/dashboard/account" className="hidden sm:inline text-surface-muted hover:text-surface hover:underline" title="My Account">
+              {user?.name}
+            </Link>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="font-semibold text-surface border border-primary/40 rounded-control px-4 py-2 hover:bg-primary-light/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              Log out
+            </button>
+          </div>
+        </header>
+        {/* Over the page rather than instead of it: the page stays where it was, and signing back in returns to it. */}
+        {sessionEnded ? <SessionEndedPrompt onSignIn={() => void leaveEndedSession()} /> : null}
+        <div className="flex flex-1 min-h-0">
+          <Sidebar mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+          {/* `relative` keeps every absolutely-positioned element on a page —
+              the visually-hidden radios behind each radio group (`sr-only` is
+              `position: absolute`) — inside this scroll box. Without it they
+              sit relative to the viewport instead: one far down a long form
+              stretched the window itself, and scrolling ran on past the page
+              into blank space. */}
+          <main className="relative flex-1 overflow-y-auto">
+            <PageGate>{children}</PageGate>
+          </main>
         </div>
-        <div className="flex items-center gap-4 shrink-0 text-small">
-          {/* Everyone's way to their own sign-in settings — two-step sign-in lives there. */}
-          <Link href="/dashboard/account" className="hidden sm:inline text-surface-muted hover:text-surface hover:underline" title="My Account">
-            {user?.name}
-          </Link>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="font-semibold text-surface border border-primary/40 rounded-control px-4 py-2 hover:bg-primary-light/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            Log out
-          </button>
-        </div>
-      </header>
-      {/* Over the page rather than instead of it: the page stays where it was, and signing back in returns to it. */}
-      {sessionEnded ? <SessionEndedPrompt onSignIn={() => void leaveEndedSession()} /> : null}
-      <div className="flex flex-1 min-h-0">
-        <Sidebar mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
-        {/* `relative` keeps every absolutely-positioned element on a page —
-            the visually-hidden radios behind each radio group (`sr-only` is
-            `position: absolute`) — inside this scroll box. Without it they
-            sit relative to the viewport instead: one far down a long form
-            stretched the window itself, and scrolling ran on past the page
-            into blank space. */}
-        <main className="relative flex-1 overflow-y-auto">{children}</main>
       </div>
-    </div>
+    </PageAccessProvider>
   );
 }

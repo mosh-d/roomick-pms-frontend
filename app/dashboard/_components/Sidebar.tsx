@@ -4,8 +4,9 @@ import { Fragment, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAlertsQuery } from '@/lib/alerts';
-import { NAV_GROUPS, activeFeatureHref } from '@/lib/navigation';
+import { activeFeatureHref, openNav } from '@/lib/navigation';
 import { useAuthStore } from '@/lib/store/authStore';
+import { usePageAccess } from './PageAccess';
 
 /**
  * The operations sidebar — a flat, single-level list, matching the
@@ -77,6 +78,9 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
   // on the shared map (`lib/navigation.ts`), which also covers each
   // feature's own pages — Front Desk for Arrivals, Billing for a folio.
   const activeHref = activeFeatureHref(pathname);
+  // Only the rows this person can open (Page Access); nothing until that's known, rather than rows that then vanish.
+  const { ready, canOpen } = usePageAccess();
+  const groups = ready ? openNav(canOpen) : [];
 
   useEffect(() => {
     onClose();
@@ -100,14 +104,14 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {NAV_GROUPS.map((group) => (
+        {groups.map((group) => (
           <Fragment key={group.label}>
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
             {group.items.map((item) =>
               item.href === '/dashboard/alerts' ? (
                 <AlertsLink key={item.href} active={activeHref === item.href} />
               ) : (
-                <SidebarLink key={item.label} item={item} active={activeHref === item.href} />
+                <SidebarLink key={item.label} item={{ label: item.label, href: item.to }} active={activeHref === item.href} />
               ),
             )}
           </Fragment>

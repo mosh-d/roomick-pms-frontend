@@ -69,11 +69,17 @@ export const CARD_TONE_CLASSES: Record<CardTone, string> = {
 export function Card({
   tone = 'secondary',
   className = '',
+  id,
   children,
 }: {
   tone?: CardTone;
   className?: string;
+  id?: string;
   children: ReactNode;
 }) {
-  return <div className={`${CARD_TONE_CLASSES[tone]} border rounded-card p-4 ${className}`}>{children}</div>;
+  return (
+    <div id={id} className={`${CARD_TONE_CLASSES[tone]} border rounded-card p-4 ${className}`}>
+      {children}
+    </div>
+  );
 }

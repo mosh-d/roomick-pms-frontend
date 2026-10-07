@@ -18,6 +18,11 @@ export interface NavPage {
    * the trail.
    */
   detail?: { prefix: string; label: string };
+  /**
+   * A hub: a page of links to the pages under it, with nothing of its own to
+   * keep from anyone. It opens when any page under it does (Page Access).
+   */
+  hub?: true;
 }
 
 export interface NavGroup {
@@ -36,6 +41,7 @@ export const NAV_GROUPS: NavGroup[] = [
       {
         label: 'Front Desk',
         href: '/dashboard',
+        hub: true,
         children: [
           { label: 'Arrivals Dashboard', href: '/dashboard/arrivals' },
           { label: 'Check-In Flow', href: '/dashboard/check-in', detail: { prefix: '/dashboard/check-in/', label: 'Check-In' } },
@@ -51,6 +57,7 @@ export const NAV_GROUPS: NavGroup[] = [
       {
         label: 'Reservations',
         href: '/dashboard/reservations',
+        hub: true,
         children: [
           { label: 'Availability Calendar', href: '/dashboard/reservations/availability-calendar' },
           { label: 'Create Reservation', href: '/dashboard/reservations/create' },
@@ -62,6 +69,7 @@ export const NAV_GROUPS: NavGroup[] = [
       {
         label: 'Housekeeping',
         href: '/dashboard/housekeeping',
+        hub: true,
         children: [
           { label: 'Task Board', href: '/dashboard/housekeeping/task-board' },
           { label: 'Staff Assignment', href: '/dashboard/housekeeping/staff-assignment' },
@@ -72,6 +80,7 @@ export const NAV_GROUPS: NavGroup[] = [
       {
         label: 'Billing & Payments',
         href: '/dashboard/billing',
+        hub: true,
         children: [
           // A folio's own page lives at /dashboard/billing/[folioId], beside this list rather than under it.
           { label: 'Guest Folios', href: '/dashboard/billing/folios', detail: { prefix: '/dashboard/billing/', label: 'Folio' } },
@@ -83,6 +92,7 @@ export const NAV_GROUPS: NavGroup[] = [
       {
         label: 'Folio Transfer',
         href: '/dashboard/folio-transfer',
+        hub: true,
         children: [
           { label: 'Transfer Charges', href: '/dashboard/folio-transfer/transfer' },
           { label: 'Create Secondary Folio', href: '/dashboard/folio-transfer/secondary-folio' },
@@ -92,6 +102,7 @@ export const NAV_GROUPS: NavGroup[] = [
       {
         label: 'Point of Sale',
         href: '/dashboard/pos',
+        hub: true,
         children: [
           { label: 'POS Terminal', href: '/dashboard/pos/terminal' },
           { label: 'Menu Management', href: '/dashboard/pos/menu' },
@@ -107,12 +118,13 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Management',
     href: '/dashboard/manager',
     items: [
-      { label: 'Manager Dashboard', href: '/dashboard/manager' },
+      { label: 'Manager Dashboard', href: '/dashboard/manager', children: [{ label: 'Staff Management', href: '/dashboard/manager/staff' }] },
       { label: 'Overbooking Mgmt', href: '/dashboard/overbooking' },
       { label: 'Rate Resolver', href: '/dashboard/reservations/rate-plans' },
       {
         label: 'Guest Profiles & CRM',
         href: '/dashboard/guests',
+        hub: true,
         children: [
           { label: 'Guest Profiles', href: '/dashboard/guests/profiles', detail: { prefix: '/dashboard/guests/', label: 'Guest Profile' } },
           { label: 'Corporate Accounts', href: '/dashboard/guests/corporate' },
@@ -129,6 +141,7 @@ export const NAV_GROUPS: NavGroup[] = [
       {
         label: 'Reports & Analytics',
         href: '/dashboard/reports',
+        hub: true,
         children: [
           { label: 'Operational Reports', href: '/dashboard/reports/operational' },
           { label: 'Financial Reports', href: '/dashboard/reports/financial' },
@@ -207,21 +220,86 @@ function siblingsOf(group: NavGroup, trail: NavPage[], index: number): NavPage[]
 }
 
 /**
+ * Whether a page opens for someone, given the pages Page Access lets them
+ * open (`canOpen`, by href). A hub opens when any page under it does.
+ */
+export type CanOpen = (href: string) => boolean;
+
+const EVERYTHING: CanOpen = () => true;
+
+function pageOpens(page: NavPage, canOpen: CanOpen): boolean {
+  if (page.hub) return (page.children ?? []).some((child) => pageOpens(child, canOpen));
+  return canOpen(page.href);
+}
+
+/** Where a link to `page` should go: the page itself, or — when only pages under it open — the first of those. Null when nothing there opens. */
+function targetOf(page: NavPage, canOpen: CanOpen): string | null {
+  if (pageOpens(page, canOpen)) return page.href;
+  for (const child of page.children ?? []) {
+    const target = targetOf(child, canOpen);
+    if (target) return target;
+  }
+  return null;
+}
+
+/** A sidebar row as someone sees it: `to` is where it links, `href` stays the row's own (what marks it active). */
+export interface OpenNavPage extends NavPage {
+  to: string;
+}
+
+export interface OpenNavGroup extends Omit<NavGroup, 'items'> {
+  items: OpenNavPage[];
+}
+
+/** The map with only what opens for someone — rows with nothing they can open are gone, and a group with no rows with them. */
+export function openNav(canOpen: CanOpen = EVERYTHING): OpenNavGroup[] {
+  const groups: OpenNavGroup[] = [];
+  for (const group of NAV_GROUPS) {
+    const items = group.items.flatMap((item) => {
+      const to = targetOf(item, canOpen);
+      return to ? [{ ...item, to }] : [];
+    });
+    if (items.length > 0) groups.push({ ...group, href: items[0].to, items });
+  }
+  return groups;
+}
+
+/** The first page someone can open — where the dashboard sends a person who can't open the Front Desk. */
+export function firstOpenHref(canOpen: CanOpen): string | null {
+  return openNav(canOpen)[0]?.items[0]?.to ?? null;
+}
+
+/** Whether a path opens: the page it is, or the page a record page belongs to. A path off the map (My Account) always does. */
+export function pathOpens(pathname: string, canOpen: CanOpen): boolean {
+  // `/dashboard/check-in?override=1` is the Check-In page.
+  const found = find(pathname.split(/[?#]/)[0]);
+  if (!found) return true;
+  return pageOpens(last(found.pages), canOpen);
+}
+
+/**
  * The trail below the branch for a dashboard path — group, feature, the
  * page within it, and a record page's own crumb — with each level's
- * alternatives. Empty for a path that isn't on the map.
+ * alternatives, limited to what opens for the person (`canOpen`). Empty for
+ * a path that isn't on the map.
  */
-export function breadcrumbTrail(pathname: string): Crumb[] {
+export function breadcrumbTrail(pathname: string, canOpen: CanOpen = EVERYTHING): Crumb[] {
   const found = find(pathname);
   if (!found) return [];
   if (!found.group) return found.pages.map((page) => ({ label: page.label, href: page.href, options: [] }));
   const { group, pages, detail } = found;
+  const options = (list: NavPage[]) =>
+    list.flatMap((page) => {
+      const to = targetOf(page, canOpen);
+      return to ? [{ label: page.label, href: to }] : [];
+    });
+  const groups = openNav(canOpen);
   const crumbs: Crumb[] = [
-    { label: group.label, href: group.href, options: NAV_GROUPS.map((g) => ({ label: g.label, href: g.href })) },
+    { label: group.label, href: groups.find((g) => g.label === group.label)?.href ?? null, options: groups.map((g) => ({ label: g.label, href: g.href })) },
     ...pages.map((page, index) => ({
       label: page.label,
-      href: page.href,
-      options: siblingsOf(group, pages, index).map((sibling) => ({ label: sibling.label, href: sibling.href })),
+      href: targetOf(page, canOpen),
+      options: options(siblingsOf(group, pages, index)),
     })),
   ];
   if (detail) crumbs.push({ label: detail, href: null, options: [] });

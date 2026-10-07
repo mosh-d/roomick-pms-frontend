@@ -114,7 +114,7 @@ function PermissionMatrixSection({ auth }: { auth: AuthOpts }) {
       <div className="flex flex-col gap-3">
         <p className="text-small text-surface">
           The six built-in roles cover the usual jobs. Create a custom role for anything else — a night auditor, a revenue manager — and tick exactly what it
-          may do. Staff are given a role per property under Manager Dashboard → Staff.
+          may do. Staff are given a role per property, and each property’s manager chooses the pages a role opens there, under Manager Dashboard → Staff Management.
         </p>
         <div className="flex flex-wrap items-end gap-3">
           <div className="w-64">

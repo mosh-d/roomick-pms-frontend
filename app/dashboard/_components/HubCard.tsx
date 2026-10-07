@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { CARD_TONE_CLASSES } from '@/components/ui/Card';
+import { pathOpens } from '@/lib/navigation';
+import { usePageAccess } from './PageAccess';
 
 /**
  * One card in the Front Desk hub grid (Roomick-UI.pdf page 10). Two
@@ -54,6 +56,10 @@ export function HubCard({
   stats?: string[];
   href?: string;
 }) {
+  // A page this person can't open (Staff Management → Page Access) isn't offered at all.
+  const { canOpen } = usePageAccess();
+  if (href && !pathOpens(href, canOpen)) return null;
+
   const content = (
     <>
       <div className="flex items-center gap-2">

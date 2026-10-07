@@ -18,8 +18,10 @@ import {
 import { deriveRoomStatus } from '@/lib/deriveRoomStatus';
 import { useRoomsQuery } from '@/lib/rooms';
 import { useArrivalsQuery, useDeparturesQuery, useInHouseQuery } from '@/lib/reservations';
+import { pathOpens } from '@/lib/navigation';
 import { useAuthStore } from '@/lib/store/authStore';
 import { HubCard } from './_components/HubCard';
+import { usePageAccess } from './_components/PageAccess';
 
 /**
  * Front Desk hub (Roomick-UI.pdf page 10) — the actual `/dashboard`
@@ -40,6 +42,9 @@ export default function FrontDeskHubPage() {
   const arrivalsQuery = useArrivalsQuery(activeBranchId, undefined, auth);
   const departuresQuery = useDeparturesQuery(activeBranchId, undefined, auth);
   const inHouseQuery = useInHouseQuery(activeBranchId, auth);
+  // A section with none of its pages open to this person (Page Access) isn't shown at all.
+  const { canOpen } = usePageAccess();
+  const anyOpens = (...hrefs: string[]) => hrefs.some((href) => pathOpens(href, canOpen));
 
   const roomStatusStats = useMemo(() => {
     const rooms = roomsQuery.data ?? [];
@@ -76,79 +81,85 @@ export default function FrontDeskHubPage() {
         roles="Front Desk Agent"
       />
 
-      <Section label="Check-In">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <HubCard
-            icon={<PlaneLandingIcon className="size-5" />}
-            title="Arrivals Dashboard"
-            description="Today's expected arrivals, status, room readiness"
-            stats={arrivalsQuery.data ? [`${arrivalsQuery.data.length} pending ${arrivalsQuery.data.length === 1 ? 'arrival' : 'arrivals'} today`] : undefined}
-            href="/dashboard/arrivals"
-          />
-          <HubCard
-            icon={<HotelCheckInIcon className="size-5" />}
-            title="Check-In Flow"
-            description="Room assignment for an arriving guest"
-            href="/dashboard/check-in"
-          />
-          <HubCard
-            icon={<ManualRoomOverrideIcon className="size-5" />}
-            title="Manual Room Override"
-            description="Receptionist selects room manually"
-            href="/dashboard/check-in?override=1"
-          />
-          <HubCard
-            icon={<HotelCheckInIcon className="size-5" />}
-            title="Group Check-In"
-            description="A group's arrivals into their rooms together"
-            href="/dashboard/group-check-in"
-          />
-          <HubCard
-            icon={<WalkInIcon className="size-5" />}
-            title="Walk-In Booking"
-            description="Create reservation and check-in in one flow"
-            href="/dashboard/walk-in-booking"
-          />
-        </div>
-      </Section>
+      {anyOpens('/dashboard/arrivals', '/dashboard/check-in', '/dashboard/check-in?override=1', '/dashboard/group-check-in', '/dashboard/walk-in-booking') ? (
+        <Section label="Check-In">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <HubCard
+              icon={<PlaneLandingIcon className="size-5" />}
+              title="Arrivals Dashboard"
+              description="Today's expected arrivals, status, room readiness"
+              stats={arrivalsQuery.data ? [`${arrivalsQuery.data.length} pending ${arrivalsQuery.data.length === 1 ? 'arrival' : 'arrivals'} today`] : undefined}
+              href="/dashboard/arrivals"
+            />
+            <HubCard
+              icon={<HotelCheckInIcon className="size-5" />}
+              title="Check-In Flow"
+              description="Room assignment for an arriving guest"
+              href="/dashboard/check-in"
+            />
+            <HubCard
+              icon={<ManualRoomOverrideIcon className="size-5" />}
+              title="Manual Room Override"
+              description="Receptionist selects room manually"
+              href="/dashboard/check-in?override=1"
+            />
+            <HubCard
+              icon={<HotelCheckInIcon className="size-5" />}
+              title="Group Check-In"
+              description="A group's arrivals into their rooms together"
+              href="/dashboard/group-check-in"
+            />
+            <HubCard
+              icon={<WalkInIcon className="size-5" />}
+              title="Walk-In Booking"
+              description="Create reservation and check-in in one flow"
+              href="/dashboard/walk-in-booking"
+            />
+          </div>
+        </Section>
+      ) : null}
 
-      <Section label="Check-Out">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <HubCard
-            icon={<CityDepartureIcon className="size-5" />}
-            title="Departures Dashboard"
-            description="Today's expected departures"
-            stats={departuresQuery.data ? [`${departuresQuery.data.length} ${departuresQuery.data.length === 1 ? 'guest' : 'guests'} departing today`] : undefined}
-            href="/dashboard/departures"
-          />
-          <HubCard
-            icon={<HotelCheckOutIcon className="size-5" />}
-            title="Check-Out Flow"
-            description="Release a departing guest's room"
-            href="/dashboard/check-out"
-          />
-          <HubCard icon={<RoomUpgradeIcon className="size-5" />} title="Room Upgrade" description="Switch guest to a higher room category" href="/dashboard/room-move" />
-        </div>
-      </Section>
+      {anyOpens('/dashboard/departures', '/dashboard/check-out', '/dashboard/room-move') ? (
+        <Section label="Check-Out">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <HubCard
+              icon={<CityDepartureIcon className="size-5" />}
+              title="Departures Dashboard"
+              description="Today's expected departures"
+              stats={departuresQuery.data ? [`${departuresQuery.data.length} ${departuresQuery.data.length === 1 ? 'guest' : 'guests'} departing today`] : undefined}
+              href="/dashboard/departures"
+            />
+            <HubCard
+              icon={<HotelCheckOutIcon className="size-5" />}
+              title="Check-Out Flow"
+              description="Release a departing guest's room"
+              href="/dashboard/check-out"
+            />
+            <HubCard icon={<RoomUpgradeIcon className="size-5" />} title="Room Upgrade" description="Switch guest to a higher room category" href="/dashboard/room-move" />
+          </div>
+        </Section>
+      ) : null}
 
-      <Section label="In-House Management">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <HubCard
-            icon={<ClipboardListIcon className="size-5" />}
-            title="In-House Guest List"
-            description="All currently checked-in guests"
-            stats={inHouseQuery.data ? [`${inHouseQuery.data.length} checked-in ${inHouseQuery.data.length === 1 ? 'guest' : 'guests'}`] : undefined}
-            href="/dashboard/in-house-guest-list"
-          />
-          <HubCard
-            icon={<CheckCircleIcon className="size-5" />}
-            title="Room Status Board"
-            description="Live grid of all rooms and their status"
-            stats={roomStatusStats}
-            href="/dashboard/room-status-board"
-          />
-        </div>
-      </Section>
+      {anyOpens('/dashboard/in-house-guest-list', '/dashboard/room-status-board') ? (
+        <Section label="In-House Management">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <HubCard
+              icon={<ClipboardListIcon className="size-5" />}
+              title="In-House Guest List"
+              description="All currently checked-in guests"
+              stats={inHouseQuery.data ? [`${inHouseQuery.data.length} checked-in ${inHouseQuery.data.length === 1 ? 'guest' : 'guests'}`] : undefined}
+              href="/dashboard/in-house-guest-list"
+            />
+            <HubCard
+              icon={<CheckCircleIcon className="size-5" />}
+              title="Room Status Board"
+              description="Live grid of all rooms and their status"
+              stats={roomStatusStats}
+              href="/dashboard/room-status-board"
+            />
+          </div>
+        </Section>
+      ) : null}
     </Container>
   );
 }

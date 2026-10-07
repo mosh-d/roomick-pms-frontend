@@ -5,12 +5,9 @@ import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { Select, type SelectOption } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
-import { Table, type TableColumn } from '@/components/ui/Table';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { ReportsIcon } from '@/components/ui/Icons';
+import { ReportsIcon, StaffAssignmentIcon } from '@/components/ui/Icons';
 import { STATUS_STYLES } from '@/components/ui/StatusTag';
 import { useOccupancyReportQuery, useAdrReportQuery } from '@/lib/reports';
 import { useArrivalsQuery, useDeparturesQuery, useInHouseQuery, useReservationsQuery, useSetRateOverrideMutation, type ReservationSummary } from '@/lib/reservations';
@@ -18,11 +15,11 @@ import { useFoliosQuery } from '@/lib/folios';
 import { useAlertsQuery } from '@/lib/alerts';
 import { useRoomsQuery } from '@/lib/rooms';
 import { deriveRoomStatus } from '@/lib/deriveRoomStatus';
-import { useRolesQuery, useStaffQuery, useBulkInviteMutation, usePatchStaffMutation, type StaffMember } from '@/lib/staff';
-import { useResetStaffMfaMutation } from '@/lib/mfa';
+import { useStaffQuery } from '@/lib/staff';
 import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { ApiError } from '@/lib/api';
+import { HubCard } from '../_components/HubCard';
 import { useAuthStore } from '@/lib/store/authStore';
 
 function today(): string {
@@ -64,154 +61,6 @@ function RoomStatusMiniMap({ rooms }: { rooms: Array<{ id: string; number: strin
         );
       })}
     </div>
-  );
-}
-
-function InviteStaffModal({
-  open,
-  onClose,
-  branchId,
-  auth,
-}: {
-  open: boolean;
-  onClose: () => void;
-  branchId: string;
-  auth: { accessToken: string | undefined; tenantId: string | undefined };
-}) {
-  const [email, setEmail] = useState('');
-  const [roleId, setRoleId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const rolesQuery = useRolesQuery(auth);
-  const inviteMutation = useBulkInviteMutation(branchId, auth);
-
-  const roleOptions: SelectOption[] = (rolesQuery.data ?? []).map((r) => ({ value: r.id, label: r.name }));
-
-  async function handleSubmit() {
-    if (!email || !roleId) return;
-    setError(null);
-    try {
-      await inviteMutation.mutateAsync([{ email, roleId }]);
-      setEmail('');
-      setRoleId(null);
-      onClose();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
-    }
-  }
-
-  if (!open) return null;
-
-  return (
-    <Modal open={open} onClose={onClose} title="Invite Staff">
-      <Input id="invite-staff-email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} error={error ?? undefined} />
-      <Select label="Role" options={roleOptions} value={roleId} onChange={setRoleId} placeholder="Select a role" />
-      <div className="flex items-center gap-3">
-        <Button type="button" variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button type="button" onClick={handleSubmit} disabled={inviteMutation.isPending || !email || !roleId}>
-          {inviteMutation.isPending ? 'Sending…' : 'Send Invite'}
-        </Button>
-      </div>
-    </Modal>
-  );
-}
-
-function StaffManagementSection({ branchId, auth }: { branchId: string; auth: { accessToken: string | undefined; tenantId: string | undefined } }) {
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const staffQuery = useStaffQuery(branchId, auth);
-  const patchStaffMutation = usePatchStaffMutation(branchId, auth);
-  const resetMfa = useResetStaffMfaMutation(auth);
-  const me = useAuthStore((s) => s.user);
-  const isOwner = me?.roles.some((r) => r.role === 'owner') ?? false;
-  const [mfaMessage, setMfaMessage] = useState<string | null>(null);
-
-  const columns: TableColumn<StaffMember>[] = [
-    { key: 'name', label: 'Name', render: (s) => s.name, sortValue: (s) => s.name },
-    { key: 'email', label: 'Email', render: (s) => s.email, sortValue: (s) => s.email },
-    {
-      key: 'role',
-      label: 'Role',
-      render: (s) => (
-        <div className="flex flex-wrap gap-1">
-          {s.roles.map((r) => (
-            <span key={`${r.roleId}-${r.branchId ?? 'all'}`} className="inline-flex items-center rounded-pill bg-secondary-light/20 text-secondary px-2.5 py-0.5 text-tiny font-semibold">
-              {r.role}
-            </span>
-          ))}
-        </div>
-      ),
-      sortValue: (s) => s.roles[0]?.role ?? '',
-    },
-    {
-      key: 'lastLoginAt',
-      label: 'Last Login',
-      render: (s) => (s.lastLoginAt ? new Date(s.lastLoginAt).toLocaleString() : 'Never'),
-      sortValue: (s) => s.lastLoginAt ?? '',
-    },
-    {
-      key: 'mfa',
-      label: 'Two-Step',
-      render: (s) =>
-        s.mfaEnabled ? (
-          <div className="flex items-center gap-2">
-            <span className="text-small text-green-700 font-semibold">On</span>
-            {isOwner && s.id !== me?.id ? (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={resetMfa.isPending}
-                onClick={() => {
-                  setMfaMessage(null);
-                  resetMfa.mutate(s.id, {
-                    onSuccess: () => setMfaMessage(`Two-step sign-in reset for ${s.name}. They sign in with their password and can set it up again from My Account.`),
-                    onError: (err) => setMfaMessage(err instanceof ApiError ? err.message : 'Couldn’t reset it.'),
-                  });
-                }}
-              >
-                Reset
-              </Button>
-            ) : null}
-          </div>
-        ) : (
-          <span className="text-small text-surface/70">Off</span>
-        ),
-      sortValue: (s) => (s.mfaEnabled ? 1 : 0),
-    },
-    {
-      key: 'active',
-      label: 'Status',
-      render: (s) => (
-        <Button size="sm" variant="outline" onClick={() => patchStaffMutation.mutate({ userId: s.id, active: !s.active })} disabled={patchStaffMutation.isPending}>
-          {s.active ? 'Active — Deactivate' : 'Inactive — Reactivate'}
-        </Button>
-      ),
-    },
-  ];
-
-  return (
-    <Section label="Staff Management">
-      <div className="flex flex-col gap-3">
-        <div className="flex justify-end">
-          <Button size="sm" onClick={() => setInviteOpen(true)}>
-            Invite Staff
-          </Button>
-        </div>
-        {staffQuery.isLoading ? (
-          <p className="text-body text-surface-muted">Loading staff…</p>
-        ) : (
-          <Card tone="secondary">
-            <Table columns={columns} rows={staffQuery.data ?? []} emptyMessage="No staff at this branch yet." exportFileName="staff" />
-            {mfaMessage ? (
-              <p className="text-small text-surface mt-2" id="staff-mfa-message">
-                {mfaMessage}
-              </p>
-            ) : null}
-          </Card>
-        )}
-      </div>
-      <InviteStaffModal open={inviteOpen} onClose={() => setInviteOpen(false)} branchId={branchId} auth={auth} />
-    </Section>
   );
 }
 
@@ -318,8 +167,8 @@ function RateOverrideSection({ branchId, auth }: { branchId: string; auth: { acc
  * restructuring surfaced as honest placeholders. Picked first because it
  * needed zero new backend models: "Operations Overview" is pure
  * composition of report/alerts/reservation hooks that already existed,
- * and "Staff Management" wraps staff endpoints that shipped in P1 with no
- * frontend surface until now. "Rate Override" is the one genuinely new
+ * and "Staff Management" — its own page now, with Page Access — wraps staff
+ * endpoints that shipped in P1 with no frontend surface until then. "Rate Override" is the one genuinely new
  * backend piece — `overrideRate`/`overrideReason` columns existed since P0
  * but nothing ever wrote them.
  */
@@ -338,6 +187,7 @@ export default function ManagerDashboardPage() {
   const outstandingQuery = useFoliosQuery(activeBranchId, 'outstanding', auth);
   const alertsQuery = useAlertsQuery(activeBranchId, auth);
   const roomsQuery = useRoomsQuery(activeBranchId, auth);
+  const staffQuery = useStaffQuery(activeBranchId, auth);
 
   const dirtyRoomsCount = (roomsQuery.data ?? []).filter((r) => r.cleanlinessStatus === 'dirty').length;
   const outstandingTotal = (outstandingQuery.data ?? []).reduce((sum, f) => sum + Number(f.balanceDue), 0);
@@ -378,7 +228,17 @@ export default function ManagerDashboardPage() {
 
       <RateOverrideSection branchId={activeBranchId} auth={auth} />
 
-      <StaffManagementSection branchId={activeBranchId} auth={auth} />
+      <Section label="Staff Management">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <HubCard
+            icon={<StaffAssignmentIcon className="size-5" />}
+            title="Staff Management"
+            description="Invite and deactivate staff, and choose which pages each staff role opens here"
+            stats={staffQuery.data ? [`${staffQuery.data.length} ${staffQuery.data.length === 1 ? 'person' : 'people'} at this branch`] : undefined}
+            href="/dashboard/manager/staff"
+          />
+        </div>
+      </Section>
     </Container>
   );
 }
