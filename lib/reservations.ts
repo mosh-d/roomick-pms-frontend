@@ -34,6 +34,11 @@ export interface ReservationSummary {
   adults: number;
   children: number;
   confirmedRate: string;
+  /** The promo code the stay was booked with — modify and extend re-price under it. */
+  promoCode: string | null;
+  /** The company the stay is booked under — its contracted rate applies on every re-price. */
+  corporateAccountId: string | null;
+  corporateAccount: { id: string; name: string } | null;
   guest: GuestSummary;
   roomType: { id: string; name: string };
   room: { id: string; number: string } | null;
@@ -143,6 +148,8 @@ export function useCreateReservationMutation(branchId: string, { accessToken, te
         channel?: ReservationChannel;
         /** Skips the availability check and books as `waitlisted` — the explicit Waitlist Management path, not an automatic fallback. */
         joinWaitlist?: boolean;
+        /** Books the stay under a company account — its contracted rate applies. */
+        corporateAccountId?: string;
       },
     ) => apiFetch<ReservationSummary>(`/branches/${branchId}/reservations`, { method: 'POST', accessToken, tenantId, body }),
     onSuccess: () => invalidateAfterLifecycleChange(queryClient, branchId),
@@ -246,7 +253,17 @@ export function useCreateWalkInMutation(branchId: string, { accessToken, tenantI
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (
-      body: GuestRef & { roomTypeId: string; roomId: string; checkOutDate: string; adults: number; children?: number; specialRequests?: string; idDocument?: IdDocumentInput },
+      body: GuestRef & {
+        roomTypeId: string;
+        roomId: string;
+        checkOutDate: string;
+        adults: number;
+        children?: number;
+        specialRequests?: string;
+        idDocument?: IdDocumentInput;
+        /** Books the stay under a company account — its contracted rate applies. */
+        corporateAccountId?: string;
+      },
     ) => apiFetch<ReservationSummary>(`/branches/${branchId}/reservations/walk-in`, { method: 'POST', accessToken, tenantId, body }),
     onSuccess: () => invalidateAfterLifecycleChange(queryClient, branchId),
   });

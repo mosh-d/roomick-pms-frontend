@@ -102,7 +102,10 @@ export const NAV_GROUPS: NavGroup[] = [
       {
         label: 'Guest Profiles & CRM',
         href: '/dashboard/guests',
-        children: [{ label: 'Guest Profiles', href: '/dashboard/guests/profiles', detail: { prefix: '/dashboard/guests/', label: 'Guest Profile' } }],
+        children: [
+          { label: 'Guest Profiles', href: '/dashboard/guests/profiles', detail: { prefix: '/dashboard/guests/', label: 'Guest Profile' } },
+          { label: 'Corporate Accounts', href: '/dashboard/guests/corporate' },
+        ],
       },
       { label: 'Revenue Management', href: '/dashboard/revenue' },
       { label: 'Sales & Events', href: '/dashboard/sales-events' },

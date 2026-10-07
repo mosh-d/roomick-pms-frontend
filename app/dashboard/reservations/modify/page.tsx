@@ -15,6 +15,7 @@ import { ModifyReservationIcon } from '@/components/ui/Icons';
 import { modifyReservationSchema, type ModifyReservationFormValues } from '@/lib/schemas/reservations';
 import { useRoomTypesQuery } from '@/lib/rooms';
 import { useReservationsQuery, useModifyReservationMutation, type ReservationSummary } from '@/lib/reservations';
+import { useCalculateRateQuery } from '@/lib/rate-resolver';
 import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { dayAfter } from '@/lib/dates';
@@ -30,12 +31,11 @@ function toDateInput(iso: string): string {
 /**
  * Modify Reservation (ref p23), reduced to what the backend's
  * `modifyReservation` actually does: dates, room type, party size, on a
- * reservation that hasn't checked in yet. The reference's own Room Change
- * grid (pick a specific room), Rate Plan section, and old-rate/new-rate
- * cost comparison all assume machinery this pass doesn't have (a specific
- * room isn't assigned until check-in in this design; there's no rate-plan
- * resolver) — the live "new total" line below does the one honest version
- * of that comparison this app can actually back up.
+ * reservation that hasn't checked in yet. The reference's Room Change grid
+ * (pick a specific room) doesn't apply — a room isn't assigned until
+ * check-in in this design. The "New Total" line is the Rate Resolver's own
+ * quote under the deal the stay was booked with (its company and promo
+ * code), the same pricing the save applies.
  *
  * **A `checked_in` stay can't be modified here** — it already has folio
  * charges posted against its original dates (§4.5's append-only ledger),
@@ -127,13 +127,21 @@ export default function ModifyReservationPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkInDate]);
 
-  const newRate = useMemo(() => {
-    if (!roomTypeId || !checkInDate || !checkOutDate || checkOutDate <= checkInDate) return null;
-    const roomType = (roomTypesQuery.data ?? []).find((rt) => rt.id === roomTypeId);
-    if (!roomType) return null;
-    const nights = Math.round((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / 86_400_000);
-    return { nights, total: Number(roomType.baseRate) * nights };
-  }, [roomTypeId, checkInDate, checkOutDate, roomTypesQuery.data]);
+  // Quoted the way the save prices it — every rate plan, and the stay's own
+  // company and promo code — not base rate × nights, which showed a company
+  // booking's re-price as a jump to the public rate.
+  const quoteQuery = useCalculateRateQuery(
+    selected ? activeBranchId : null,
+    {
+      roomTypeId: roomTypeId || null,
+      checkInDate: checkInDate || null,
+      checkOutDate: checkOutDate || null,
+      promoCode: selected?.promoCode ?? undefined,
+      corporateAccountId: selected?.corporateAccountId ?? undefined,
+    },
+    auth,
+  );
+  const newRate = quoteQuery.data ? { nights: quoteQuery.data.perNight.length, total: quoteQuery.data.subtotal } : null;
 
   if (!activeBranchId) return null;
 
@@ -192,6 +200,7 @@ export default function ModifyReservationPage() {
               <Card tone="accent" className="flex flex-col gap-2">
                 <Row label="Guest" value={selected.guest.name} />
                 <Row label="Confirmation #" value={selected.confirmationNumber} />
+                {selected.corporateAccount ? <Row label="Company" value={selected.corporateAccount.name} /> : null}
                 <Row label="Current Total" value={formatMoney(selected.confirmedRate, currencySymbolFor(selected.branch.currency))} />
                 {newRate ? (
                   <Row label="New Total" value={`${formatMoney(newRate.total, currencySymbolFor(selected.branch.currency))} (${newRate.nights} nights)`} />

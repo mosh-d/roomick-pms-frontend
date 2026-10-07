@@ -15,6 +15,7 @@ import { CreateReservationIcon } from '@/components/ui/Icons';
 import { RatePreview } from '../../_components/RatePreview';
 import { CapacityWarning } from '../../_components/CapacityWarning';
 import { GuestLookupFields } from '../../_components/GuestLookupFields';
+import { CompanyField, useCompanyChoice } from '../../_components/CompanyField';
 import type { GuestMatch } from '@/lib/guests';
 import { createReservationSchema, type CreateReservationFormValues } from '@/lib/schemas/reservations';
 import { useRoomTypesQuery } from '@/lib/rooms';
@@ -36,9 +37,9 @@ function todayString(): string {
  * the backend doesn't have yet (group reservations, encrypted ID-document
  * storage, a payments-at-booking flow) — building a form for them would be
  * UI over nothing. The rate now DOES go through the full Rate Resolver
- * cascade (`RatePreview`, below) — no promo/corporate-account picker on
- * this form yet, though the backend already accepts both; adding that
- * input is deferred, not the resolver itself.
+ * cascade (`RatePreview`, below), including a company's contracted rate
+ * when the stay is booked under one (`CompanyField` — offered from the
+ * guest's email domain). No promo-code input yet; the backend accepts one.
  *
  * This does the same job Walk-In Booking's own "book ahead" branch
  * already does (same `createReservation` call, same resolved pricing) —
@@ -79,6 +80,7 @@ export default function CreateReservationPage() {
   const watchedCheckOutDate = watch('checkOutDate');
   const watchedAdults = watch('adults');
   const watchedChildren = watch('children');
+  const company = useCompanyChoice(watch('guestEmail'), auth);
 
   // Found live: picking a new check-in date left check-out wherever it was
   // previously set — a one-night stay booked for the 10th, then moved to
@@ -111,6 +113,7 @@ export default function CreateReservationPage() {
         ...(linkedGuest
           ? { guestId: linkedGuest.id }
           : { guest: { name: values.guestName, email: values.guestEmail || undefined, phone: values.guestPhone || undefined } }),
+        corporateAccountId: company.companyId ?? undefined,
         roomTypeId: values.roomTypeId,
         checkInDate: values.checkInDate,
         checkOutDate: values.checkOutDate,
@@ -177,6 +180,7 @@ export default function CreateReservationPage() {
             <Input label="Children" type="number" min={0} max={20} {...register('children', { valueAsNumber: true })} error={errors.children?.message} />
           </div>
           <CapacityWarning roomType={roomTypesQuery.data?.find((rt) => rt.id === watchedRoomTypeId)} adults={watchedAdults} childrenCount={watchedChildren} />
+          <CompanyField accounts={company.accounts} companyId={company.companyId} suggested={company.suggested} onChange={company.setChoice} />
           <Textarea label="Special Requests" {...register('specialRequests')} error={errors.specialRequests?.message} />
           <RatePreview
             branchId={activeBranchId}
@@ -184,6 +188,7 @@ export default function CreateReservationPage() {
             roomTypeId={watchedRoomTypeId || null}
             checkInDate={watchedCheckInDate || null}
             checkOutDate={watchedCheckOutDate || null}
+            corporateAccountId={company.companyId ?? undefined}
             accessToken={auth.accessToken}
             tenantId={auth.tenantId}
           />

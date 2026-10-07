@@ -5,6 +5,7 @@ import { Section } from '@/components/ui/Section';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { GuestProfileIcon, CorporateAccountsIcon } from '@/components/ui/Icons';
 import { useGuestsListQuery } from '@/lib/guests';
+import { useCorporateAccountsQuery } from '@/lib/corporateAccounts';
 import { useAuthStore } from '@/lib/store/authStore';
 import { HubCard } from '../_components/HubCard';
 
@@ -22,6 +23,8 @@ export default function GuestCrmHubPage() {
   const auth = { accessToken: accessToken ?? undefined, tenantId: user?.tenantId };
 
   const guestsQuery = useGuestsListQuery('', 1, auth);
+  const accountsQuery = useCorporateAccountsQuery(auth);
+  const activeAccounts = accountsQuery.data?.filter((a) => a.isActive).length;
 
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-8">
@@ -41,7 +44,13 @@ export default function GuestCrmHubPage() {
             stats={guestsQuery.data ? [`${guestsQuery.data.total} ${guestsQuery.data.total === 1 ? 'guest' : 'guests'} on file`] : undefined}
             href="/dashboard/guests/profiles"
           />
-          <HubCard icon={<CorporateAccountsIcon className="size-5" />} title="Corporate Accounts" description="Company profiles with linked travelers" />
+          <HubCard
+            icon={<CorporateAccountsIcon className="size-5" />}
+            title="Corporate Accounts"
+            description="Company profiles with linked travelers"
+            stats={activeAccounts !== undefined ? [`${activeAccounts} active ${activeAccounts === 1 ? 'company' : 'companies'}`] : undefined}
+            href="/dashboard/guests/corporate"
+          />
         </div>
       </Section>
     </Container>

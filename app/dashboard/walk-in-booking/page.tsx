@@ -26,6 +26,7 @@ import { RoomGrid } from '../_components/RoomGrid';
 import { RatePreview } from '../_components/RatePreview';
 import { CapacityWarning } from '../_components/CapacityWarning';
 import { GuestLookupFields } from '../_components/GuestLookupFields';
+import { CompanyField, useCompanyChoice } from '../_components/CompanyField';
 
 /** Browser-local "today" for the date input's default/min — the backend is the actual authority on "today" (branch timezone, via `todayInTimezone`) and re-derives it server-side for the walk-in path regardless of what's shown here. */
 function todayString(): string {
@@ -98,6 +99,7 @@ export default function WalkInBookingPage() {
   const checkOutDate = watch('checkOutDate');
   const roomTypeId = watch('roomTypeId');
   const isImmediate = checkInDate === today;
+  const company = useCompanyChoice(watch('guestEmail'), auth);
 
   // Same fix as Create Reservation: picking a later check-in date (the
   // "book ahead" branch here) left check-out wherever it was previously
@@ -173,6 +175,7 @@ export default function WalkInBookingPage() {
 
         const reservation = await createWalkInMutation.mutateAsync({
           ...guestRef,
+          corporateAccountId: company.companyId ?? undefined,
           roomTypeId: values.roomTypeId,
           roomId: selectedRoomId,
           checkOutDate: values.checkOutDate,
@@ -189,6 +192,7 @@ export default function WalkInBookingPage() {
       }
       await createReservationMutation.mutateAsync({
         ...guestRef,
+        corporateAccountId: company.companyId ?? undefined,
         roomTypeId: values.roomTypeId,
         checkInDate: values.checkInDate,
         checkOutDate: values.checkOutDate,
@@ -257,6 +261,7 @@ export default function WalkInBookingPage() {
             <Input label="Children" type="number" min={0} max={20} {...register('children', { valueAsNumber: true })} error={errors.children?.message} />
           </div>
           <CapacityWarning roomType={roomTypesQuery.data?.find((rt) => rt.id === roomTypeId)} adults={watch('adults')} childrenCount={watch('children')} />
+          <CompanyField accounts={company.accounts} companyId={company.companyId} suggested={company.suggested} onChange={company.setChoice} />
           <Textarea label="Special Requests" {...register('specialRequests')} error={errors.specialRequests?.message} />
           <RatePreview
             branchId={activeBranchId}
@@ -264,6 +269,7 @@ export default function WalkInBookingPage() {
             roomTypeId={roomTypeId || null}
             checkInDate={checkInDate || null}
             checkOutDate={checkOutDate || null}
+            corporateAccountId={company.companyId ?? undefined}
             accessToken={auth.accessToken}
             tenantId={auth.tenantId}
           />
