@@ -2450,3 +2450,53 @@ Quotes keep "Subtotal + Tax = Total"; where some tax was already inside the pric
   - no sideways scroll at 390px;
   - onboarding: the builder on Organization Structure holds Continue for a half-made rule; Branch Setup offers the brand's VAT for a draft saved before taxes existed; a branch-level ₦2,000 service charge on rooms survives an address edit after it; Review shows both; **Finish creates the branch with only its own service charge**;
   - zero console errors.
+
+## Phase 82 — The owner's to-do list: breadcrumbs, sessions, returning guests, consistent pages, and GDPR erasure (2026-10-07)
+
+Everything in `docs/to-do.md`, plus GDPR erasure (approved) and the Next.js upgrade.
+
+### A breadcrumb you can navigate
+- The top bar's trail now runs from the branch down: **"Sope Hotel Abijo / Operations / Front Desk / Arrivals Dashboard"**. Every level above the page is a link (pointer cursor) to that level — the branch goes to its home, a group to its first page, a feature to its hub.
+- Any level with other places beside it carries **up-and-down chevrons**, as on Cloudflare's dashboard, opening a list of them with the current one ticked: the other branches (switching keeps you on the same page — or its list, from one folio or guest), the three groups, the group's features, or the feature's other pages. Arrow keys, Home/End and Escape work in the list.
+- A record's page ends in its own crumb: ".../ Billing & Payments / Guest Folios / Folio".
+- **Below `lg`** the trail is gone; the top bar keeps the logo (beside the menu button on a phone).
+- One map, `lib/navigation.ts`, drives both the breadcrumb and the sidebar, so their names and order can't drift apart; the sidebar's active row comes from the same lookup. The old route-title table and group-prefix list in the layout are gone.
+
+### No more scrolling into blank space
+The dashboard shell scrolls only its page area — but the visually-hidden radio inputs behind every radio group (`sr-only` is `position: absolute`) had no positioned ancestor, so they sat relative to the viewport and a long form's last one stretched the window itself. Scrolling then ran on past the page into blank space, with the sidebar sliding away. `main` is now `relative` in both the dashboard and the signup wizard, which keeps them inside it.
+
+### Alerts
+- Guest names were `primary-dark` in a secondary card; they're the card's own secondary colour now, like the rest of the row (Overdue Balances too).
+- **Overdue Checkouts** shows what each guest owes, linked to their bill, with a line explaining why they aren't under Overdue Balances (still in-house) and that the night audit now charges each night they stay.
+
+### Every feature page's content in labelled sections
+Billing and Payments, Folio Transfer, Point of Sale, Guest Profiles & CRM, Reports & Analytics and Integrations & APIs had their hub cards straight on the page; each is now in a labelled section (the divider and the gold card), like Housekeeping. Rate Resolver's "Architecture Rule" box and the Alerts note moved into sections too. A browser pass over all 25 feature pages finds nothing left outside one.
+
+### Sessions end after an hour away (from the Five Clover PMS)
+- **An idle clock** (`lib/session.ts`, in localStorage so every tab shares it): sign-in starts it; a click or key moves it, once a minute at most; network activity never does. An hour untouched ends the session — checked every 30 seconds and whenever the tab is looked at again.
+- **Mid-work, a prompt** — "Your session has ended" — over the page, with one way out (no close, no Escape, no backdrop click): **Sign in again**, which ends the session on the server too and comes back to the same page after signing in (`/login?next=…`, dashboard paths only).
+- **On arrival**, a session idle for an hour is over before anything can renew it — the next page is sign-in.
+- A 401 renews the session only for someone active in the last hour. Refresh tokens are single-use now (backend), so a renewal another tab already made is picked up from storage rather than ending a live session.
+- **Log out** ends the session on the server and lands on a clean sign-in page (no `?next=`, so the next person at the computer starts fresh).
+
+### Returning guests while you type
+On **Walk-In Booking** and **Create Reservation**, typing in Name, Email or Phone drops down the matching guests under that field — name, phone and email, a VIP badge — after a quarter-second pause (phone from four digits, however it was typed). Arrow keys and Enter, or a click, pick one: the fields fill and lock, a "Returning guest" line says the booking goes on their existing profile, and **Not this guest** goes back to a new one. A picked guest is booked by `guestId`, so no duplicate profile.
+
+### GDPR erasure
+Security & Roles → GDPR: an erasure request has **Erase Guest Data** (it replaces Mark Completed), behind a confirmation saying exactly what goes and what stays. A refusal (a stay booked or money owed) shows its reason.
+
+### Next.js 16.3.8
+Up from 16.3.2 (and `eslint-config-next` with it), clearing the three critical Next.js advisories `npm audit` reported. The remaining eight are high-severity, in build and lint tooling only (brace-expansion, braces, fast-uri, js-yaml).
+
+### Verified
+- **Checks:** `npx tsc --noEmit` clean; `eslint` clean on everything changed (six warnings, all the existing React Compiler notes about `watch()` in forms); **`npm run build` succeeded on Next 16.3.8.**
+- **Browser, 27/27**, against real Postgres:
+  - the trail reads "Abijo Suites / Operations / Front Desk / Arrivals Dashboard", with pointer-cursor links; the page list ticks Arrivals, Escape closes it; the feature list opens Housekeeping; the groups list opens Admin's first page; the branch list switches branch and stays on Property Config; a folio reads ".../ Guest Folios / Folio" with Billing & Payments active in the sidebar; Guest Folios and the branch crumb navigate;
+  - at 390px the trail is gone and the logo stays;
+  - at 937×695, Walk-In Booking and a Check-In page scrolled to the bottom leave the window itself unscrolled;
+  - Alerts' guest name is the same colour as the rest of the row, and the overdue guest's ₦200,000.00 links to the bill;
+  - all 25 feature pages: nothing outside a labelled section;
+  - "0803 123" in Phone offers Ada Obi, Enter picks her and locks the fields, the booking keeps one Ada; a click picks Chidi; Not this guest unlocks;
+  - Erase Guest Data asks first and shows why an in-house guest can't be erased;
+  - a click stamps the idle clock; an hour idle brings the prompt, which Escape and clicks can't dismiss; Sign in again goes to `/login?next=/dashboard/maintenance` and back there after signing in; reopening after an hour lands on sign-in; Log out lands on sign-in without `next`;
+  - zero console errors.
