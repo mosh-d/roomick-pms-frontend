@@ -19,12 +19,13 @@ import { groupRoomsByFloor } from '@/lib/groupRoomsByFloor';
 import { useCreateReservationMutation, useCreateWalkInMutation } from '@/lib/reservations';
 import { dayAfter } from '@/lib/dates';
 import { ApiError, apiFetch } from '@/lib/api';
-import type { IdDocType, IdDocumentInput } from '@/lib/guests';
+import type { GuestMatch, IdDocType, IdDocumentInput } from '@/lib/guests';
 import { COUNTRIES } from '@/lib/countries';
 import { useAuthStore } from '@/lib/store/authStore';
 import { RoomGrid } from '../_components/RoomGrid';
 import { RatePreview } from '../_components/RatePreview';
 import { CapacityWarning } from '../_components/CapacityWarning';
+import { GuestLookupFields } from '../_components/GuestLookupFields';
 
 /** Browser-local "today" for the date input's default/min — the backend is the actual authority on "today" (branch timezone, via `todayInTimezone`) and re-derives it server-side for the walk-in path regardless of what's shown here. */
 function todayString(): string {
@@ -72,6 +73,8 @@ export default function WalkInBookingPage() {
   const today = todayString();
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  // A returning guest picked from the suggestions: the booking goes on their profile instead of a new one.
+  const [linkedGuest, setLinkedGuest] = useState<GuestMatch | null>(null);
 
   const [idDocType, setIdDocType] = useState<string | null>(null);
   const [idDocNumber, setIdDocNumber] = useState('');
@@ -139,7 +142,9 @@ export default function WalkInBookingPage() {
 
   async function onSubmit(values: WalkInBookingFormValues) {
     setFormError(null);
-    const guest = { name: values.guestName, email: values.guestEmail || undefined, phone: values.guestPhone || undefined };
+    const guestRef = linkedGuest
+      ? { guestId: linkedGuest.id }
+      : { guest: { name: values.guestName, email: values.guestEmail || undefined, phone: values.guestPhone || undefined } };
     try {
       if (isImmediate) {
         if (!selectedRoomId) {
@@ -167,7 +172,7 @@ export default function WalkInBookingPage() {
         }
 
         const reservation = await createWalkInMutation.mutateAsync({
-          guest,
+          ...guestRef,
           roomTypeId: values.roomTypeId,
           roomId: selectedRoomId,
           checkOutDate: values.checkOutDate,
@@ -183,7 +188,7 @@ export default function WalkInBookingPage() {
         return;
       }
       await createReservationMutation.mutateAsync({
-        guest,
+        ...guestRef,
         roomTypeId: values.roomTypeId,
         checkInDate: values.checkInDate,
         checkOutDate: values.checkOutDate,
@@ -214,11 +219,19 @@ export default function WalkInBookingPage() {
             date fields side by side) — a single stacked column made this
             form roughly twice as tall as the reference for no benefit. */}
         <Section label="Guest">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
-            <Input label="Name" {...register('guestName')} error={errors.guestName?.message} />
-            <Input label="Email" type="email" {...register('guestEmail')} error={errors.guestEmail?.message} />
-            <Input label="Phone" {...register('guestPhone')} error={errors.guestPhone?.message} />
-          </div>
+          <GuestLookupFields
+            fields={{ name: register('guestName'), email: register('guestEmail'), phone: register('guestPhone') }}
+            errors={{ name: errors.guestName?.message, email: errors.guestEmail?.message, phone: errors.guestPhone?.message }}
+            linkedGuest={linkedGuest}
+            onLink={(guest) => {
+              setLinkedGuest(guest);
+              setValue('guestName', guest.name, { shouldValidate: true });
+              setValue('guestEmail', guest.email ?? '', { shouldValidate: true });
+              setValue('guestPhone', guest.phone ?? '', { shouldValidate: true });
+            }}
+            onUnlink={() => setLinkedGuest(null)}
+            auth={auth}
+          />
         </Section>
 
         <Section label="Stay">

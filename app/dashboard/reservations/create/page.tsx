@@ -14,6 +14,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { CreateReservationIcon } from '@/components/ui/Icons';
 import { RatePreview } from '../../_components/RatePreview';
 import { CapacityWarning } from '../../_components/CapacityWarning';
+import { GuestLookupFields } from '../../_components/GuestLookupFields';
+import type { GuestMatch } from '@/lib/guests';
 import { createReservationSchema, type CreateReservationFormValues } from '@/lib/schemas/reservations';
 import { useRoomTypesQuery } from '@/lib/rooms';
 import { useCreateReservationMutation } from '@/lib/reservations';
@@ -56,6 +58,8 @@ export default function CreateReservationPage() {
 
   const today = todayString();
   const [formError, setFormError] = useState<string | null>(null);
+  // A returning guest picked from the suggestions: the booking goes on their profile instead of a new one.
+  const [linkedGuest, setLinkedGuest] = useState<GuestMatch | null>(null);
   const [offerWaitlist, setOfferWaitlist] = useState(false);
 
   const {
@@ -104,7 +108,9 @@ export default function CreateReservationPage() {
     setOfferWaitlist(false);
     try {
       await createMutation.mutateAsync({
-        guest: { name: values.guestName, email: values.guestEmail || undefined, phone: values.guestPhone || undefined },
+        ...(linkedGuest
+          ? { guestId: linkedGuest.id }
+          : { guest: { name: values.guestName, email: values.guestEmail || undefined, phone: values.guestPhone || undefined } }),
         roomTypeId: values.roomTypeId,
         checkInDate: values.checkInDate,
         checkOutDate: values.checkOutDate,
@@ -133,11 +139,19 @@ export default function CreateReservationPage() {
 
       <form onSubmit={handleSubmit((values) => submit(values, false))} className="flex flex-col gap-4">
         <Section label="Guest">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
-            <Input label="Name" {...register('guestName')} error={errors.guestName?.message} />
-            <Input label="Email" type="email" {...register('guestEmail')} error={errors.guestEmail?.message} />
-            <Input label="Phone" {...register('guestPhone')} error={errors.guestPhone?.message} />
-          </div>
+          <GuestLookupFields
+            fields={{ name: register('guestName'), email: register('guestEmail'), phone: register('guestPhone') }}
+            errors={{ name: errors.guestName?.message, email: errors.guestEmail?.message, phone: errors.guestPhone?.message }}
+            linkedGuest={linkedGuest}
+            onLink={(guest) => {
+              setLinkedGuest(guest);
+              setValue('guestName', guest.name, { shouldValidate: true });
+              setValue('guestEmail', guest.email ?? '', { shouldValidate: true });
+              setValue('guestPhone', guest.phone ?? '', { shouldValidate: true });
+            }}
+            onUnlink={() => setLinkedGuest(null)}
+            auth={auth}
+          />
         </Section>
 
         <Section label="Stay">

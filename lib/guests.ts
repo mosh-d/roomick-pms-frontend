@@ -32,11 +32,16 @@ export interface IdDocumentInput {
   photoBase64?: string;
 }
 
-/** Wraps `GET /guests/search` — top 20 matches by name/email, requires a non-empty `q`. Used by quick "find one guest" pickers (GDPR request form, Rate Override); the browsable Guest Profiles & CRM list below is a separate, paginated endpoint that doesn't require `q`. */
+/** A search result: the summary plus the VIP level a suggestion list badges. */
+export interface GuestMatch extends GuestSummary {
+  vipLevel: number | null;
+}
+
+/** Wraps `GET /guests/search` — top 20 matches by name, email or phone, requires a non-empty `q`. Used by quick "find one guest" pickers (GDPR request form, Rate Override) and the returning-guest suggestions on Walk-In Booking and Create Reservation; the browsable Guest Profiles & CRM list below is a separate, paginated endpoint that doesn't require `q`. */
 export function useGuestSearchQuery(q: string, { accessToken, tenantId }: { accessToken: string | undefined; tenantId: string | undefined }) {
   return useQuery({
     queryKey: ['guests-search', q] as const,
-    queryFn: () => apiFetch<GuestSummary[]>(`/guests/search?q=${encodeURIComponent(q)}`, { accessToken, tenantId }),
+    queryFn: () => apiFetch<GuestMatch[]>(`/guests/search?q=${encodeURIComponent(q)}`, { accessToken, tenantId }),
     enabled: q.trim().length > 0,
   });
 }
