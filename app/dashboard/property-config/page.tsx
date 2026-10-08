@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { Card } from '@/components/ui/Card';
@@ -36,7 +36,7 @@ import { useRoomTypesQuery, useCreateRoomTypeMutation, useUpdateRoomTypeMutation
 import { COUNTRIES } from '@/lib/countries';
 import { timezoneOptionsFor } from '@/lib/timezones';
 import { formatMoney } from '@/lib/numberFormat';
-import { currencySymbolFor } from '@/lib/currencies';
+import { currencySymbolFor, DEFAULT_CURRENCY_BY_COUNTRY } from '@/lib/currencies';
 import { isOwner } from '@/lib/roles';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
@@ -118,9 +118,15 @@ function BranchDetailsSection({ branch, auth }: { branch: BranchDetail; auth: Au
     checkInTime: timeOfDay(branch.checkInTime),
     checkOutTime: timeOfDay(branch.checkOutTime),
     category: branch.category ?? '',
+    cashVarianceThreshold: typeof branch.policies?.cashVarianceThreshold === 'number' ? String(branch.policies.cashVarianceThreshold) : '',
   });
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Every currency a country defaults to, plus whatever this branch already uses — a picker, not a free text field.
+  const currencyOptions: SelectOption[] = useMemo(() => {
+    const codes = new Set([...Object.values(DEFAULT_CURRENCY_BY_COUNTRY), branch.currency]);
+    return [...codes].sort().map((code) => ({ value: code, label: `${code} ${currencySymbolFor(code) !== code ? `(${currencySymbolFor(code)})` : ''}`.trim() }));
+  }, [branch.currency]);
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -138,6 +144,7 @@ function BranchDetailsSection({ branch, auth }: { branch: BranchDetail; auth: Au
         checkInTime: form.checkInTime,
         checkOutTime: form.checkOutTime,
         category: form.category || undefined,
+        policies: { ...(branch.policies ?? {}), cashVarianceThreshold: form.cashVarianceThreshold.trim() === '' ? undefined : Number(form.cashVarianceThreshold) },
       });
       setSaved(true);
     } catch (err) {
@@ -155,8 +162,32 @@ function BranchDetailsSection({ branch, auth }: { branch: BranchDetail; auth: Au
           <Input id="branch-state" label="State (optional)" value={form.state} onChange={(e) => set('state', e.target.value)} />
           <Select id="branch-country" label="Country" options={COUNTRIES} value={form.country} onChange={(v) => set('country', v)} />
           <Input id="branch-zip" label="ZIP (optional)" value={form.zip} onChange={(e) => set('zip', e.target.value)} />
-          <Select id="branch-timezone" label="Timezone" options={timezoneOptionsFor(form.country)} value={form.timezone} onChange={(v) => set('timezone', v)} />
-          <Input id="branch-currency" label="Currency (ISO 4217)" value={form.currency} onChange={(e) => set('currency', e.target.value.toUpperCase())} />
+          <Select
+            id="branch-timezone"
+            label="Timezone"
+            options={timezoneOptionsFor(form.country)}
+            value={form.timezone}
+            onChange={(v) => set('timezone', v)}
+            hint="Fixed once the branch has bookings or payments — every business day is filed by it."
+          />
+          <Select
+            id="branch-currency"
+            label="Currency"
+            options={currencyOptions}
+            value={form.currency}
+            onChange={(v) => set('currency', v)}
+            hint="Fixed once the branch has bookings or payments — every amount on record is in it."
+          />
+          <Input
+            id="branch-cash-variance"
+            label="Cash variance threshold"
+            type="number"
+            min={0}
+            step="0.01"
+            value={form.cashVarianceThreshold}
+            onChange={(e) => set('cashVarianceThreshold', e.target.value)}
+            hint="A shift whose counted cash is further than this from the till's figure needs a written explanation to close. Blank = 5."
+          />
           <Select id="branch-category" label="Category" options={CATEGORY_OPTIONS} value={form.category || null} onChange={(v) => set('category', v)} placeholder="Select a category" />
           <Input id="branch-checkin" label="Check-In Time" type="time" value={form.checkInTime} onChange={(e) => set('checkInTime', e.target.value)} />
           <Input id="branch-checkout" label="Check-Out Time" type="time" value={form.checkOutTime} onChange={(e) => set('checkOutTime', e.target.value)} />

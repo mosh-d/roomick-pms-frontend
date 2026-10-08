@@ -8,7 +8,9 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
+  type AvailabilityRestrictionSummary,
   useAvailabilityRestrictionsQuery,
   useCreateAvailabilityRestrictionMutation,
   useDeleteAvailabilityRestrictionMutation,
@@ -28,6 +30,7 @@ import { ApiError } from '@/lib/api';
 import { currencySymbolFor } from '@/lib/currencies';
 import { formatMoney } from '@/lib/numberFormat';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatDateOnly } from '@/lib/dates';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -81,6 +84,7 @@ function RestrictionsSection({ branchId, auth }: { branchId: string; auth: AuthO
   const [maxLOS, setMaxLOS] = useState('');
   const [closedToArrival, setClosedToArrival] = useState(false);
   const [stopSell, setStopSell] = useState(false);
+  const [removing, setRemoving] = useState<AvailabilityRestrictionSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const roomTypeOptions = useMemo(
@@ -163,14 +167,14 @@ function RestrictionsSection({ branchId, auth }: { branchId: string; auth: AuthO
                 <tr key={r.id} className="border-t border-secondary/10 text-small text-surface">
                   <td className="py-2 pr-4">{r.roomTypeId ? (r.roomTypeName ?? roomTypeNameById.get(r.roomTypeId) ?? 'Unknown') : 'All room types'}</td>
                   <td className="py-2 pr-4">
-                    {new Date(r.startDate).toLocaleDateString()} – {new Date(r.endDate).toLocaleDateString()}
+                    {formatDateOnly(r.startDate)} – {formatDateOnly(r.endDate)}
                   </td>
                   <td className="py-2 pr-4">{r.minLOS ?? '—'}</td>
                   <td className="py-2 pr-4">{r.maxLOS ?? '—'}</td>
                   <td className="py-2 pr-4">{r.closedToArrival ? 'Yes' : '—'}</td>
                   <td className="py-2 pr-4">{r.stopSell ? 'Yes' : '—'}</td>
                   <td className="py-2 pr-4">
-                    <Button size="sm" variant="outline" loading={deleteMutation.isPending} onClick={() => deleteMutation.mutate(r.id)}>
+                    <Button size="sm" variant="outline" loading={deleteMutation.isPending && deleteMutation.variables === r.id} onClick={() => setRemoving(r)}>
                       Remove
                     </Button>
                   </td>
@@ -180,6 +184,21 @@ function RestrictionsSection({ branchId, auth }: { branchId: string; auth: AuthO
           </table>
         </Card>
       )}
+      <ConfirmDialog
+        open={removing !== null}
+        title="Remove this restriction?"
+        description={
+          removing
+            ? `${removing.roomTypeId ? (removing.roomTypeName ?? roomTypeNameById.get(removing.roomTypeId) ?? 'This room type') : 'All room types'}, ${formatDateOnly(removing.startDate)} to ${formatDateOnly(removing.endDate)}: bookings for those nights are unrestricted again at once.`
+            : ''
+        }
+        confirmLabel="Remove"
+        onCancel={() => setRemoving(null)}
+        onConfirm={() => {
+          if (removing) deleteMutation.mutate(removing.id);
+          setRemoving(null);
+        }}
+      />
     </Section>
   );
 }

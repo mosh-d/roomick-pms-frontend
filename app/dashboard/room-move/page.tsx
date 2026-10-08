@@ -18,6 +18,7 @@ import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
 import { RoomPicker } from '../_components/RoomPicker';
+import { formatDateOnly } from '@/lib/dates';
 
 type RateChoice = 'keep' | 'new';
 
@@ -117,7 +118,7 @@ export default function RoomMovePage() {
         {stay ? (
           <Card tone="accent" className="flex flex-col gap-1">
             <Row label="Now in" value={`Room ${stay.room?.number ?? '?'} — ${stay.roomType.name}`} />
-            <Row label="Leaving" value={new Date(stay.checkOutDate).toLocaleDateString()} />
+            <Row label="Leaving" value={formatDateOnly(stay.checkOutDate)} />
           </Card>
         ) : null}
       </Section>

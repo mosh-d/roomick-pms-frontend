@@ -9,6 +9,7 @@ import { Select, type SelectOption } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { CopyButton } from '@/components/ui/CopyButton';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { IntegrationsIcon, PaymentGatewayIcon } from '@/components/ui/Icons';
 import { HubCard } from '../_components/HubCard';
@@ -42,24 +43,6 @@ const EVERY_BRANCH = 'all';
 
 const errorText = (err: unknown) => (err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—');
-
-function CopyButton({ value, label = 'Copy' }: { value: string; label?: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <Button
-      type="button"
-      size="sm"
-      variant="outline"
-      onClick={async () => {
-        await navigator.clipboard.writeText(value);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }}
-    >
-      {copied ? 'Copied!' : label}
-    </Button>
-  );
-}
 
 /** Shown once, straight after creating a key or a webhook — the only time its secret is readable. */
 function ShownOnce({ title, value, onDone }: { title: string; value: string; onDone: () => void }) {

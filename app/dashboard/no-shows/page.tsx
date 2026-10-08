@@ -22,6 +22,7 @@ import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatDateOnly } from '@/lib/dates';
 
 function todayString(): string {
   const now = new Date();
@@ -133,7 +134,7 @@ export default function NoShowHandlingPage() {
                     {r.guest.name} — {r.roomType.name}
                   </p>
                   <p className="text-small text-surface-muted">
-                    {r.confirmationNumber} · Check-in was {new Date(r.checkInDate).toLocaleDateString()}
+                    {r.confirmationNumber} · Check-in was {formatDateOnly(r.checkInDate)}
                   </p>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => setMarkingId(r.id)}>
@@ -164,7 +165,7 @@ export default function NoShowHandlingPage() {
                         {r.guest.name} — {r.roomType.name}
                       </p>
                       <p className="text-small text-surface-muted">
-                        {r.confirmationNumber} · Was due {new Date(r.checkInDate).toLocaleDateString()}
+                        {r.confirmationNumber} · Was due {formatDateOnly(r.checkInDate)}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">

@@ -18,6 +18,7 @@ import { timezoneOptionsFor, defaultTimezoneFor } from '@/lib/timezones';
 import { isOwner } from '@/lib/roles';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+import { addDays, todayLocal } from '@/lib/dates';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -29,9 +30,8 @@ const REPORT_TABS: Array<{ value: CrossPropertyReportType; label: string }> = [
 ];
 
 function defaultRange(): { from: string; to: string } {
-  const to = new Date();
-  const from = new Date(to.getTime() - 29 * 86400000);
-  return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) };
+  const to = todayLocal();
+  return { from: addDays(to, -29), to };
 }
 
 /** The headline figure for a report type's own summary/blendedTotal shape — the one number worth a row-level column, matching each single-branch report page's own summary framing. */

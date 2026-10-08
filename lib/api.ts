@@ -40,7 +40,10 @@ export type ApiErrorCode =
   | 'AUDIT_ALREADY_RAN'
   | 'TOO_MANY_REQUESTS'
   | 'SHIFT_REQUIRED'
-  | 'EARLY_CHECK_IN';
+  | 'EARLY_CHECK_IN'
+  | 'TENANT_SUSPENDED'
+  | 'PAYLOAD_TOO_LARGE'
+  | 'FOLIO_CREDIT_BALANCE';
 
 /**
  * The backend's global ProblemJsonExceptionFilter always returns this shape
@@ -131,6 +134,13 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
 
   if (!response.ok) {
     const problem = (data ?? {}) as { code?: string; detail?: string; errors?: unknown };
+    // The organisation was suspended while someone was signed in: every call
+    // is refused from now on, so the session ends with a plain explanation
+    // instead of every page failing one request at a time.
+    if (response.status === 403 && problem.code === 'TENANT_SUSPENDED' && accessToken) {
+      const { useAuthStore } = await import('./store/authStore');
+      useAuthStore.getState().endSession('suspended');
+    }
     const fallback = response.status === 429 ? 'Too many attempts — try again in a minute.' : 'Something went wrong. Please try again.';
     throw new ApiError(response.status, problem.code ?? (response.status === 429 ? 'TOO_MANY_REQUESTS' : 'INTERNAL'), problem.detail ?? fallback, problem.errors);
   }

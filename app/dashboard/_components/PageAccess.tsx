@@ -14,6 +14,9 @@ interface PageAccessValue {
   /** False until the person's pages at this branch are known. */
   ready: boolean;
   canOpen: CanOpen;
+  /** The page list couldn't be read — nothing opens until it can be. */
+  failed?: boolean;
+  retry?: () => void;
 }
 
 const OPEN_TO_ALL: PageAccessValue = { ready: true, canOpen: () => true };
@@ -38,12 +41,17 @@ export function PageAccessProvider({ branchId, children }: { branchId: string; c
   const data = query.data;
   const loading = query.isLoading;
 
+  const failed = query.isError;
+  const refetch = query.refetch;
   const value = useMemo<PageAccessValue>(() => {
     if (loading) return { ready: false, canOpen: () => false };
+    // Closed, not open, when the list can't be read: the server refuses the
+    // API calls anyway, so an open page would only be a page of errors.
+    if (failed) return { ready: true, canOpen: () => false, failed: true, retry: () => void refetch() };
     if (!data || !data.restricted) return OPEN_TO_ALL;
     const allowed = new Set(data.pages);
     return { ready: true, canOpen: (href) => allowed.has(href) };
-  }, [loading, data]);
+  }, [loading, failed, refetch, data]);
 
   return <PageAccessContext.Provider value={value}>{children}</PageAccessContext.Provider>;
 }
@@ -60,18 +68,35 @@ export function usePageAccess(): PageAccessValue {
 export function PageGate({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { ready, canOpen } = usePageAccess();
+  const { ready, canOpen, failed, retry } = usePageAccess();
   const opens = ready && pathOpens(pathname, canOpen);
   const fallback = ready ? firstOpenHref(canOpen) : null;
-  const redirect = ready && !opens && pathname === '/dashboard' && fallback !== null ? fallback : null;
+  const redirect = ready && !opens && !failed && pathname === '/dashboard' && fallback !== null ? fallback : null;
 
   useEffect(() => {
     if (redirect) router.replace(redirect);
   }, [redirect, router]);
 
   if (!ready || redirect) return null;
+  if (failed) return <AccessCheckFailed retry={retry} />;
   if (!opens) return <NoAccess fallback={fallback} />;
   return children;
+}
+
+function AccessCheckFailed({ retry }: { retry?: () => void }) {
+  return (
+    <Container className="max-w-3xl py-10">
+      <Card tone="primary" className="flex flex-col gap-3" id="page-access-unavailable">
+        <p className="text-header font-bold text-surface">Couldn’t check which pages are open to you</p>
+        <p className="text-body text-surface">The server didn’t answer. Check the connection and try again — nothing opens until it does.</p>
+        {retry ? (
+          <button type="button" onClick={retry} className="self-start text-body font-semibold text-surface underline cursor-pointer">
+            Try again
+          </button>
+        ) : null}
+      </Card>
+    </Container>
+  );
 }
 
 function NoAccess({ fallback }: { fallback: string | null }) {

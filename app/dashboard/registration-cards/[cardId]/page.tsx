@@ -15,6 +15,7 @@ import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { ApiError, downloadFile } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatDateOnly } from '@/lib/dates';
 
 /**
  * Guest Registration Card (ref: Month 3) — "auto-generated when check-in
@@ -107,8 +108,8 @@ export default function RegistrationCardPage() {
           <Section label="Stay Details" tone="accent">
             <Row label="Room" value={card.fields.roomNumber ?? 'NIL'} />
             <Row label="Room Type" value={card.fields.roomType} />
-            <Row label="Check-In" value={new Date(card.fields.checkInDate).toLocaleDateString()} />
-            <Row label="Check-Out" value={new Date(card.fields.checkOutDate).toLocaleDateString()} />
+            <Row label="Check-In" value={formatDateOnly(card.fields.checkInDate)} />
+            <Row label="Check-Out" value={formatDateOnly(card.fields.checkOutDate)} />
             <Row label="Adults / Children" value={`${card.fields.adults} / ${card.fields.children}`} />
             <Row label="Rate" value={formatMoney(card.fields.rate, currencySymbolFor(card.fields.currency))} />
           </Section>

@@ -124,6 +124,7 @@ function SendSection({ campaign, auth, staffEmail }: { campaign: Campaign; auth:
   const [testEmail, setTestEmail] = useState(staffEmail);
   const [scheduledAt, setScheduledAt] = useState(toLocalInput(campaign.scheduledAt));
   const [confirming, setConfirming] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
 
   function runTest() {
@@ -198,14 +199,7 @@ function SendSection({ campaign, auth, staffEmail }: { campaign: Campaign; auth:
             Send Now
           </Button>
           {campaign.status !== 'failed' ? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() =>
-                cancel.mutate(undefined, { onError: (err) => setMessage({ kind: 'error', text: errorText(err, 'Couldn’t cancel the campaign.') }) })
-              }
-              loading={cancel.isPending}
-            >
+            <Button type="button" variant="outline" onClick={() => setCancelling(true)} loading={cancel.isPending}>
               Cancel Campaign
             </Button>
           ) : null}
@@ -223,6 +217,17 @@ function SendSection({ campaign, auth, staffEmail }: { campaign: Campaign; auth:
         confirmLabel="Send"
         onConfirm={sendNow}
         onCancel={() => setConfirming(false)}
+      />
+      <ConfirmDialog
+        open={cancelling}
+        title="Cancel this campaign?"
+        description={`“${campaign.name}” ${campaign.scheduledAt ? 'won’t be sent at its scheduled time' : 'won’t be sent'}. A cancelled campaign can’t be reopened — you’d make a new one.`}
+        confirmLabel="Cancel Campaign"
+        onConfirm={() => {
+          setCancelling(false);
+          cancel.mutate(undefined, { onError: (err) => setMessage({ kind: 'error', text: errorText(err, 'Couldn’t cancel the campaign.') }) });
+        }}
+        onCancel={() => setCancelling(false)}
       />
     </Section>
   );

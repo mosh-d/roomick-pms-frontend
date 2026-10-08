@@ -20,6 +20,7 @@ import { useAuthStore } from '@/lib/store/authStore';
 import { PostChargeForm } from './_components/PostChargeForm';
 import { RecordPaymentForm } from './_components/RecordPaymentForm';
 import { RedeemPointsCard } from './_components/RedeemPointsCard';
+import { formatDateOnly } from '@/lib/dates';
 
 /**
  * Guest Folio (Roomick-UI.pdf page 33) — guest details, the line-item
@@ -257,7 +258,7 @@ function LineItemRow({ item, symbol }: { item: LineItem; symbol: string }) {
   return (
     <tr className="border-b border-primary/15 last:border-0">
       <td className="text-small text-surface py-3 pr-4 whitespace-nowrap">
-        {item.serviceDate ? new Date(item.serviceDate).toLocaleDateString() : '—'}
+        {item.serviceDate ? formatDateOnly(item.serviceDate) : '—'}
       </td>
       <td className={`text-small py-3 pr-4 ${isTax ? 'text-surface-muted' : 'text-surface'}`}>{item.description}</td>
       <td className="py-3 pr-4">

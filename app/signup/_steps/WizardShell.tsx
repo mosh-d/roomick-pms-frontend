@@ -87,7 +87,8 @@ export function WizardShell({
 }) {
   const currentIndex = PHASES.findIndex((phase) => phase.key === currentPhase);
   const currentLabel = PHASES[currentIndex]?.label ?? '';
-  const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL ?? 'http://localhost:3002';
+  // The marketing site, when there is one; otherwise the app itself — never a developer's localhost.
+  const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL || '/';
 
   return (
     // `h-screen` + `overflow-hidden` (not `min-h-screen`) caps the whole

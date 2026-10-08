@@ -28,6 +28,7 @@ import {
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 import { formatMoney } from '@/lib/numberFormat';
+import { currencySymbolFor } from '@/lib/currencies';
 
 const SHIFT_TYPE_OPTIONS: SelectOption[] = [
   { value: 'morning', label: 'Morning' },
@@ -290,6 +291,7 @@ function OpenShiftDetail({ shiftId, branchId, auth }: { shiftId: string; branchI
 
   const shift = shiftQuery.data;
   if (!shift) return <p className="text-body text-surface-muted">Loading…</p>;
+  const symbol = currencySymbolFor(shift.branch?.currency);
 
   const cashPayments = (shift.payments ?? []).filter((p) => p.method === 'cash');
   // Point of Sale cash lands in the same drawer — closing the shift expects both.
@@ -318,12 +320,12 @@ function OpenShiftDetail({ shiftId, branchId, auth }: { shiftId: string; branchI
           </div>
           <div>
             <p className="text-tiny text-surface-muted">Opening Float</p>
-            <p className="text-body font-semibold text-surface">{formatMoney(shift.openingFloat)}</p>
+            <p className="text-body font-semibold text-surface">{formatMoney(shift.openingFloat, symbol)}</p>
           </div>
           <div>
             <p className="text-tiny text-surface-muted">Cash Taken So Far</p>
-            <p className="text-body font-semibold text-surface">{formatMoney(cashTakenSoFar)}</p>
-            {posCashSoFar > 0 ? <p className="text-tiny text-surface-muted">incl. {formatMoney(posCashSoFar)} at Point of Sale</p> : null}
+            <p className="text-body font-semibold text-surface">{formatMoney(cashTakenSoFar, symbol)}</p>
+            {posCashSoFar > 0 ? <p className="text-tiny text-surface-muted">incl. {formatMoney(posCashSoFar, symbol)} at Point of Sale</p> : null}
           </div>
         </Card>
       </Section>

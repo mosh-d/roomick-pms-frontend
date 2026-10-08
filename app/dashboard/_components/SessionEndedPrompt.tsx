@@ -12,7 +12,7 @@ import { LockIcon } from '@/components/ui/Icons';
  * needs redoing, because nothing on the page can be saved any more. (The
  * Five Clover PMS's own prompt, word for word in spirit.)
  */
-export function SessionEndedPrompt({ onSignIn }: { onSignIn: () => void }) {
+export function SessionEndedPrompt({ onSignIn, reason = 'idle' }: { onSignIn: () => void; reason?: 'idle' | 'suspended' | null }) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,11 +48,12 @@ export function SessionEndedPrompt({ onSignIn }: { onSignIn: () => void }) {
           <LockIcon className="size-7" />
         </span>
         <h2 id="session-ended-title" className="font-display text-header font-bold text-surface">
-          Your session has ended
+          {reason === 'suspended' ? 'This account is suspended' : 'Your session has ended'}
         </h2>
         <p id="session-ended-body" className="text-body text-surface-muted">
-          You&apos;ve been signed out after an hour away, so nothing on this page can be saved until you sign in again. Anything you had typed and not yet
-          saved will need to be entered again.
+          {reason === 'suspended'
+            ? 'Your organisation’s Roomick account has been suspended, so nothing on this page can be saved. Contact support to restore access.'
+            : 'You’ve been signed out after an hour away, so nothing on this page can be saved until you sign in again. Anything you had typed and not yet saved will need to be entered again.'}
         </p>
         <Button type="button" onClick={onSignIn}>
           Sign in again

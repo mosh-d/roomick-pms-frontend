@@ -66,7 +66,7 @@ export function useCreateWorkOrderMutation(branchId: string, { accessToken, tena
 export function useUpdateWorkOrderMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ orderId, ...body }: { orderId: string; status?: MaintenanceStatus; assignedTo?: string; completionNotes?: string; partsUsed?: string[] }) =>
+    mutationFn: ({ orderId, ...body }: { orderId: string; status?: MaintenanceStatus; assignedTo?: string | null; completionNotes?: string; partsUsed?: string[] }) =>
       apiFetch<WorkOrder>(`/maintenance/work-orders/${orderId}`, { method: 'PATCH', accessToken, tenantId, body }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: workOrdersQueryKey(branchId) });

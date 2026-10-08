@@ -26,6 +26,8 @@ export interface ShiftIssue {
 
 /** Mirrors `Shift` (roomick-pms-backend/prisma/schema.prisma). Decimal columns arrive as strings. */
 export interface Shift {
+  /** The branch's currency, for showing the float and the cash taken with their symbol. */
+  branch?: { currency: string };
   id: string;
   branchId: string;
   agentId: string;

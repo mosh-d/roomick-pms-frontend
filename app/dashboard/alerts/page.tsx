@@ -13,6 +13,7 @@ import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
 import type { FolioListRow } from '@/lib/folios';
+import { formatDateOnly } from '@/lib/dates';
 
 type AlertTab = 'missedCheckIns' | 'overdueCheckouts' | 'overdueBalances' | 'maintenance';
 
@@ -160,7 +161,7 @@ function ReservationAlertsTable({
                   <td className="py-2 pr-4 font-semibold">{r.guest.name}</td>
                   <td className="py-2 pr-4">{r.confirmationNumber}</td>
                   <td className="py-2 pr-4">{r.room ? `${r.room.number} (${r.roomType.name})` : r.roomType.name}</td>
-                  <td className="py-2 pr-4">{new Date(dateOf(r)).toLocaleDateString()}</td>
+                  <td className="py-2 pr-4">{formatDateOnly(dateOf(r))}</td>
                   {bill ? (
                     <td className={`py-2 pr-4 text-right whitespace-nowrap ${owes > 0 ? 'font-semibold text-red-600' : ''}`}>
                       {bill.folioId ? (
@@ -273,7 +274,7 @@ function OverdueBalancesTable({ rows }: { rows: FolioListRow[] }) {
               <tr key={f.id} className="border-t border-secondary/10 text-small text-surface">
                 <td className="py-2 pr-4 font-semibold">{f.guest.name}</td>
                 <td className="py-2 pr-4">{f.reservation?.confirmationNumber ?? 'NIL'}</td>
-                <td className="py-2 pr-4">{f.reservation ? new Date(f.reservation.checkOutDate).toLocaleDateString() : 'NIL'}</td>
+                <td className="py-2 pr-4">{f.reservation ? formatDateOnly(f.reservation.checkOutDate) : 'NIL'}</td>
                 <td className="py-2 pr-4 text-right font-semibold text-red-600">{formatMoney(f.balanceDue, currencySymbolFor(f.currency))}</td>
                 <td className="py-2 pr-4 text-right">
                   <Link href={`/dashboard/billing/${f.id}`}>

@@ -4,6 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { CameraIcon, RetakeIcon } from './Icons';
 
+/** The longest edge a document photo is sent at — a passport reads fine at this size, and the API accepts bodies up to 8 MB. */
+const MAX_EDGE = 1600;
+/** An upload bigger than this is refused before it is even decoded. */
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+
 /**
  * ID document capture, camera-first — a front-desk agent is holding the
  * guest's own physical ID at the counter; asking them to "upload a file"
@@ -71,16 +76,28 @@ export function CameraCapture({
     setCameraActive(false);
   }
 
+  /**
+   * Every photo — captured or uploaded — leaves here at most `MAX_EDGE` pixels
+   * on its long side, as a JPEG. A phone camera's native frame is several
+   * megabytes before base64 adds a third; a document is perfectly legible at
+   * 1600 pixels across and a few hundred kilobytes.
+   */
+  function downscaled(source: CanvasImageSource, width: number, height: number): string | null {
+    const scale = Math.min(1, MAX_EDGE / Math.max(width, height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.8).replace(/^data:.*;base64,/, '');
+  }
+
   function capture() {
     const video = videoRef.current;
     if (!video || !video.videoWidth) return;
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0);
-    onCapture(canvas.toDataURL('image/jpeg', 0.85).replace(/^data:.*;base64,/, ''));
+    const base64 = downscaled(video, video.videoWidth, video.videoHeight);
+    if (base64) onCapture(base64);
     cancelCamera();
   }
 
@@ -91,9 +108,28 @@ export function CameraCapture({
 
   function handleFilePicked(file: File | null) {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => onCapture(String(reader.result).replace(/^data:.*;base64,/, ''));
-    reader.readAsDataURL(file);
+    setCameraError(null);
+    if (!file.type.startsWith('image/')) {
+      setCameraError('Choose a photo — a JPEG or PNG file.');
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setCameraError('That photo is over 10 MB — choose a smaller one.');
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      const base64 = downscaled(image, image.naturalWidth, image.naturalHeight);
+      URL.revokeObjectURL(url);
+      if (base64) onCapture(base64);
+      else setCameraError('Could not read that photo.');
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      setCameraError('Could not read that photo.');
+    };
+    image.src = url;
   }
 
   return (

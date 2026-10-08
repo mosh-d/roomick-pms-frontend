@@ -115,8 +115,9 @@ export function useGuestProfileQuery(guestId: string | null, { accessToken, tena
 
 interface UpdateGuestInput {
   name?: string;
-  email?: string;
-  phone?: string;
+  /** `null` clears the field; leaving it out keeps it. */
+  email?: string | null;
+  phone?: string | null;
   preferences?: GuestPreferences;
   vipLevel?: number;
   tags?: string[];

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { XIcon } from './Icons';
 
 const FOCUSABLE_SELECTOR =
@@ -34,6 +34,8 @@ export function Modal({
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<Element | null>(null);
+  // Unique per dialog — every modal used to share `id="modal-title"`, so two on one page had duplicate ids.
+  const titleId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -88,12 +90,12 @@ export function Modal({
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="modal-title"
+        aria-labelledby={titleId}
         tabIndex={-1}
         className="surface-page w-full max-w-md rounded-card bg-white/90 backdrop-blur-sm border border-white shadow-xl p-6 flex flex-col gap-4 focus:outline-none"
       >
         <div className="flex items-center justify-between gap-4">
-          <h2 id="modal-title" className="text-header font-bold text-surface">
+          <h2 id={titleId} className="text-header font-bold text-surface">
             {title}
           </h2>
           <button

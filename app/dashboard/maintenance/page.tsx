@@ -28,6 +28,7 @@ import { useRoomsQuery } from '@/lib/rooms';
 import { useStaffQuery } from '@/lib/staff';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatDateOnly } from '@/lib/dates';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -128,7 +129,7 @@ function WorkOrderDetailModalInner({ order, branchId, auth, onClose }: { order: 
   const [partsUsed, setPartsUsed] = useState(order.partsUsed.join(', '));
   const [error, setError] = useState<string | null>(null);
 
-  const staffOptions: SelectOption[] = (staffQuery.data ?? []).filter((s) => s.active).map((s) => ({ value: s.id, label: s.name }));
+  const staffOptions: SelectOption[] = [{ value: '', label: 'Unassigned' }, ...(staffQuery.data ?? []).filter((s) => s.active).map((s) => ({ value: s.id, label: s.name }))];
 
   async function handleSave() {
     setError(null);
@@ -136,7 +137,7 @@ function WorkOrderDetailModalInner({ order, branchId, auth, onClose }: { order: 
       await updateMutation.mutateAsync({
         orderId: order.id,
         status: status as MaintenanceStatus,
-        assignedTo: assignedTo ?? undefined,
+        assignedTo,
         completionNotes: completionNotes || undefined,
         partsUsed: partsUsed
           .split(',')
@@ -157,7 +158,7 @@ function WorkOrderDetailModalInner({ order, branchId, auth, onClose }: { order: 
       </p>
       {order.description ? <p className="text-body text-surface">{order.description}</p> : null}
       <Select id="wo-status" label="Status" options={STATUS_OPTIONS} value={status} onChange={setStatus} />
-      <Select id="wo-assigned-to" label="Assign to" options={staffOptions} value={assignedTo} onChange={setAssignedTo} placeholder="Unassigned" />
+      <Select id="wo-assigned-to" label="Assign to" options={staffOptions} value={assignedTo ?? ''} onChange={(v) => setAssignedTo(v || null)} />
       <Textarea id="wo-completion-notes" label="Completion notes" value={completionNotes} onChange={(e) => setCompletionNotes(e.target.value)} />
       <Input id="wo-parts-used" label="Parts used (comma-separated)" value={partsUsed} onChange={(e) => setPartsUsed(e.target.value)} />
       {error ? <p className="text-small text-red-600">{error}</p> : null}
@@ -311,7 +312,7 @@ function AssetRegistrySection({ branchId, auth }: { branchId: string; auth: Auth
       render: (a) => {
         if (!a.nextServiceDue) return <span className="text-surface-muted">—</span>;
         const overdue = new Date(a.nextServiceDue).getTime() < Date.now();
-        return <span className={overdue ? 'text-red-600 font-semibold' : ''}>{new Date(a.nextServiceDue).toLocaleDateString()}</span>;
+        return <span className={overdue ? 'text-red-600 font-semibold' : ''}>{formatDateOnly(a.nextServiceDue)}</span>;
       },
       sortValue: (a) => a.nextServiceDue ?? '',
     },

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import './globals.css';
 import { satoshi, playfairDisplay } from '@/lib/fonts';
 import { colors } from '@/design-system/tokens';
@@ -19,7 +20,12 @@ export const viewport = {
 // Next.js 16's RootLayout signature is `LayoutProps<'/'>` (a typed-route
 // helper), not the older `{ children }: { children: ReactNode }` — see
 // AGENTS.md at the project root and node_modules/next/dist/docs/.
-export default function RootLayout({ children }: LayoutProps<'/'>) {
+export default async function RootLayout({ children }: LayoutProps<'/'>) {
+  // Every page is rendered per request: `proxy.ts` gives each one its own
+  // script nonce, and a page prerendered at build time would carry a stale
+  // one that no live policy matches. Reading the headers is what makes the
+  // whole tree dynamic.
+  await headers();
   return (
     // Both font `.variable` classNames go on <html> so their CSS custom
     // properties (--font-body / --font-display) are in scope everywhere.

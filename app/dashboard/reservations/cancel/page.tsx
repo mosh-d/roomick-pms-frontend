@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
 import { Select, type SelectOption } from '@/components/ui/Select';
+import { SearchInput } from '@/components/ui/SearchInput';
 import { YesNoToggle } from '@/components/ui/YesNoToggle';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -24,6 +25,7 @@ import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { isSupervisorAtBranch } from '@/lib/roles';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatDateOnly } from '@/lib/dates';
 
 const PENALTY_LABELS: Record<CancellationQuote['penaltyType'], string> = {
   first_night: 'first night',
@@ -66,13 +68,20 @@ export default function CancelReservationPage() {
 
   const confirmedQuery = useReservationsQuery(activeBranchId, { status: 'confirmed' }, auth);
   const waitlistedQuery = useReservationsQuery(activeBranchId, { status: 'waitlisted' }, auth);
+  // The lists above stop at the newest few hundred; a search reaches any booking by name or number.
+  const [search, setSearch] = useState('');
+  const searching = search.trim().length > 0;
+  const searchQuery = useReservationsQuery(activeBranchId, { search: search.trim() }, auth, searching);
   const quoteQuery = useCancellationQuoteQuery(selectedId, auth);
   const cancelMutation = useCancelReservationMutation(activeBranchId ?? '', auth);
   const waiverMutation = useCancelWithWaiverMutation(activeBranchId ?? '', auth);
 
   const cancellable: ReservationSummary[] = useMemo(
-    () => [...(confirmedQuery.data ?? []), ...(waitlistedQuery.data ?? [])],
-    [confirmedQuery.data, waitlistedQuery.data],
+    () =>
+      searching
+        ? (searchQuery.data ?? []).filter((r) => r.status === 'confirmed' || r.status === 'waitlisted')
+        : [...(confirmedQuery.data ?? []), ...(waitlistedQuery.data ?? [])],
+    [searching, searchQuery.data, confirmedQuery.data, waitlistedQuery.data],
   );
   const selected = cancellable.find((r) => r.id === selectedId) ?? null;
 
@@ -135,10 +144,19 @@ export default function CancelReservationPage() {
       {cancelledName ? <p className="text-body font-semibold text-surface">{cancelledName}&apos;s reservation is cancelled.</p> : null}
 
       <Section label="Reservation Search">
-        {confirmedQuery.isLoading || waitlistedQuery.isLoading ? (
+        <SearchInput
+          label="Search reservations"
+          placeholder="Guest name or confirmation number"
+          value={search}
+          onChange={(v) => {
+            setSearch(v);
+            setSelectedId(null);
+          }}
+        />
+        {confirmedQuery.isLoading || waitlistedQuery.isLoading || (searching && searchQuery.isLoading) ? (
           <p className="text-body text-surface-muted">Loading reservations…</p>
         ) : options.length === 0 ? (
-          <p className="text-body text-surface-muted">No confirmed or waitlisted reservations to cancel.</p>
+          <p className="text-body text-surface-muted">{searching ? 'No confirmed or waitlisted reservation matches that.' : 'No confirmed or waitlisted reservations to cancel.'}</p>
         ) : (
           <>
             <Select id="cancel-reservation" name="reservationId" label="Reservation" options={options} value={selectedId} onChange={pick} />
@@ -147,8 +165,8 @@ export default function CancelReservationPage() {
               <Card tone="secondary" className="flex flex-col gap-2">
                 <Row label="Name" value={selected.guest.name} />
                 <Row label="Room Type" value={selected.roomType.name} />
-                <Row label="Check-In Date" value={new Date(selected.checkInDate).toLocaleDateString()} />
-                <Row label="Check-Out Date" value={new Date(selected.checkOutDate).toLocaleDateString()} />
+                <Row label="Check-In Date" value={formatDateOnly(selected.checkInDate)} />
+                <Row label="Check-Out Date" value={formatDateOnly(selected.checkOutDate)} />
                 <Row label="Status" value={selected.status === 'waitlisted' ? 'Waitlisted' : 'Confirmed'} />
               </Card>
             ) : null}

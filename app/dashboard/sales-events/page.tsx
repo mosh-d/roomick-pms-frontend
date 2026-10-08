@@ -9,8 +9,10 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PageHeader } from '@/components/ui/PageHeader';
 import {
+  type EventBookingSummary,
   SETUP_STYLE_LABELS,
   downloadBeo,
   seatsFor,
@@ -39,6 +41,7 @@ import { ApiError } from '@/lib/api';
 import { currencySymbolFor } from '@/lib/currencies';
 import { formatMoney } from '@/lib/numberFormat';
 import { useAuthStore } from '@/lib/store/authStore';
+import { addDays, todayLocal } from '@/lib/dates';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -55,9 +58,8 @@ function errorText(err: unknown): string {
 }
 
 function defaultMonthRange(): { from: string; to: string } {
-  const from = new Date();
-  const to = new Date(from.getTime() + 30 * 86400000);
-  return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) };
+  const from = todayLocal();
+  return { from, to: addDays(from, 30) };
 }
 
 function formatDay(value: string): string {
@@ -671,6 +673,7 @@ function EventSpacesSection({ branchId, auth }: { branchId: string; auth: AuthOp
   const [contactEmail, setContactEmail] = useState('');
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState<EventBookingSummary | null>(null);
 
   const spaces = spacesQuery.data ?? [];
   const spaceById = useMemo(() => new Map((spacesQuery.data ?? []).map((s) => [s.id, s])), [spacesQuery.data]);
@@ -823,7 +826,7 @@ function EventSpacesSection({ branchId, auth }: { branchId: string; auth: AuthOp
                       <Button size="sm" variant="outline" onClick={() => setDetailId(booking.id)}>
                         Details &amp; BEO
                       </Button>
-                      <Button size="sm" variant="outline" loading={cancelBookingMutation.isPending} onClick={() => cancelBookingMutation.mutate(booking.id)}>
+                      <Button size="sm" variant="outline" loading={cancelBookingMutation.isPending && cancelBookingMutation.variables === booking.id} onClick={() => setCancelling(booking)}>
                         Cancel
                       </Button>
                     </div>
@@ -835,6 +838,21 @@ function EventSpacesSection({ branchId, auth }: { branchId: string; auth: AuthOp
         )}
       </div>
       {detailId ? <EventDetailsModal key={detailId} bookingId={detailId} branchId={branchId} from={fromIso} to={toIso} auth={auth} onClose={() => setDetailId(null)} /> : null}
+      <ConfirmDialog
+        open={cancelling !== null}
+        title={cancelling ? `Cancel “${cancelling.title}”?` : ''}
+        description={
+          cancelling
+            ? `${spaceById.get(cancelling.eventSpaceId)?.name ?? 'The space'} is free again for ${new Date(cancelling.startsAt).toLocaleString()}. The event stays on record with its BEO, but it can’t be reinstated — you’d book it again.`
+            : ''
+        }
+        confirmLabel="Cancel Event"
+        onCancel={() => setCancelling(null)}
+        onConfirm={() => {
+          if (cancelling) cancelBookingMutation.mutate(cancelling.id);
+          setCancelling(null);
+        }}
+      />
     </Section>
   );
 }

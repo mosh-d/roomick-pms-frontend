@@ -16,6 +16,7 @@ import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
 import { ExtendStayDialog, type ExtendStayTarget } from '../_components/ExtendStayDialog';
 import { GuestNameCell } from '../_components/GuestNameCell';
+import { formatDateOnly } from '@/lib/dates';
 
 /**
  * In-House Guest List (Roomick-UI.pdf page 18) — every currently
@@ -37,7 +38,7 @@ export default function InHouseGuestListPage() {
   const auth = { accessToken: accessToken ?? undefined, tenantId: user?.tenantId };
 
   const inHouseQuery = useInHouseQuery(activeBranchId, auth);
-  const foliosQuery = useFoliosQuery(activeBranchId, 'all', auth);
+  const foliosQuery = useFoliosQuery(activeBranchId, 'in_house', auth);
 
   /** reservationId -> its folio, so each row can show a live balance and link straight to it. */
   const folioByReservation = useMemo(() => {
@@ -65,13 +66,13 @@ export default function InHouseGuestListPage() {
     {
       key: 'checkInDate',
       label: 'Check-In Date',
-      render: (r) => new Date(r.checkInDate).toLocaleDateString(),
+      render: (r) => formatDateOnly(r.checkInDate),
       sortValue: (r) => r.checkInDate,
     },
     {
       key: 'checkOutDate',
       label: 'Check-Out Date',
-      render: (r) => new Date(r.checkOutDate).toLocaleDateString(),
+      render: (r) => formatDateOnly(r.checkOutDate),
       sortValue: (r) => r.checkOutDate,
     },
     {

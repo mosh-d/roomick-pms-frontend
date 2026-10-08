@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware';
 import { apiFetch } from '../api';
 import { announceSessionEnded, clearIdleClock, hasBeenIdleTooLong, startIdleClock } from '../session';
 
+export type SessionEndReason = 'idle' | 'suspended';
+
 export interface AuthUser {
   id: string;
   tenantId: string;
@@ -68,9 +70,11 @@ interface AuthState {
    * starts signed out regardless.
    */
   sessionEnded: boolean;
+  /** Why: an hour away, or the organisation was suspended while someone was signed in. */
+  sessionEndedReason: SessionEndReason | null;
   /** Set by `logout()` only, so the sign-in page a sign-out lands on doesn't carry `?next=` — the next person at this computer shouldn't be taken to where the last one was. */
   signedOut: boolean;
-  endSession: () => void;
+  endSession: (reason?: SessionEndReason) => void;
   /** Signing out: ends the session on the server too (best effort), then forgets it here. */
   logout: () => Promise<void>;
   /** Forgets the session after it ended — the "Sign in again" on the ended prompt; the sign-in page then brings you back here. */
@@ -131,6 +135,7 @@ export const useAuthStore = create<AuthState>()(
           user: result.user,
           activeBranchId: null,
           sessionEnded: false,
+          sessionEndedReason: null,
           signedOut: false,
         });
         startIdleClock();
@@ -147,6 +152,7 @@ export const useAuthStore = create<AuthState>()(
           user: result.user,
           activeBranchId: null,
           sessionEnded: false,
+          sessionEndedReason: null,
           signedOut: false,
         });
         startIdleClock();
@@ -162,6 +168,7 @@ export const useAuthStore = create<AuthState>()(
           user: result.user,
           ...(options?.keepBranch ? {} : { activeBranchId: null }),
           sessionEnded: false,
+          sessionEndedReason: null,
           signedOut: false,
         });
         startIdleClock();
@@ -188,21 +195,22 @@ export const useAuthStore = create<AuthState>()(
         }
       },
       sessionEnded: false,
+      sessionEndedReason: null,
       signedOut: false,
-      endSession: () => {
+      endSession: (reason: SessionEndReason = 'idle') => {
         if (get().sessionEnded) return;
-        set({ sessionEnded: true });
+        set({ sessionEnded: true, sessionEndedReason: reason });
         announceSessionEnded();
       },
       async logout() {
         const { refreshToken } = get();
-        set({ ...SIGNED_OUT, sessionEnded: false, signedOut: true });
+        set({ ...SIGNED_OUT, sessionEnded: false, sessionEndedReason: null, signedOut: true });
         clearIdleClock();
         await revokeOnServer(refreshToken);
       },
       async leaveEndedSession() {
         const { refreshToken } = get();
-        set({ ...SIGNED_OUT, sessionEnded: false, signedOut: false });
+        set({ ...SIGNED_OUT, sessionEnded: false, sessionEndedReason: null, signedOut: false });
         clearIdleClock();
         await revokeOnServer(refreshToken);
       },

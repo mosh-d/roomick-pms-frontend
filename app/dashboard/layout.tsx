@@ -42,6 +42,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const setActiveBranchId = useAuthStore((s) => s.setActiveBranchId);
   const logout = useAuthStore((s) => s.logout);
   const sessionEnded = useAuthStore((s) => s.sessionEnded);
+  const sessionEndedReason = useAuthStore((s) => s.sessionEndedReason);
   const endSession = useAuthStore((s) => s.endSession);
   const leaveEndedSession = useAuthStore((s) => s.leaveEndedSession);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -183,7 +184,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
         {/* Over the page rather than instead of it: the page stays where it was, and signing back in returns to it. */}
-        {sessionEnded ? <SessionEndedPrompt onSignIn={() => void leaveEndedSession()} /> : null}
+        {sessionEnded ? <SessionEndedPrompt reason={sessionEndedReason} onSignIn={() => void leaveEndedSession()} /> : null}
         <div className="flex flex-1 min-h-0">
           <Sidebar mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
           {/* `relative` keeps every absolutely-positioned element on a page —

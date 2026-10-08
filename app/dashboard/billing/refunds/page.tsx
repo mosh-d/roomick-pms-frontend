@@ -22,6 +22,7 @@ import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { isSupervisorAtBranch, mayActAtBranch } from '@/lib/roles';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatDateOnly } from '@/lib/dates';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -349,7 +350,7 @@ function BillPanel({
               <tbody>
                 {correctable.map((li) => (
                   <tr key={li.id} className="border-b border-primary/15 last:border-0">
-                    <td className="text-small text-surface py-3 pr-4 whitespace-nowrap">{li.serviceDate ? new Date(li.serviceDate).toLocaleDateString() : '—'}</td>
+                    <td className="text-small text-surface py-3 pr-4 whitespace-nowrap">{li.serviceDate ? formatDateOnly(li.serviceDate) : '—'}</td>
                     <td className={`text-small py-3 pr-4 ${li.chargeType === 'tax' ? 'text-surface-muted' : 'text-surface'}`}>{li.description}</td>
                     <td className="text-small text-surface py-3 pr-4 text-right whitespace-nowrap">{formatMoney(li.amount, symbol)}</td>
                     <td className="py-3 text-right">

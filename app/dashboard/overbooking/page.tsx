@@ -88,8 +88,8 @@ export default function OverbookingManagementPage() {
         compensationOffered: compensationOffered.trim() || undefined,
       });
       setWalkResult(
-        Number(result.refundedTotal) > 0
-          ? `${result.reservation.guest.name} walked to ${relocationProperty}. Refunded ${result.refundedTotal}.`
+        Number(result.refundRequested) > 0
+          ? `${result.reservation.guest.name} walked to ${relocationProperty}. A refund of ${result.refundRequested} has been raised — it is paid out from Billing → Refunds.`
           : `${result.reservation.guest.name} walked to ${relocationProperty}. Nothing had been paid yet, so nothing to refund.`,
       );
       setWalkReservationId(null);
@@ -241,8 +241,8 @@ function ConfigForm({
         globalEnabled: enabled === 'yes',
         maxOverbookPct: maxOverbookPct ? Number(maxOverbookPct) : undefined,
         alertAtPct: alertAtPct ? Number(alertAtPct) : undefined,
-        validFrom: validFrom || undefined,
-        validTo: validTo || undefined,
+        validFrom: validFrom || null,
+        validTo: validTo || null,
       });
       setSaved(true);
     } catch (err) {

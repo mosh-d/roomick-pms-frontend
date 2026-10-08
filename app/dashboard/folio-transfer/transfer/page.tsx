@@ -16,6 +16,7 @@ import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { mayActAtBranch } from '@/lib/roles';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatDateOnly } from '@/lib/dates';
 
 /** Who the backend lets move charges onto another stay's bill (`POST /folios/:id/transfer`'s roles). */
 const TRANSFER_ROLES = ['owner', 'manager', 'accountant'] as const;
@@ -241,7 +242,7 @@ export default function TransferChargesPage() {
                               className={`size-4 accent-primary ${locked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
                             />
                           </td>
-                          <td className="text-small text-surface py-3 pr-4 whitespace-nowrap">{li.serviceDate ? new Date(li.serviceDate).toLocaleDateString() : '—'}</td>
+                          <td className="text-small text-surface py-3 pr-4 whitespace-nowrap">{li.serviceDate ? formatDateOnly(li.serviceDate) : '—'}</td>
                           <td className={`text-small py-3 pr-4 ${li.chargeType === 'tax' || li.chargeType === 'correction' ? 'text-surface-muted' : 'text-surface'}`}>
                             {li.description}
                             {!moveAll && isAttached(li) ? <span className="block text-tiny text-surface-muted">Moves with its charge</span> : null}

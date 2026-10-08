@@ -20,6 +20,7 @@ import {
 import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatDateOnly } from '@/lib/dates';
 
 /**
  * Night Audit (Roomick-UI.pdf page 35) — end-of-day rollover: pre-audit
@@ -150,7 +151,7 @@ export default function NightAuditPage() {
                       <tr key={r.id} className="border-b border-primary/15 last:border-0">
                         <td className="text-small text-surface py-3 pr-4">{r.guestName}</td>
                         <td className="text-small text-surface py-3 pr-4">{r.confirmationNumber}</td>
-                        <td className="text-small text-surface py-3 pr-4">{new Date(r.checkInDate).toLocaleDateString()}</td>
+                        <td className="text-small text-surface py-3 pr-4">{formatDateOnly(r.checkInDate)}</td>
                         <td className="py-3 text-right">
                           <Button size="sm" variant="outline" onClick={() => router.push(`/dashboard/check-in/${r.id}`)}>
                             View Reservation
@@ -203,7 +204,7 @@ export default function NightAuditPage() {
               <tbody>
                 {runsQuery.data.map((run) => (
                   <tr key={run.id} className="border-b border-primary/15 last:border-0">
-                    <td className="text-small text-surface py-3 pr-4">{new Date(run.auditDate).toLocaleDateString()}</td>
+                    <td className="text-small text-surface py-3 pr-4">{formatDateOnly(run.auditDate)}</td>
                     <td className="py-3 pr-4">
                       <RunStatusBadge status={run.status} />
                     </td>

@@ -16,6 +16,7 @@ import { currencySymbolFor } from '@/lib/currencies';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 import { ExtendStayDialog, type ExtendStayTarget } from '../_components/ExtendStayDialog';
+import { formatDateOnly } from '@/lib/dates';
 
 /**
  * Check-out is NEVER blocked by an outstanding balance — the room has to
@@ -56,7 +57,7 @@ export default function DeparturesDashboardPage() {
 
   const auth = { accessToken: accessToken ?? undefined, tenantId: user?.tenantId };
   const departuresQuery = useDeparturesQuery(activeBranchId, undefined, auth);
-  const foliosQuery = useFoliosQuery(activeBranchId, 'all', auth);
+  const foliosQuery = useFoliosQuery(activeBranchId, 'in_house', auth);
   const checkOutMutation = useCheckOutMutation(activeBranchId ?? '', auth);
 
   /** reservationId -> folio balance, so the row and the confirm dialog can both warn about money owed. */
@@ -95,7 +96,7 @@ export default function DeparturesDashboardPage() {
     {
       key: 'checkOutDate',
       label: 'Check-Out Date',
-      render: (r) => new Date(r.checkOutDate).toLocaleDateString(),
+      render: (r) => formatDateOnly(r.checkOutDate),
       sortValue: (r) => r.checkOutDate,
     },
     {

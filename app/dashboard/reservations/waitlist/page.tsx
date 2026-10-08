@@ -10,6 +10,7 @@ import { Table, type TableColumn } from '@/components/ui/Table';
 import { useReservationsQuery, usePromoteFromWaitlistMutation, type ReservationSummary } from '@/lib/reservations';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatDateOnly } from '@/lib/dates';
 
 /**
  * Waitlist Management (ref p10 card) — every reservation booked via Create
@@ -52,13 +53,13 @@ export default function WaitlistManagementPage() {
     {
       key: 'checkInDate',
       label: 'Check-In Date',
-      render: (r) => new Date(r.checkInDate).toLocaleDateString(),
+      render: (r) => formatDateOnly(r.checkInDate),
       sortValue: (r) => r.checkInDate,
     },
     {
       key: 'checkOutDate',
       label: 'Check-Out Date',
-      render: (r) => new Date(r.checkOutDate).toLocaleDateString(),
+      render: (r) => formatDateOnly(r.checkOutDate),
       sortValue: (r) => r.checkOutDate,
     },
     { key: 'confirmation', label: 'Confirmation #', render: (r) => r.confirmationNumber, sortValue: (r) => r.confirmationNumber },

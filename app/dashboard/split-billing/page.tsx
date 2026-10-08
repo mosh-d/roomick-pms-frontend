@@ -25,6 +25,7 @@ import { CHARGE_TYPE_OPTIONS } from '@/lib/schemas/folios';
 import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatDateOnly } from '@/lib/dates';
 
 /**
  * Split Billing (Roomick-UI.pdf page 34) — divide charges across a
@@ -372,7 +373,7 @@ function SplitRow({
         />
       </td>
       <td className="text-small text-surface py-3 pr-4 whitespace-nowrap">
-        {item.serviceDate ? new Date(item.serviceDate).toLocaleDateString() : '—'}
+        {item.serviceDate ? formatDateOnly(item.serviceDate) : '—'}
       </td>
       <td className={`text-small py-3 pr-4 ${item.chargeType === 'tax' ? 'text-surface-muted' : 'text-surface'}`}>
         {item.description}

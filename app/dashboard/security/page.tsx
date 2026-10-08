@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Table, type TableColumn } from '@/components/ui/Table';
 import { Modal } from '@/components/ui/Modal';
+import { Textarea } from '@/components/ui/Textarea';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SecurityIcon } from '@/components/ui/Icons';
 import {
@@ -38,6 +39,7 @@ import {
 import { useGuestSearchQuery, type GuestSummary } from '@/lib/guests';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatDateOnly } from '@/lib/dates';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -377,12 +379,14 @@ function AuditDiff({ before, after }: { before: unknown; after: unknown }) {
 
 function AuditLogSection({ auth }: { auth: AuthOpts }) {
   const [action, setAction] = useState('');
+  const [entityType, setEntityType] = useState('');
+  const [entityId, setEntityId] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [page, setPage] = useState(1);
   const limit = 25;
 
-  const query = useAuditLogsQuery({ action: action || undefined, from: from || undefined, to: to || undefined, page, limit }, auth);
+  const query = useAuditLogsQuery({ action: action || undefined, entityType: entityType.trim() || undefined, entityId: entityId.trim() || undefined, from: from || undefined, to: to || undefined, page, limit }, auth);
 
   const columns: TableColumn<AuditLogRow>[] = [
     { key: 'timestamp', label: 'Timestamp', render: (r) => new Date(r.timestamp).toLocaleString(), sortValue: (r) => r.timestamp },
@@ -405,6 +409,8 @@ function AuditLogSection({ auth }: { auth: AuthOpts }) {
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-end gap-4">
           <Input id="audit-log-action" label="Action contains" placeholder="e.g. reservation.check_in" value={action} onChange={(e) => { setAction(e.target.value); setPage(1); }} />
+          <Input id="audit-log-entity-type" label="Record type" placeholder="e.g. reservation, folio, guest_profile" value={entityType} onChange={(e) => { setEntityType(e.target.value); setPage(1); }} />
+          <Input id="audit-log-entity-id" label="Record id" placeholder="One record’s whole history" value={entityId} onChange={(e) => { setEntityId(e.target.value); setPage(1); }} />
           <Input id="audit-log-from" label="From" type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(1); }} />
           <Input id="audit-log-to" label="To" type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(1); }} />
         </div>
@@ -454,6 +460,8 @@ function GdprSection({ auth }: { auth: AuthOpts }) {
   const statusMutation = useUpdateGdprStatusMutation(auth);
   const eraseMutation = useEraseGuestMutation(auth);
   const [erasing, setErasing] = useState<GdprRequestRow | null>(null);
+  const [rejecting, setRejecting] = useState<GdprRequestRow | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
   const [eraseError, setEraseError] = useState<string | null>(null);
 
   const typeOptions: SelectOption[] = [
@@ -497,7 +505,7 @@ function GdprSection({ auth }: { auth: AuthOpts }) {
       key: 'deadline',
       label: 'Deadline',
       render: (r) => {
-        if (r.status === 'completed' || r.status === 'rejected') return new Date(r.deadline).toLocaleDateString();
+        if (r.status === 'completed' || r.status === 'rejected') return formatDateOnly(r.deadline);
         const days = daysUntil(r.deadline);
         return <span className={days < 0 ? 'font-semibold text-red-600' : days <= 7 ? 'font-semibold text-primary' : ''}>{days < 0 ? `${-days}d overdue` : `${days}d left`}</span>;
       },
@@ -537,7 +545,7 @@ function GdprSection({ auth }: { auth: AuthOpts }) {
                   Mark Completed
                 </Button>
               )}
-              <Button size="sm" variant="danger" onClick={() => statusMutation.mutate({ requestId: r.id, status: 'rejected' })}>
+              <Button size="sm" variant="danger" onClick={() => setRejecting(r)}>
                 Reject
               </Button>
             </>
@@ -616,6 +624,31 @@ function GdprSection({ auth }: { auth: AuthOpts }) {
           eraseMutation.mutate(target.id, { onError: (err) => setEraseError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.') });
         }}
       />
+      {rejecting ? (
+        <Modal open onClose={() => setRejecting(null)} title={`Reject ${rejecting.guest.name}’s request?`}>
+          <p className="text-small text-surface-muted">A rejection is final for this request, and the guest can ask why — the reason is kept with it.</p>
+          <Textarea id="gdpr-reject-reason" label="Reason" rows={3} maxLength={500} value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
+          <div className="flex gap-3">
+            <Button type="button" variant="outline" onClick={() => setRejecting(null)}>
+              Keep it
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              disabled={rejectReason.trim().length < 3}
+              loading={statusMutation.isPending}
+              onClick={() => {
+                const target = rejecting;
+                setRejecting(null);
+                statusMutation.mutate({ requestId: target.id, status: 'rejected', notes: rejectReason.trim() });
+                setRejectReason('');
+              }}
+            >
+              Reject
+            </Button>
+          </div>
+        </Modal>
+      ) : null}
     </Section>
   );
 }

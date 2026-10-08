@@ -26,6 +26,7 @@ import { CONSENT_SOURCE_LABELS, useSetMarketingConsentMutation } from '@/lib/mar
 import { formatMoney } from '@/lib/numberFormat';
 import { isSupervisorAtBranch } from '@/lib/roles';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatDateOnly } from '@/lib/dates';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -75,8 +76,8 @@ function ProfileForm({ guest, auth }: { guest: GuestProfileDetail; auth: AuthOpt
     try {
       await updateMutation.mutateAsync({
         name,
-        email: email || undefined,
-        phone: phone || undefined,
+        email: email.trim() || null,
+        phone: phone.trim() || null,
         vipLevel,
         tags,
         preferences: { bedType: bedType || undefined, floor: floor || undefined, view: view || undefined, pillow: pillow || undefined, temp: temp || undefined, dietaryRestrictions },
@@ -129,8 +130,8 @@ function StayHistorySection({ stayHistory }: { stayHistory: GuestStaySummary[] }
   const columns: TableColumn<GuestStaySummary>[] = [
     { key: 'confirmationNumber', label: 'Confirmation #', render: (s) => s.confirmationNumber },
     { key: 'roomType', label: 'Room Type', render: (s) => s.roomType.name },
-    { key: 'checkInDate', label: 'Check-In', render: (s) => new Date(s.checkInDate).toLocaleDateString(), sortValue: (s) => s.checkInDate },
-    { key: 'checkOutDate', label: 'Check-Out', render: (s) => new Date(s.checkOutDate).toLocaleDateString() },
+    { key: 'checkInDate', label: 'Check-In', render: (s) => formatDateOnly(s.checkInDate), sortValue: (s) => s.checkInDate },
+    { key: 'checkOutDate', label: 'Check-Out', render: (s) => formatDateOnly(s.checkOutDate) },
     { key: 'status', label: 'Status', render: (s) => <span className="capitalize">{s.status.replace('_', ' ')}</span> },
     { key: 'confirmedRate', label: 'Rate', align: 'right', render: (s) => s.confirmedRate },
   ];

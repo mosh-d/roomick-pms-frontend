@@ -19,6 +19,7 @@ import {
   type PublicProperty,
   type PublicRoomType,
 } from '@/lib/publicBooking';
+import { formatDateOnly } from '@/lib/dates';
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -127,13 +128,13 @@ function BookingConfirmed({
           <div>
             <dt className="text-surface-muted">Check-in</dt>
             <dd className="font-semibold">
-              {new Date(confirmation.checkInDate).toLocaleDateString()} from {property.checkInTime}
+              {formatDateOnly(confirmation.checkInDate)} from {property.checkInTime}
             </dd>
           </div>
           <div>
             <dt className="text-surface-muted">Check-out</dt>
             <dd className="font-semibold">
-              {new Date(confirmation.checkOutDate).toLocaleDateString()} by {property.checkOutTime}
+              {formatDateOnly(confirmation.checkOutDate)} by {property.checkOutTime}
             </dd>
           </div>
         </dl>

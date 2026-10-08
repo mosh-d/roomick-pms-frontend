@@ -3,6 +3,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { ArrowLeftIcon, ArrowRightIcon, DownloadIcon, SortIcon } from './Icons';
 import { Button } from './Button';
+import { csvCell } from '@/lib/csv';
 
 export interface TableColumn<T> {
   key: string;
@@ -181,9 +182,4 @@ export function Table<T extends { id: string }>({
       ) : null}
     </div>
   );
-}
-
-/** RFC 4180 quoting — a guest name with a comma would otherwise split into two columns. */
-function csvCell(value: string): string {
-  return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
 }

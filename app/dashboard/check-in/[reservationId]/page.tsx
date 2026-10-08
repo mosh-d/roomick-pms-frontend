@@ -20,6 +20,7 @@ import { RoomPicker, isReady } from '../../_components/RoomPicker';
 import { ApiError, apiFetch } from '@/lib/api';
 import type { IdDocType, IdDocumentInput } from '@/lib/guests';
 import { COUNTRIES } from '@/lib/countries';
+import { formatDateOnly, todayLocal } from '@/lib/dates';
 import { useAuthStore } from '@/lib/store/authStore';
 
 const ID_DOC_TYPE_OPTIONS: SelectOption[] = [
@@ -94,6 +95,11 @@ function CheckInFlow() {
   }, [roomsQuery.data, reservation]);
 
   const buildings = useMemo(() => groupRoomsByFloor(readyRooms), [readyRooms]);
+
+  // Nights between the booked arrival and today — they post at check-in, and the agent should know before pressing the button.
+  const missedNights = reservation
+    ? Math.max(0, Math.round((new Date(`${todayLocal()}T00:00:00.000Z`).getTime() - new Date(`${reservation.checkInDate.slice(0, 10)}T00:00:00.000Z`).getTime()) / 86_400_000))
+    : 0;
 
   const chosenRoomId = overrideMode ? (overrideRoom?.id ?? null) : selectedRoomId;
   /** Another type, or not ready yet — what the override is for, and what needs a reason. */
@@ -178,6 +184,14 @@ function CheckInFlow() {
             <Row label="Confirmation #" value={reservation.confirmationNumber} />
             {reservation.estimatedArrivalTime ? <Row label="Expected Arrival" value={reservation.estimatedArrivalTime} /> : null}
           </Section>
+
+          {missedNights > 0 ? (
+            <p className="rounded-card border border-amber-300 bg-amber-50 px-4 py-3 text-small text-amber-900" id="late-arrival-notice">
+              <span className="font-semibold">Arrived late.</span> This booking was due on {formatDateOnly(reservation.checkInDate)}; the {missedNights}{' '}
+              {missedNights === 1 ? 'night' : 'nights'} since then {missedNights === 1 ? 'is' : 'are'} billed to the folio at check-in, as booked. Modify the
+              reservation first if the guest shouldn’t pay for them.
+            </p>
+          ) : null}
 
           <Section label="Room Selection">
             <div className="flex flex-wrap items-center justify-between gap-3">

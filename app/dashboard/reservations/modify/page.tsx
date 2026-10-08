@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select, type SelectOption } from '@/components/ui/Select';
+import { SearchInput } from '@/components/ui/SearchInput';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ModifyReservationIcon } from '@/components/ui/Icons';
@@ -58,12 +59,19 @@ export default function ModifyReservationPage() {
   // support for a two-value set.
   const confirmedQuery = useReservationsQuery(activeBranchId, { status: 'confirmed' }, auth);
   const waitlistedQuery = useReservationsQuery(activeBranchId, { status: 'waitlisted' }, auth);
+  // The lists above stop at the newest few hundred; a search reaches any booking by name or number.
+  const [search, setSearch] = useState('');
+  const searching = search.trim().length > 0;
+  const searchQuery = useReservationsQuery(activeBranchId, { search: search.trim() }, auth, searching);
   const roomTypesQuery = useRoomTypesQuery(activeBranchId, auth);
   const modifyMutation = useModifyReservationMutation(activeBranchId ?? '', auth);
 
   const modifiable: ReservationSummary[] = useMemo(
-    () => [...(confirmedQuery.data ?? []), ...(waitlistedQuery.data ?? [])],
-    [confirmedQuery.data, waitlistedQuery.data],
+    () =>
+      searching
+        ? (searchQuery.data ?? []).filter((r) => r.status === 'confirmed' || r.status === 'waitlisted')
+        : [...(confirmedQuery.data ?? []), ...(waitlistedQuery.data ?? [])],
+    [searching, searchQuery.data, confirmedQuery.data, waitlistedQuery.data],
   );
   const selected = modifiable.find((r) => r.id === selectedId) ?? null;
 
@@ -161,10 +169,19 @@ export default function ModifyReservationPage() {
       <PageHeader icon={<ModifyReservationIcon className="size-8" />} title="Modify Reservation" subtitle="Change dates, room types, add extensions and more" />
 
       <Section label="Reservation Search">
-        {confirmedQuery.isLoading || waitlistedQuery.isLoading ? (
+        <SearchInput
+          label="Search reservations"
+          placeholder="Guest name or confirmation number"
+          value={search}
+          onChange={(v) => {
+            setSearch(v);
+            setSelectedId(null);
+          }}
+        />
+        {confirmedQuery.isLoading || waitlistedQuery.isLoading || (searching && searchQuery.isLoading) ? (
           <p className="text-body text-surface-muted">Loading reservations…</p>
         ) : reservationOptions.length === 0 ? (
-          <p className="text-body text-surface-muted">No confirmed or waitlisted reservations to modify.</p>
+          <p className="text-body text-surface-muted">{searching ? 'No confirmed or waitlisted reservation matches that.' : 'No confirmed or waitlisted reservations to modify.'}</p>
         ) : (
           <Select
             id="modify-reservation"

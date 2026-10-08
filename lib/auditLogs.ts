@@ -21,6 +21,8 @@ export interface AuditLogFilter {
   branchId?: string;
   userId?: string;
   action?: string;
+  entityType?: string;
+  entityId?: string;
   from?: string;
   to?: string;
   page?: number;
@@ -34,6 +36,8 @@ export function useAuditLogsQuery(filter: AuditLogFilter, { accessToken, tenantI
   if (filter.branchId) params.set('branchId', filter.branchId);
   if (filter.userId) params.set('userId', filter.userId);
   if (filter.action) params.set('action', filter.action);
+  if (filter.entityType) params.set('entityType', filter.entityType);
+  if (filter.entityId) params.set('entityId', filter.entityId);
   if (filter.from) params.set('from', filter.from);
   if (filter.to) params.set('to', filter.to);
   params.set('page', String(filter.page ?? 1));

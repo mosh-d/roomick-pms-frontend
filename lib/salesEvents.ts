@@ -162,6 +162,9 @@ export interface EventBookingSummary {
   catering: CateringLine[];
   avRequirements: string | null;
   notes: string | null;
+  /** `confirmed`, or `cancelled` — kept on record rather than deleted, and off the calendar. */
+  status: string;
+  cancelledAt: string | null;
   createdAt: string;
 }
 

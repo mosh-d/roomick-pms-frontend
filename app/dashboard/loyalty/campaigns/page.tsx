@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { BackButton } from '@/components/ui/BackButton';
 import { MultiSelectTagInput } from '@/components/ui/MultiSelectTagInput';
@@ -271,6 +272,7 @@ function SegmentsSection({ auth }: { auth: AuthOpts }) {
   const segments = useSegmentsQuery(auth);
   const remove = useDeleteSegmentMutation(auth);
   const [editing, setEditing] = useState<Segment | 'new' | null>(null);
+  const [removing, setRemoving] = useState<Segment | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   return (
@@ -299,15 +301,7 @@ function SegmentsSection({ auth }: { auth: AuthOpts }) {
               <Button type="button" size="sm" variant="outline" onClick={() => setEditing(segment)}>
                 Edit
               </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setError(null);
-                  remove.mutate(segment.id, { onError: (err) => setError(errorText(err, 'Couldn’t remove that audience.')) });
-                }}
-              >
+              <Button type="button" size="sm" variant="outline" onClick={() => setRemoving(segment)}>
                 Remove
               </Button>
             </div>
@@ -315,6 +309,19 @@ function SegmentsSection({ auth }: { auth: AuthOpts }) {
         ))}
       </div>
       {editing ? <SegmentModal auth={auth} segment={editing === 'new' ? null : editing} onClose={() => setEditing(null)} /> : null}
+      <ConfirmDialog
+        open={removing !== null}
+        title={removing ? `Remove “${removing.name}”?` : ''}
+        description="Campaigns already sent to this audience keep their results; new campaigns can’t pick it. It can’t be brought back."
+        confirmLabel="Remove"
+        onCancel={() => setRemoving(null)}
+        onConfirm={() => {
+          if (!removing) return;
+          setError(null);
+          remove.mutate(removing.id, { onError: (err) => setError(errorText(err, 'Couldn’t remove that audience.')) });
+          setRemoving(null);
+        }}
+      />
     </Section>
   );
 }
@@ -468,6 +475,7 @@ function TemplatesSection({ auth }: { auth: AuthOpts }) {
   const templates = useTemplatesQuery(auth);
   const remove = useDeleteTemplateMutation(auth);
   const [editing, setEditing] = useState<MessageTemplate | 'new' | null>(null);
+  const [removing, setRemoving] = useState<MessageTemplate | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   return (
@@ -490,15 +498,7 @@ function TemplatesSection({ auth }: { auth: AuthOpts }) {
               <Button type="button" size="sm" variant="outline" onClick={() => setEditing(template)}>
                 Edit
               </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setError(null);
-                  remove.mutate(template.id, { onError: (err) => setError(errorText(err, 'Couldn’t remove that template.')) });
-                }}
-              >
+              <Button type="button" size="sm" variant="outline" onClick={() => setRemoving(template)}>
                 Remove
               </Button>
             </div>
@@ -506,6 +506,19 @@ function TemplatesSection({ auth }: { auth: AuthOpts }) {
         ))}
       </div>
       {editing ? <TemplateModal auth={auth} template={editing === 'new' ? null : editing} onClose={() => setEditing(null)} /> : null}
+      <ConfirmDialog
+        open={removing !== null}
+        title={removing ? `Remove “${removing.name}”?` : ''}
+        description="Campaigns already sent with it keep what they sent; new campaigns can’t pick it. It can’t be brought back."
+        confirmLabel="Remove"
+        onCancel={() => setRemoving(null)}
+        onConfirm={() => {
+          if (!removing) return;
+          setError(null);
+          remove.mutate(removing.id, { onError: (err) => setError(errorText(err, 'Couldn’t remove that template.')) });
+          setRemoving(null);
+        }}
+      />
     </Section>
   );
 }

@@ -15,6 +15,8 @@ import { currencySymbolFor } from '@/lib/currencies';
 import { formatMoney } from '@/lib/numberFormat';
 import { downloadFile, ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+import { csvCell } from '@/lib/csv';
+import { addDays, todayLocal } from '@/lib/dates';
 
 type ReportType = 'occupancy' | 'adr' | 'revpar' | 'revenue';
 
@@ -32,15 +34,14 @@ const GROUP_BY_OPTIONS: SelectOption[] = [
 ];
 
 function defaultRange(): { from: string; to: string } {
-  const to = new Date();
-  const from = new Date(to.getTime() - 29 * 86400000);
-  return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) };
+  const to = todayLocal();
+  return { from: addDays(to, -29), to };
 }
 
 function downloadCsv(filename: string, rows: Array<Record<string, string | number>>) {
   if (rows.length === 0) return;
   const headers = Object.keys(rows[0]);
-  const lines = [headers.join(','), ...rows.map((row) => headers.map((h) => `"${String(row[h]).replace(/"/g, '""')}"`).join(','))];
+  const lines = [headers.map(csvCell).join(','), ...rows.map((row) => headers.map((h) => csvCell(row[h])).join(','))];
   const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

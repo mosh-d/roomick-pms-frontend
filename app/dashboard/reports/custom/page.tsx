@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select, type SelectOption } from '@/components/ui/Select';
 import { Table, type TableColumn } from '@/components/ui/Table';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { CustomReportBuilderIcon, DownloadIcon } from '@/components/ui/Icons';
 import { ApiError, downloadFile } from '@/lib/api';
@@ -25,11 +26,12 @@ import {
 import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
+import { addDays, todayLocal } from '@/lib/dates';
 
+/** The last thirty days where the viewer is — not Lagos's, which it was hard-coded to. */
 function lastThirtyDays(): { from: string; to: string } {
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' });
-  const end = new Date(`${today}T00:00:00Z`);
-  return { from: new Date(end.getTime() - 29 * 86_400_000).toISOString().slice(0, 10), to: new Date(end.getTime() + 86_400_000).toISOString().slice(0, 10) };
+  const today = todayLocal();
+  return { from: addDays(today, -29), to: addDays(today, 1) };
 }
 
 const pretty = (value: string) => value.replace(/_/g, ' ');
@@ -65,6 +67,7 @@ export default function CustomReportBuilderPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [range, setRange] = useState(lastThirtyDays);
   const [templateName, setTemplateName] = useState('');
+  const [deleting, setDeleting] = useState<ReportTemplate | null>(null);
   const [result, setResult] = useState<CustomReportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -335,7 +338,7 @@ export default function CustomReportBuilderPage() {
                       <Button type="button" size="sm" variant="outline" onClick={() => loadTemplate(template)}>
                         Load
                       </Button>
-                      <Button type="button" size="sm" variant="outline" onClick={() => deleteMutation.mutate(template.id)}>
+                      <Button type="button" size="sm" variant="outline" onClick={() => setDeleting(template)}>
                         Delete
                       </Button>
                     </div>
@@ -344,6 +347,17 @@ export default function CustomReportBuilderPage() {
               </ul>
             )}
             <p className="text-tiny text-surface-muted">Emailing a saved report on a schedule needs an email provider — it&apos;s on the owner checklist.</p>
+            <ConfirmDialog
+              open={deleting !== null}
+              title={deleting ? `Delete “${deleting.name}”?` : ''}
+              description="The saved report goes for everyone at this property. It can’t be brought back — you’d build and save it again."
+              confirmLabel="Delete"
+              onCancel={() => setDeleting(null)}
+              onConfirm={() => {
+                if (deleting) deleteMutation.mutate(deleting.id);
+                setDeleting(null);
+              }}
+            />
           </Section>
         </>
       )}

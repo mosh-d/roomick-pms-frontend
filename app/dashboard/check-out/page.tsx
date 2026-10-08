@@ -16,6 +16,7 @@ import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatDateOnly } from '@/lib/dates';
 
 /**
  * Check-Out Flow (Roomick-UI.pdf page 16) — pick an in-house guest, review
@@ -42,7 +43,7 @@ export default function CheckOutFlowPage() {
 
   const auth = { accessToken: accessToken ?? undefined, tenantId: user?.tenantId };
   const inHouseQuery = useInHouseQuery(activeBranchId, auth);
-  const foliosQuery = useFoliosQuery(activeBranchId, 'all', auth);
+  const foliosQuery = useFoliosQuery(activeBranchId, 'in_house', auth);
   const checkOutMutation = useCheckOutMutation(activeBranchId ?? '', auth);
 
   /** reservationId -> folio, so the selected guest's live balance can be shown before committing. */
@@ -120,7 +121,7 @@ export default function CheckOutFlowPage() {
                 <Row label="Name" value={selected.guest.name} />
                 <Row label="Room" value={selected.room?.number ?? '—'} />
                 <Row label="Confirmation #" value={selected.confirmationNumber} />
-                <Row label="Departing" value={new Date(selected.checkOutDate).toLocaleDateString()} />
+                <Row label="Departing" value={formatDateOnly(selected.checkOutDate)} />
                 <Row
                   label="Balance Due"
                   value={folio ? formatMoney(folio.balanceDue, currencySymbolFor(folio.currency)) : '—'}

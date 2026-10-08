@@ -119,6 +119,8 @@ interface UpdateBranchInput {
   checkInTime?: string;
   checkOutTime?: string;
   category?: string;
+  /** Branch-level settings as a bag — the cash-variance threshold lives here. */
+  policies?: Record<string, unknown>;
 }
 
 export function useUpdateBranchMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {

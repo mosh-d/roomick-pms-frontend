@@ -35,6 +35,7 @@ import {
 import { isSupervisorAtBranch } from '@/lib/roles';
 import { useAuthStore } from '@/lib/store/authStore';
 import { printReceipt } from '../_components/printReceipt';
+import { formatDateOnly } from '@/lib/dates';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -426,7 +427,7 @@ function OrderPanel({
             <Card tone={guest.billClosed ? 'accent' : 'primary'}>
               <p className="text-body font-semibold text-surface">{guest.guestName}</p>
               <p className="text-small text-surface-muted">
-                Room {guest.roomNumber} · leaving {new Date(guest.checkOutDate).toLocaleDateString(undefined, { timeZone: 'UTC' })}
+                Room {guest.roomNumber} · leaving {formatDateOnly(guest.checkOutDate, { timeZone: 'UTC' })}
               </p>
               {guest.billClosed ? (
                 <p className="text-small text-red-600">This guest&apos;s bill is settled and closed — the front desk has to reopen it first. Take cash or card instead.</p>

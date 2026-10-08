@@ -27,6 +27,7 @@ import { currencySymbolFor } from '@/lib/currencies';
 import { isSupervisorAtBranch } from '@/lib/roles';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatDateOnly } from '@/lib/dates';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -164,13 +165,13 @@ function AccountDetail({ accountId, auth, onClose }: { accountId: string; auth: 
     },
     { key: 'contact', label: 'Contact', render: (t) => [t.guest.email, t.guest.phone].filter(Boolean).join(' · ') || '—' },
     { key: 'stays', label: 'Stays', align: 'right', render: (t) => t.stays, sortValue: (t) => t.stays },
-    { key: 'last', label: 'Last stay', render: (t) => new Date(t.lastStay).toLocaleDateString(), sortValue: (t) => t.lastStay },
+    { key: 'last', label: 'Last stay', render: (t) => formatDateOnly(t.lastStay), sortValue: (t) => t.lastStay },
   ];
   const stayColumns: TableColumn<CorporateStay>[] = [
     { key: 'conf', label: 'Confirmation #', render: (s) => s.confirmationNumber, sortValue: (s) => s.confirmationNumber },
     { key: 'guest', label: 'Guest', render: (s) => s.guest.name, sortValue: (s) => s.guest.name },
     { key: 'branch', label: 'Property', render: (s) => s.branch.name },
-    { key: 'dates', label: 'Dates', render: (s) => `${new Date(s.checkInDate).toLocaleDateString()} – ${new Date(s.checkOutDate).toLocaleDateString()}`, sortValue: (s) => s.checkInDate },
+    { key: 'dates', label: 'Dates', render: (s) => `${formatDateOnly(s.checkInDate)} – ${formatDateOnly(s.checkOutDate)}`, sortValue: (s) => s.checkInDate },
     { key: 'status', label: 'Status', render: (s) => s.status.replace('_', ' ') },
     { key: 'rate', label: 'Room total', align: 'right', render: (s) => formatMoney(s.confirmedRate, currencySymbolFor(s.branch.currency)) },
   ];

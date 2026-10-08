@@ -35,7 +35,8 @@ export function RatePreview({
 
   if (!roomTypeId || !checkInDate || !checkOutDate || checkOutDate <= checkInDate) return null;
 
-  const symbol = currencySymbolFor(currency);
+  // The quote carries the branch's currency, so a caller that doesn't know it still shows a symbol.
+  const symbol = currencySymbolFor(currency ?? quoteQuery.data?.currency);
 
   return (
     <Card tone="accent" className="flex flex-col gap-1">

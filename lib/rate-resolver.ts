@@ -6,6 +6,8 @@ export type AdjustmentType = 'fixed' | 'percentage';
 
 /** Mirrors `RateResolverService`'s `StayResolution` (roomick-pms-backend/src/modules/rate-resolver/rate-resolver.service.ts). */
 export interface RateQuote {
+  /** The branch's currency — the quote's own, so no caller has to know it. */
+  currency: string;
   nightlyRate: string;
   subtotal: string;
   /** Tax added on top of `subtotal`. */

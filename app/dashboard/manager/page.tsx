@@ -21,14 +21,15 @@ import { currencySymbolFor } from '@/lib/currencies';
 import { ApiError } from '@/lib/api';
 import { HubCard } from '../_components/HubCard';
 import { useAuthStore } from '@/lib/store/authStore';
+import { addDays, todayLocal } from '@/lib/dates';
 
+// The viewer's own calendar day, not the UTC date — which in Lagos is still
+// yesterday until one in the morning, so "today's" figures were a day out.
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayLocal();
 }
 function tomorrow(): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + 1);
-  return d.toISOString().slice(0, 10);
+  return addDays(todayLocal(), 1);
 }
 
 function KpiCard({ label, value }: { label: string; value: string }) {

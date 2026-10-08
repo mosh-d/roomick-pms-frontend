@@ -13,7 +13,8 @@ export type FolioStatus = 'pending' | 'open' | 'settled' | 'disputed';
  * + balance (see `FoliosService.deriveGuestStatus`). `city_ledger` = the
  * guest has departed and still owes — a collections matter, never a block.
  */
-export type FolioGuestStatus = 'in_house' | 'city_ledger' | null;
+/** `refund_due` — the bill holds a credit: the guest is owed money, and it can't close until it goes back. */
+export type FolioGuestStatus = 'in_house' | 'city_ledger' | 'refund_due' | null;
 
 /** Money arrives as strings (Prisma `Decimal` serialised) — never parse to a float for arithmetic, only for display. */
 export interface LineItem {
@@ -105,7 +106,8 @@ export interface TaxBreakdownRow {
   taxCollected: string;
 }
 
-export type FolioFilter = 'all' | 'outstanding' | 'overdue';
+/** `in_house` — open bills of guests currently checked in (what the front-desk pages need, not every bill ever); `refund_due` — credits owed to guests. */
+export type FolioFilter = 'all' | 'outstanding' | 'overdue' | 'in_house' | 'refund_due';
 
 /** One end of a transfer, named the way the desk knows it: whose bill, which room. */
 export interface TransferEnd {

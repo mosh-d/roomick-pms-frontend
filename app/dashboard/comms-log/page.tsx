@@ -352,6 +352,14 @@ function TimelineEntry({ entry }: { entry: CommunicationLogEntry }) {
         </div>
         <span className={`inline-flex items-center rounded-pill px-2 py-0.5 text-tiny font-semibold whitespace-nowrap ${DELIVERY_TONE[entry.deliveryStatus]}`}>{entry.deliveryStatus}</span>
       </div>
+      {entry.deliveryStatus === 'queued' && entry.attempts > 0 ? (
+        <p className="text-tiny text-amber-700">
+          Not delivered yet — tried {entry.attempts} {entry.attempts === 1 ? 'time' : 'times'}
+          {entry.nextAttemptAt ? `, trying again ${new Date(entry.nextAttemptAt).toLocaleString()}` : ''}
+          {entry.lastError ? ` (${entry.lastError})` : ''}
+        </p>
+      ) : null}
+      {entry.deliveryStatus === 'failed' && entry.lastError ? <p className="text-tiny text-red-700">Gave up after {entry.attempts} {entry.attempts === 1 ? 'try' : 'tries'}: {entry.lastError}</p> : null}
       {expanded ? (
         <p className="text-small text-surface whitespace-pre-wrap">{entry.body}</p>
       ) : (

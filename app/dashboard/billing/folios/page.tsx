@@ -31,6 +31,7 @@ import { useAuthStore } from '@/lib/store/authStore';
 const TABS: { value: FolioFilter; label: string }[] = [
   { value: 'outstanding', label: 'Outstanding' },
   { value: 'overdue', label: 'Overdue' },
+  { value: 'refund_due', label: 'Refund due' },
   { value: 'all', label: 'All' },
 ];
 
@@ -133,13 +134,16 @@ export default function GuestFolioListPage() {
   );
 }
 
-/** City Ledger = departed and still owing (collections). Still In-House = owing but the guest is here, so front desk can resolve it before departure. */
+/** City Ledger = departed and still owing (collections). Still In-House = owing but the guest is here, so front desk can resolve it before departure. Refund Due = the folio holds a credit the guest is owed back. */
 function GuestStatusBadge({ status }: { status: FolioListRow['guestStatus'] }) {
   if (status === 'city_ledger') {
     return <span className="inline-flex rounded-pill bg-status-out-of-order px-3 py-1 text-tiny font-semibold text-white">City Ledger</span>;
   }
   if (status === 'in_house') {
     return <span className="inline-flex rounded-pill bg-status-occupied px-3 py-1 text-tiny font-semibold text-white">Still In-House</span>;
+  }
+  if (status === 'refund_due') {
+    return <span className="inline-flex rounded-pill bg-status-vacant px-3 py-1 text-tiny font-semibold text-white">Refund Due</span>;
   }
   return <span className="text-surface-muted">—</span>;
 }

@@ -5,7 +5,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useExtendStayMutation } from '@/lib/reservations';
-import { dayAfter } from '@/lib/dates';
+import { dayAfter, formatDateOnly } from '@/lib/dates';
 import { ApiError } from '@/lib/api';
 
 /** ISO date -> the plain `YYYY-MM-DD` a `type="date"` input needs. */
@@ -74,7 +74,7 @@ function ExtendStayDialogInner({
   return (
     <Modal open title={`Extend ${target.guestName}'s stay`} onClose={onClose}>
       <p className="text-body text-surface-muted">
-        Currently checked out on {new Date(target.checkOutDate).toLocaleDateString()}. Pick the new check-out date — the rate for the
+        Currently checked out on {formatDateOnly(target.checkOutDate)}. Pick the new check-out date — the rate for the
         whole stay is re-resolved, so the total updates to match the extra night(s).
       </p>
       <Input

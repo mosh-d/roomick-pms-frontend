@@ -15,6 +15,7 @@ import { useActiveBlocksQuery, useBlockRoomMutation, useUnblockRoomMutation } fr
 import { useRoomsQuery } from '@/lib/rooms';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatDateOnly } from '@/lib/dates';
 
 const REASON_OPTIONS: SelectOption[] = [
   { value: 'maintenance', label: 'Maintenance' },
@@ -116,7 +117,7 @@ export default function RoomBlockingPage() {
                     Room {block.room.number} — <span className="capitalize">{block.reason.replace('_', ' ')}</span>
                   </p>
                   <p className="text-small text-surface-muted">
-                    {new Date(block.fromDate).toLocaleDateString()} – {new Date(block.toDate).toLocaleDateString()}
+                    {formatDateOnly(block.fromDate)} – {formatDateOnly(block.toDate)}
                     {block.notes ? ` · ${block.notes}` : ''}
                   </p>
                 </div>

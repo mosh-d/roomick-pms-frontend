@@ -27,6 +27,7 @@ import {
   type PublicGuestFolio,
   type PublicMessage,
 } from '@/lib/publicBooking';
+import { formatDateOnly } from '@/lib/dates';
 
 /** Guest wording for `ChargeType`. */
 const CHARGE_LABELS: Record<string, string> = {
@@ -773,13 +774,13 @@ function BookingDetail({ booking, onLookupAnother }: { booking: PublicBookingDet
           <div>
             <dt className="text-surface-muted">Check-in</dt>
             <dd className="font-semibold">
-              {new Date(booking.checkInDate).toLocaleDateString()} from {booking.property.checkInTime}
+              {formatDateOnly(booking.checkInDate)} from {booking.property.checkInTime}
             </dd>
           </div>
           <div>
             <dt className="text-surface-muted">Check-out</dt>
             <dd className="font-semibold">
-              {new Date(booking.checkOutDate).toLocaleDateString()} by {booking.property.checkOutTime}
+              {formatDateOnly(booking.checkOutDate)} by {booking.property.checkOutTime}
             </dd>
           </div>
           <div>

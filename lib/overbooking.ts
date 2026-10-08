@@ -59,8 +59,9 @@ export function useUpdateOverbookingConfigMutation(branchId: string, { accessTok
       globalEnabled?: boolean;
       maxOverbookPct?: number;
       alertAtPct?: number;
-      validFrom?: string;
-      validTo?: string;
+      /** `null` clears the date. */
+      validFrom?: string | null;
+      validTo?: string | null;
     }) => apiFetch<OverbookingConfig>(`/branches/${branchId}/overbooking-config`, { method: 'PATCH', accessToken, tenantId, body }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['overbooking-config', branchId] });
@@ -89,7 +90,7 @@ export function useWalkReservationMutation(branchId: string, { accessToken, tena
       transportProvided?: boolean;
       transportCost?: number;
       compensationOffered?: string;
-    }) => apiFetch<{ reservation: ReservationSummary; walkRecord: WalkRecord; refundedTotal: string }>(`/reservations/${reservationId}/walk`, { method: 'POST', accessToken, tenantId, body }),
+    }) => apiFetch<{ reservation: ReservationSummary; walkRecord: WalkRecord; refundRequested: string }>(`/reservations/${reservationId}/walk`, { method: 'POST', accessToken, tenantId, body }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] });
       queryClient.invalidateQueries({ queryKey: ['overbooking-exposure', branchId] });

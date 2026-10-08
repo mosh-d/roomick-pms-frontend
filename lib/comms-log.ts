@@ -22,6 +22,10 @@ export interface CommunicationLogEntry {
   sentBy: string | null;
   sentAt: string;
   deliveredAt: string | null;
+  /** Delivery attempts so far; a queued row with attempts is waiting for its next try. */
+  attempts: number;
+  nextAttemptAt: string | null;
+  lastError: string | null;
   readAt: string | null;
 }
 
