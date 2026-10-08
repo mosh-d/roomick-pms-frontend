@@ -111,7 +111,9 @@ export default function RegistrationCardPage() {
             <Row label="Check-In" value={formatDateOnly(card.fields.checkInDate)} />
             <Row label="Check-Out" value={formatDateOnly(card.fields.checkOutDate)} />
             <Row label="Adults / Children" value={`${card.fields.adults} / ${card.fields.children}`} />
-            <Row label="Rate" value={formatMoney(card.fields.rate, currencySymbolFor(card.fields.currency))} />
+            {card.fields.showRate === false ? null : (
+              <Row label="Rate" value={`${formatMoney(card.fields.rate, currencySymbolFor(card.fields.currency))} for ${stayNights(card.fields)} ${stayNights(card.fields) === 1 ? 'night' : 'nights'}`} />
+            )}
           </Section>
 
           {card.fields.houseRules ? (
@@ -146,6 +148,11 @@ export default function RegistrationCardPage() {
       )}
     </Container>
   );
+}
+
+/** Nights in the stay, from the card's own dates — the rate on the card is the stay's total. */
+function stayNights(fields: { checkInDate: string; checkOutDate: string }): number {
+  return Math.max(1, Math.round((Date.parse(fields.checkOutDate) - Date.parse(fields.checkInDate)) / 86_400_000));
 }
 
 /** Matches `check-in/[reservationId]/page.tsx`'s own Row exactly — same Guest Details anatomy, same reasoning for the `text-accent-dark` label. */

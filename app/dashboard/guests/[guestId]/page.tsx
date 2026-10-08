@@ -24,6 +24,7 @@ import { ApiError } from '@/lib/api';
 import { benefitLabel, useAdjustPointsMutation, useEnrollGuestMutation, useGuestLoyaltyQuery } from '@/lib/loyalty';
 import { CONSENT_SOURCE_LABELS, useSetMarketingConsentMutation } from '@/lib/marketing';
 import { formatMoney } from '@/lib/numberFormat';
+import { currencySymbolFor } from '@/lib/currencies';
 import { isSupervisorAtBranch } from '@/lib/roles';
 import { useAuthStore } from '@/lib/store/authStore';
 import { formatDateOnly } from '@/lib/dates';
@@ -133,7 +134,15 @@ function StayHistorySection({ stayHistory }: { stayHistory: GuestStaySummary[] }
     { key: 'checkInDate', label: 'Check-In', render: (s) => formatDateOnly(s.checkInDate), sortValue: (s) => s.checkInDate },
     { key: 'checkOutDate', label: 'Check-Out', render: (s) => formatDateOnly(s.checkOutDate) },
     { key: 'status', label: 'Status', render: (s) => <span className="capitalize">{s.status.replace('_', ' ')}</span> },
-    { key: 'confirmedRate', label: 'Rate', align: 'right', render: (s) => s.confirmedRate },
+    { key: 'property', label: 'Property', render: (s) => s.branch.name, sortValue: (s) => s.branch.name },
+    {
+      key: 'confirmedRate',
+      label: 'Stay Total',
+      align: 'right',
+      render: (s) => formatMoney(s.confirmedRate, currencySymbolFor(s.branch.currency)),
+      sortValue: (s) => Number(s.confirmedRate),
+      exportValue: (s) => `${s.branch.currency} ${s.confirmedRate}`,
+    },
   ];
 
   return (
@@ -403,7 +412,16 @@ function GuestProfileContent({ guest, auth, canAdjustPoints }: { guest: GuestPro
       <MarketingConsentSection guest={guest} auth={auth} />
       <Card tone="accent" className="max-w-xs">
         <p className="text-tiny text-surface-muted">Total Spend</p>
-        <p className="text-header font-bold text-surface">{guest.totalSpend}</p>
+        {guest.spend.length === 0 ? (
+          <p className="text-header font-bold text-surface">{formatMoney(0)}</p>
+        ) : (
+          // One line per currency: a guest of properties in two currencies isn't one sum.
+          guest.spend.map((line) => (
+            <p key={line.currency} className="text-header font-bold text-surface">
+              {formatMoney(line.total, currencySymbolFor(line.currency))}
+            </p>
+          ))
+        )}
       </Card>
       <StayHistorySection stayHistory={guest.stayHistory} />
       <NotesFeedSection guest={guest} auth={auth} />

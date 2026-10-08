@@ -12,8 +12,11 @@ export interface RegistrationCardFields {
   checkOutDate: string;
   adults: number;
   children: number;
+  /** The stay's total, not a nightly price. */
   rate: string;
   currency: string;
+  /** The template's "Show Rate on Card" when the card was made; absent on older cards (shown). */
+  showRate?: boolean;
   confirmationNumber: string;
   houseRules: string | null;
   logoUrl: string | null;

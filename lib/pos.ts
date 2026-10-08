@@ -243,7 +243,8 @@ export function useRoomLookupQuery(branchId: string | null, room: string | null,
 /** A sale moves money elsewhere too: a room charge onto a guest's folio, cash into the open shift's drawer. */
 function invalidateAfterSale(queryClient: QueryClient, outletId: string) {
   queryClient.invalidateQueries({ queryKey: ['pos-orders', outletId] });
-  queryClient.invalidateQueries({ queryKey: ['shift'] });
+  // Every shift query — the open drawer's running total is `shift-current`, which a bare ['shift'] key never matched.
+  queryClient.invalidateQueries({ predicate: (query) => typeof query.queryKey[0] === 'string' && query.queryKey[0].startsWith('shift') });
   queryClient.invalidateQueries({ predicate: (query) => typeof query.queryKey[0] === 'string' && query.queryKey[0].startsWith('folio') });
 }
 

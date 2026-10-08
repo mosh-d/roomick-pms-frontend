@@ -246,6 +246,15 @@ export function useCloseFolioMutation(branchId: string, folioId: string, { acces
   });
 }
 
+/** Opens a settled bill again (supervisors) — the reason goes in the audit trail. */
+export function useReopenFolioMutation(branchId: string, folioId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (reason: string) => apiFetch<FolioDetail>(`/folios/${folioId}/reopen`, { method: 'POST', accessToken, tenantId, body: { reason } }),
+    onSuccess: () => invalidateMoney(queryClient, branchId, folioId),
+  });
+}
+
 
 /** A stay's bills, main bill first (`FoliosService.listFoliosForReservation`). */
 export interface ReservationFolio {

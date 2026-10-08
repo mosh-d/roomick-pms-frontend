@@ -615,13 +615,15 @@ function GdprSection({ auth }: { auth: AuthOpts }) {
         open={erasing !== null}
         title={erasing ? `Erase ${erasing.guest.name}?` : ''}
         description="This can't be undone. Their name, contact details, ID document and photo, registration-card details, notes and message text are erased now. Stays, bills and payments are kept, under “Erased guest”."
-        confirmLabel={eraseMutation.isPending ? 'Erasing…' : 'Erase'}
+        confirmLabel="Erase"
+        loading={eraseMutation.isPending}
         onCancel={() => setErasing(null)}
         onConfirm={() => {
           if (!erasing) return;
-          const target = erasing;
-          setErasing(null);
-          eraseMutation.mutate(target.id, { onError: (err) => setEraseError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.') });
+          eraseMutation.mutate(erasing.id, {
+            onError: (err) => setEraseError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.'),
+            onSettled: () => setErasing(null),
+          });
         }}
       />
       {rejecting ? (
@@ -704,7 +706,6 @@ function RetentionSection({ auth }: { auth: AuthOpts }) {
   ];
 
   function save() {
-    setConfirming(false);
     setMessage(null);
     setRetention.mutate(chosenMonths ?? null, {
       onSuccess: (result) => {
@@ -718,6 +719,7 @@ function RetentionSection({ auth }: { auth: AuthOpts }) {
         });
       },
       onError: (err) => setMessage({ kind: 'error', text: err instanceof ApiError ? err.message : 'Something went wrong. Please try again.' }),
+      onSettled: () => setConfirming(false),
     });
   }
 
@@ -799,6 +801,7 @@ function RetentionSection({ auth }: { auth: AuthOpts }) {
         confirmLabel="Save and Remove"
         onCancel={() => setConfirming(false)}
         onConfirm={save}
+        loading={setRetention.isPending}
       />
     </Section>
   );

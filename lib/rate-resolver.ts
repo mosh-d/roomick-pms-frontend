@@ -34,6 +34,8 @@ export interface RatePlan {
   minLOS: number | null;
   promoCode: string | null;
   isActive: boolean;
+  /** The branch's ISO 4217 code — `amount` is in it when the plan is a price. */
+  currency: string;
 }
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };

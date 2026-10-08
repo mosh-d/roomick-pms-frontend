@@ -95,6 +95,15 @@ async function revokeOnServer(refreshToken: string | null): Promise<void> {
 const SIGNED_OUT = { accessToken: null, refreshToken: null, user: null, activeBranchId: null };
 
 /**
+ * The renewal in flight, if any. A page opened after the access token ran
+ * out fires all its requests at once and each meets a 401; they now wait on
+ * one renewal instead of each spending the single-use refresh token — nine
+ * at once used to send nine renewals, one accepted and eight refused, and
+ * only the order the answers came back in kept the session alive.
+ */
+let renewing: Promise<string | null> | null = null;
+
+/**
  * The first real Zustand store in this app (installed since Phase 1, unused
  * until now — see PHASE_NOTES.md). It exists because the onboarding wizard
  * (app/signup/_steps/) needs `accessToken`/tenantId to survive across
@@ -173,26 +182,31 @@ export const useAuthStore = create<AuthState>()(
         });
         startIdleClock();
       },
-      async refreshAccessToken() {
-        const { refreshToken } = get();
-        if (!refreshToken) return null;
-        try {
-          const result = await apiFetch<LoginResult>('/auth/refresh', {
-            method: 'POST',
-            body: { refreshToken },
-          });
-          set({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
-          return result.accessToken;
-        } catch {
-          // A refresh token works once now. Another tab may have just
-          // renewed with this same one — if it stored a newer pair, carry on
-          // with that instead of ending a session that's still alive.
-          await useAuthStore.persist.rehydrate();
-          const latest = get();
-          if (latest.refreshToken && latest.refreshToken !== refreshToken && latest.accessToken) return latest.accessToken;
-          get().endSession();
-          return null;
-        }
+      refreshAccessToken() {
+        renewing ??= (async () => {
+          const { refreshToken } = get();
+          if (!refreshToken) return null;
+          try {
+            const result = await apiFetch<LoginResult>('/auth/refresh', {
+              method: 'POST',
+              body: { refreshToken },
+            });
+            set({ accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user });
+            return result.accessToken;
+          } catch {
+            // A refresh token works once now. Another tab may have just
+            // renewed with this same one — if it stored a newer pair, carry on
+            // with that instead of ending a session that's still alive.
+            await useAuthStore.persist.rehydrate();
+            const latest = get();
+            if (latest.refreshToken && latest.refreshToken !== refreshToken && latest.accessToken) return latest.accessToken;
+            get().endSession();
+            return null;
+          }
+        })().finally(() => {
+          renewing = null;
+        });
+        return renewing;
       },
       sessionEnded: false,
       sessionEndedReason: null,

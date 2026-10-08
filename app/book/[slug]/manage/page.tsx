@@ -252,8 +252,10 @@ function PreArrivalSection({
   onCompleted: (booking: PublicBookingDetail) => void;
 }) {
   const preArrivalMutation = usePreArrivalMutation(slug);
-  const [phone, setPhone] = useState(booking.guestPhone ?? '');
-  const [nationality, setNationality] = useState(booking.guestNationality ?? '');
+  // Empty to start: the booking page never sees the details on file, only the
+  // last digits of the phone, so whoever holds the confirmation can't read them.
+  const [phone, setPhone] = useState('');
+  const [nationality, setNationality] = useState('');
   const [arrivalTime, setArrivalTime] = useState(booking.estimatedArrivalTime ?? '');
   const [accepted, setAccepted] = useState(false);
   const [marketingOptIn, setMarketingOptIn] = useState(false);
@@ -301,7 +303,14 @@ function PreArrivalSection({
         <p className="text-small text-surface">Complete these now and check-in at the property will just be collecting your key.</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-2">
-          <Input id="pre-arrival-phone" label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+234…" />
+          <Input
+            id="pre-arrival-phone"
+            label="Phone"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+234…"
+            hint={booking.guestPhoneEnding ? `We have a number ending ${booking.guestPhoneEnding} — fill this in only if it has changed.` : undefined}
+          />
           <Input
             id="pre-arrival-nationality"
             label="Nationality"

@@ -59,9 +59,9 @@ export function TaxRulesSection({ branchId, currency, auth }: { branchId: string
   const active = rules.filter((r) => r.isActive);
   const retired = rules.filter((r) => !r.isActive);
 
-  function setActive(rule: TaxRule, isActive: boolean) {
+  function setActive(rule: TaxRule, isActive: boolean, onSettled?: () => void) {
     setError(null);
-    setActiveMutation.mutate({ ruleId: rule.id, isActive }, { onError: (e) => setError(errorText(e)) });
+    setActiveMutation.mutate({ ruleId: rule.id, isActive }, { onError: (e) => setError(errorText(e)), onSettled });
   }
 
   const columns: TableColumn<TaxRule>[] = [
@@ -167,9 +167,9 @@ export function TaxRulesSection({ branchId, currency, auth }: { branchId: string
         description="It stops applying to new charges straight away. Bills already posted keep it, and you can reinstate it later."
         confirmLabel="Retire"
         onCancel={() => setRetiring(null)}
+        loading={setActiveMutation.isPending}
         onConfirm={() => {
-          if (retiring) setActive(retiring, false);
-          setRetiring(null);
+          if (retiring) setActive(retiring, false, () => setRetiring(null));
         }}
       />
     </Section>

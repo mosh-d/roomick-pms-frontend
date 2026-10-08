@@ -200,6 +200,7 @@ export default function NoShowHandlingPage() {
         confirmLabel="Mark as No-Show"
         onCancel={() => setMarkingId(null)}
         onConfirm={confirmMark}
+        loading={markMutation.isPending}
       />
 
       <Modal open={reinstating !== null} onClose={() => setReinstating(null)} title="Reinstate reservation">

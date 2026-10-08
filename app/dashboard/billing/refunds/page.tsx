@@ -163,7 +163,7 @@ function RefundsAndCorrections() {
             actions={(r) => (
               <>
                 {canHandle ? (
-                  <Button type="button" size="sm" onClick={() => setPayingOut(r)}>
+                  <Button type="button" size="sm" onClick={() => setPayingOut(r)} disabled={actionMutation.isPending && actionMutation.variables?.refund.id === r.id}>
                     Pay Out
                   </Button>
                 ) : null}
@@ -227,10 +227,13 @@ function RefundsAndCorrections() {
             : ''
         }
         confirmLabel="Pay Out"
-        onConfirm={() => {
-          const refund = payingOut;
+        // Open until the money is handed over: a second press while the first
+        // was still on its way paid the same refund out twice.
+        loading={actionMutation.isPending}
+        onConfirm={async () => {
+          if (!payingOut) return;
+          await act(payingOut, 'pay-out');
           setPayingOut(null);
-          if (refund) void act(refund, 'pay-out');
         }}
         onCancel={() => setPayingOut(null)}
       />

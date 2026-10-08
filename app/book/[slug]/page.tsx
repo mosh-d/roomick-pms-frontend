@@ -21,8 +21,13 @@ import {
 } from '@/lib/publicBooking';
 import { formatDateOnly } from '@/lib/dates';
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+/** Today at the property — the date its own booking rules go by. The UTC date offered "yesterday" for an hour after midnight in Lagos, which the booking then refused. */
+function todayAt(timezone: string): string {
+  try {
+    return new Date().toLocaleDateString('en-CA', { timeZone: timezone });
+  } catch {
+    return new Date().toLocaleDateString('en-CA');
+  }
 }
 
 function addDays(iso: string, days: number): string {
@@ -142,9 +147,8 @@ function BookingConfirmed({
           Payment is taken at the property on arrival. Please quote your confirmation number when you check in.
         </p>
         <p className="text-small text-surface-muted">Cancellation policy: {property.cancellationPolicy.summary}</p>
-        {/* The only discovery path for the lookup page — no confirmation email
-            is sent yet, so if a guest doesn't note this down here, they have
-            no way back to their booking. */}
+        {/* The confirmation email carries this too once the property has email
+            set up; until then this is the guest's only way back to the booking. */}
         <p className="text-small text-surface-muted">
           Keep this confirmation number safe — you can view this booking again at{' '}
           <Link href={`/book/${slug}/manage`} className="underline font-semibold">
@@ -171,8 +175,9 @@ function BookingFlow({
   property: PublicProperty;
   onBooked: (confirmation: PublicBookingConfirmation) => void;
 }) {
-  const [checkInDate, setCheckInDate] = useState(() => addDays(todayIso(), 1));
-  const [checkOutDate, setCheckOutDate] = useState(() => addDays(todayIso(), 3));
+  const today = todayAt(property.timezone);
+  const [checkInDate, setCheckInDate] = useState(() => addDays(today, 1));
+  const [checkOutDate, setCheckOutDate] = useState(() => addDays(today, 3));
   const [adults, setAdults] = useState('2');
   const [children, setChildren] = useState('0');
   const [selectedRoomTypeId, setSelectedRoomTypeId] = useState<string | null>(null);
@@ -205,7 +210,7 @@ function BookingFlow({
             id="booking-check-in"
             label="Check-in"
             type="date"
-            min={todayIso()}
+            min={today}
             value={checkInDate}
             onChange={(e) => {
               setCheckInDate(e.target.value);
@@ -217,7 +222,7 @@ function BookingFlow({
             id="booking-check-out"
             label="Check-out"
             type="date"
-            min={addDays(checkInDate || todayIso(), 1)}
+            min={addDays(checkInDate || today, 1)}
             value={checkOutDate}
             onChange={(e) => {
               setCheckOutDate(e.target.value);

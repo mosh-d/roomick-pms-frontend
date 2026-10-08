@@ -144,8 +144,8 @@ function ChangeRoleModal({ member, branchId, onClose, auth }: { member: StaffMem
   return (
     <Modal open onClose={close} title={`Change ${member.name}’s Role`}>
       <p className="text-small text-surface">
-        {here.branchId === null ? 'This role applies at every branch.' : 'At this branch only — a role they hold elsewhere stays as it is.'} The change takes effect the next time
-        their page loads.
+        {here.branchId === null ? 'This role applies at every branch.' : 'At this branch only — a role they hold elsewhere stays as it is.'} The new role counts from
+        their next click; their menu catches up the next time their page loads.
       </p>
       <Select id="change-role" label="Role" options={roleOptions} value={chosen} onChange={setRoleId} />
       {isOwner ? null : <p className="text-tiny text-surface-muted">Only the owner can make someone a manager.</p>}
@@ -253,16 +253,17 @@ function StaffSection({ branchId, auth }: { branchId: string; auth: AuthOpts }) 
   // other action here that can't be taken back. Reactivating is one click.
   const [confirm, setConfirm] = useState<{ kind: 'deactivate' | 'reset-mfa'; member: StaffMember } | null>(null);
 
-  function deactivate(member: StaffMember) {
+  function deactivate(member: StaffMember, onSettled?: () => void) {
     setStatusError(null);
-    patchStaffMutation.mutate({ userId: member.id, active: false }, { onError: (err) => setStatusError(errorText(err)) });
+    patchStaffMutation.mutate({ userId: member.id, active: false }, { onError: (err) => setStatusError(errorText(err)), onSettled });
   }
 
-  function resetTwoStep(member: StaffMember) {
+  function resetTwoStep(member: StaffMember, onSettled?: () => void) {
     setMfaMessage(null);
     resetMfa.mutate(member.id, {
       onSuccess: () => setMfaMessage(`Two-step sign-in reset for ${member.name}. They sign in with their password and can set it up again from My Account.`),
       onError: (err) => setMfaMessage(err instanceof ApiError ? err.message : 'Couldn’t reset it.'),
+      onSettled,
     });
   }
 
@@ -392,11 +393,12 @@ function StaffSection({ branchId, auth }: { branchId: string; auth: AuthOpts }) 
         }
         confirmLabel={confirm?.kind === 'reset-mfa' ? 'Reset two-step sign-in' : 'Deactivate'}
         onCancel={() => setConfirm(null)}
+        loading={patchStaffMutation.isPending || resetMfa.isPending}
         onConfirm={() => {
           if (!confirm) return;
-          if (confirm.kind === 'reset-mfa') resetTwoStep(confirm.member);
-          else deactivate(confirm.member);
-          setConfirm(null);
+          const close = () => setConfirm(null);
+          if (confirm.kind === 'reset-mfa') resetTwoStep(confirm.member, close);
+          else deactivate(confirm.member, close);
         }}
       />
     </Section>
@@ -414,11 +416,12 @@ function PendingInvitesSection({ branchId, auth }: { branchId: string; auth: Aut
 
   if (invites.length === 0) return null;
 
-  function withdraw(invite: PendingInvite) {
+  function withdraw(invite: PendingInvite, onSettled?: () => void) {
     setMessage(null);
     cancel.mutate(invite.id, {
       onSuccess: () => setMessage({ kind: 'ok', text: `Invitation for ${invite.email} withdrawn — its link no longer works.` }),
       onError: (err) => setMessage({ kind: 'error', text: errorText(err) }),
+      onSettled,
     });
   }
 
@@ -484,9 +487,9 @@ function PendingInvitesSection({ branchId, auth }: { branchId: string; auth: Aut
         description="The link they were sent stops working at once. You can invite them again later."
         confirmLabel="Withdraw"
         onCancel={() => setWithdrawing(null)}
+        loading={cancel.isPending}
         onConfirm={() => {
-          if (withdrawing) withdraw(withdrawing);
-          setWithdrawing(null);
+          if (withdrawing) withdraw(withdrawing, () => setWithdrawing(null));
         }}
       />
     </Section>

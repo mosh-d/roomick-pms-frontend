@@ -218,9 +218,9 @@ function ApiKeysSection({ auth, branchOptions, tenantId }: { auth: AuthOpts; bra
         description={`“${revoking?.name ?? ''}” stops working at once. Anything still using it gets refused, and it can’t be switched back on — you’d make a new key.`}
         confirmLabel="Revoke"
         onCancel={() => setRevoking(null)}
+        loading={revokeMutation.isPending}
         onConfirm={() => {
-          if (revoking) revokeMutation.mutate(revoking.id);
-          setRevoking(null);
+          if (revoking) revokeMutation.mutate(revoking.id, { onSettled: () => setRevoking(null) });
         }}
       />
     </Section>

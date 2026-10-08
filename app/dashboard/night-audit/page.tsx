@@ -55,11 +55,12 @@ export default function NightAuditPage() {
 
   async function handleRun() {
     setRunError(null);
-    setConfirmOpen(false);
     try {
       setLastRun(await runMutation.mutateAsync(undefined));
     } catch (error) {
       setRunError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
+    } finally {
+      setConfirmOpen(false);
     }
   }
 
@@ -166,6 +167,16 @@ export default function NightAuditPage() {
           </Section>
 
           <div className="flex flex-col items-center gap-2">
+            {preflight.lastStoppedRun ? (
+              <p className="text-small text-red-600 text-center max-w-xl" role="alert" id="night-audit-stopped">
+                The last run for {preflight.lastStoppedRun.auditDate} stopped part-way
+                {preflight.lastStoppedRun.chargesPosted > 0
+                  ? ` after posting ${preflight.lastStoppedRun.chargesPosted} room ${preflight.lastStoppedRun.chargesPosted === 1 ? 'charge' : 'charges'}`
+                  : ''}
+                {preflight.lastStoppedRun.reason ? ` — ${preflight.lastStoppedRun.reason}` : ''}. Close it again: it carries on where it stopped, and nothing
+                already posted is charged twice.
+              </p>
+            ) : null}
             {preflight.closedAhead.length > 0 ? (
               <p className="text-small text-red-600 text-center max-w-xl" role="alert">
                 Out of order: {listDates(preflight.closedAhead)} {preflight.closedAhead.length === 1 ? 'was' : 'were'} closed before{' '}
@@ -227,12 +238,13 @@ export default function NightAuditPage() {
       <ConfirmDialog
         open={confirmOpen}
         title="Run the night audit?"
-        description={`This closes ${preflight?.auditDate ?? 'the pending date'}: it posts a room charge for every guest in-house that night and marks unarrived confirmed reservations as no-shows. It can only be run once per date and cannot be undone.${
+        description={`This closes ${preflight?.auditDate ?? 'the pending date'}: it posts a room charge for every guest in-house that night and marks unarrived confirmed reservations as no-shows. Once a night is closed it can't be run again, and what it posts can't be undone.${
           preflight && preflight.pendingDates.length > 1 ? ` ${preflight.pendingDates.length - 1} more ${preflight.pendingDates.length === 2 ? 'night' : 'nights'} will still be open after this one.` : ''
         }`}
         confirmLabel={preflight?.alreadyRan ? 'Trigger Audit' : `Close ${preflight?.auditDate ?? 'this night'}`}
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleRun}
+        loading={runMutation.isPending}
       />
     </Container>
   );

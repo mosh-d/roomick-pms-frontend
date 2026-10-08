@@ -33,6 +33,7 @@ export interface RateRecommendation {
   currentBaseRate: string;
   suggestedAdjustmentPct: number;
   suggestedRate: string;
+  currency: string;
   rationale: string;
 }
 

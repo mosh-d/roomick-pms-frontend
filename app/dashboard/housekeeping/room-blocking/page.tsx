@@ -11,7 +11,7 @@ import { Select, type SelectOption } from '@/components/ui/Select';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { RoomBlockingIcon } from '@/components/ui/Icons';
-import { useActiveBlocksQuery, useBlockRoomMutation, useUnblockRoomMutation } from '@/lib/housekeeping';
+import { useActiveBlocksQuery, useBlockRoomMutation, useUnblockRoomMutation, type RoomBlockRow } from '@/lib/housekeeping';
 import { useRoomsQuery } from '@/lib/rooms';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
@@ -29,7 +29,13 @@ function todayString(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
-/** Room Blocking / OOO (ref p31) — every block still in effect, plus a form to create a new one. Ending a block early pulls its toDate back to today rather than deleting it — see `RoomsService.unblockRoom`'s own comment. */
+/**
+ * Room Blocking / OOO (ref p31) — every block still in effect or still to
+ * come, plus a form to create a new one. Ending a block that has started
+ * frees the room from tonight and keeps the nights it held on record; one
+ * that hasn't started yet is cancelled outright — see
+ * `RoomsService.unblockRoom`'s own comment.
+ */
 export default function RoomBlockingPage() {
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -43,7 +49,7 @@ export default function RoomBlockingPage() {
   const [toDate, setToDate] = useState(today);
   const [notes, setNotes] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
-  const [endingBlockId, setEndingBlockId] = useState<string | null>(null);
+  const [ending, setEnding] = useState<RoomBlockRow | null>(null);
 
   const blocksQuery = useActiveBlocksQuery(activeBranchId, auth);
   const roomsQuery = useRoomsQuery(activeBranchId, auth);
@@ -73,16 +79,19 @@ export default function RoomBlockingPage() {
   }
 
   async function confirmEnd() {
-    if (!endingBlockId) return;
+    if (!ending) return;
     setFormError(null);
     try {
-      await unblockMutation.mutateAsync(endingBlockId);
-      setEndingBlockId(null);
+      await unblockMutation.mutateAsync(ending.id);
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
-      setEndingBlockId(null);
+    } finally {
+      setEnding(null);
     }
   }
+
+  /** A block starting today or later hasn't held a night yet: it's cancelled, not ended. */
+  const notStarted = (block: RoomBlockRow) => block.fromDate.slice(0, 10) >= today;
 
   return (
     <Container className="max-w-5xl py-10 flex flex-col gap-8">
@@ -121,8 +130,8 @@ export default function RoomBlockingPage() {
                     {block.notes ? ` · ${block.notes}` : ''}
                   </p>
                 </div>
-                <Button size="sm" variant="outline" onClick={() => setEndingBlockId(block.id)}>
-                  End Block
+                <Button size="sm" variant="outline" onClick={() => setEnding(block)}>
+                  {notStarted(block) ? 'Cancel Block' : 'End Block'}
                 </Button>
               </Card>
             ))}
@@ -131,11 +140,19 @@ export default function RoomBlockingPage() {
       </Section>
 
       <ConfirmDialog
-        open={endingBlockId !== null}
-        title="End this block?"
-        description="This releases the room back into inventory as of today. The block's history stays on record."
-        confirmLabel="End Block"
-        onCancel={() => setEndingBlockId(null)}
+        open={ending !== null}
+        title={ending && notStarted(ending) ? 'Cancel this block?' : 'End this block?'}
+        description={
+          !ending
+            ? ''
+            : notStarted(ending)
+              ? `Room ${ending.room.number} stays in inventory for ${formatDateOnly(ending.fromDate)} – ${formatDateOnly(ending.toDate)}. The block is removed; the audit trail keeps a record of it.`
+              : `Room ${ending.room.number} is back in inventory from tonight — it can be sold and checked into today. The nights it was blocked stay on record.`
+        }
+        confirmLabel={ending && notStarted(ending) ? 'Cancel Block' : 'End Block'}
+        cancelLabel="Keep It"
+        loading={unblockMutation.isPending}
+        onCancel={() => setEnding(null)}
         onConfirm={confirmEnd}
       />
     </Container>

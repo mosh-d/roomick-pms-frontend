@@ -353,9 +353,9 @@ export default function CustomReportBuilderPage() {
               description="The saved report goes for everyone at this property. It can’t be brought back — you’d build and save it again."
               confirmLabel="Delete"
               onCancel={() => setDeleting(null)}
+              loading={deleteMutation.isPending}
               onConfirm={() => {
-                if (deleting) deleteMutation.mutate(deleting.id);
-                setDeleting(null);
+                if (deleting) deleteMutation.mutate(deleting.id, { onSettled: () => setDeleting(null) });
               }}
             />
           </Section>

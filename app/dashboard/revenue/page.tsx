@@ -194,9 +194,9 @@ function RestrictionsSection({ branchId, auth }: { branchId: string; auth: AuthO
         }
         confirmLabel="Remove"
         onCancel={() => setRemoving(null)}
+        loading={deleteMutation.isPending}
         onConfirm={() => {
-          if (removing) deleteMutation.mutate(removing.id);
-          setRemoving(null);
+          if (removing) deleteMutation.mutate(removing.id, { onSettled: () => setRemoving(null) });
         }}
       />
     </Section>
@@ -294,9 +294,9 @@ function RateRecommendationsSection({ branchId, auth }: { branchId: string; auth
                 <tr key={rec.date} className="border-t border-secondary/10 text-small text-surface align-top">
                   <td className="py-2 pr-4">{new Date(`${rec.date}T00:00:00.000Z`).toLocaleDateString()}</td>
                   <td className="py-2 pr-4">{rec.dayOfWeek}</td>
-                  <td className="py-2 pr-4">{rec.currentBaseRate}</td>
+                  <td className="py-2 pr-4">{formatMoney(rec.currentBaseRate, currencySymbolFor(rec.currency))}</td>
                   <td className="py-2 pr-4">
-                    {rec.suggestedRate}
+                    {formatMoney(rec.suggestedRate, currencySymbolFor(rec.currency))}
                     {rec.suggestedAdjustmentPct !== 0 ? (
                       <span className={rec.suggestedAdjustmentPct > 0 ? 'text-green-700' : 'text-red-600'}> ({rec.suggestedAdjustmentPct > 0 ? '+' : ''}{rec.suggestedAdjustmentPct}%)</span>
                     ) : null}

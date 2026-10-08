@@ -161,6 +161,7 @@ export default function CheckOutFlowPage() {
         confirmLabel="Check-Out"
         onCancel={() => setConfirming(false)}
         onConfirm={confirmCheckOut}
+        loading={checkOutMutation.isPending}
       />
     </Container>
   );

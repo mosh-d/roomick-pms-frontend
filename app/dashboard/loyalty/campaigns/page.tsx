@@ -318,9 +318,9 @@ function SegmentsSection({ auth }: { auth: AuthOpts }) {
         onConfirm={() => {
           if (!removing) return;
           setError(null);
-          remove.mutate(removing.id, { onError: (err) => setError(errorText(err, 'Couldn’t remove that audience.')) });
-          setRemoving(null);
+          remove.mutate(removing.id, { onError: (err) => setError(errorText(err, 'Couldn’t remove that audience.')), onSettled: () => setRemoving(null) });
         }}
+        loading={remove.isPending}
       />
     </Section>
   );
@@ -515,9 +515,9 @@ function TemplatesSection({ auth }: { auth: AuthOpts }) {
         onConfirm={() => {
           if (!removing) return;
           setError(null);
-          remove.mutate(removing.id, { onError: (err) => setError(errorText(err, 'Couldn’t remove that template.')) });
-          setRemoving(null);
+          remove.mutate(removing.id, { onError: (err) => setError(errorText(err, 'Couldn’t remove that template.')), onSettled: () => setRemoving(null) });
         }}
+        loading={remove.isPending}
       />
     </Section>
   );

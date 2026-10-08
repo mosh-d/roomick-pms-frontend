@@ -175,6 +175,7 @@ export default function DeparturesDashboardPage() {
         confirmLabel="Check-Out"
         onCancel={() => setPendingCheckOut(null)}
         onConfirm={confirmCheckOut}
+        loading={checkOutMutation.isPending}
       />
 
       <ExtendStayDialog target={extendStayTarget} branchId={activeBranchId} auth={auth} onClose={() => setExtendStayTarget(null)} />

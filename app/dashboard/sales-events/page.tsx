@@ -243,7 +243,7 @@ function GroupBlockCard({
         <div className="min-w-0">
           <p className="text-body font-semibold text-surface">{block.name}</p>
           <p className="text-small text-surface-muted">
-            {block.roomTypeName} · {formatMoney(block.blockRate)}/night
+            {block.roomTypeName} · {formatMoney(block.blockRate, currencySymbolFor(block.currency))}/night
             {block.arrivalDate && block.departureDate ? ` · ${formatDay(block.arrivalDate)} – ${formatDay(block.departureDate)}` : ''}
           </p>
           {contact ? <p className="text-tiny text-surface-muted">Contact: {contact}</p> : null}
@@ -352,7 +352,7 @@ function BookIntoBlockModal({ block, branchId, auth, onClose }: { block: GroupBl
       {confirmation ? (
         <div className="flex flex-col gap-3">
           <p className="text-body text-surface">
-            Booked — confirmation <span className="font-semibold">{confirmation}</span> at {formatMoney(block.blockRate)}/night.
+            Booked — confirmation <span className="font-semibold">{confirmation}</span> at {formatMoney(block.blockRate, currencySymbolFor(block.currency))}/night.
           </p>
           <Button type="button" onClick={onClose} className="self-start">
             Done
@@ -361,7 +361,7 @@ function BookIntoBlockModal({ block, branchId, auth, onClose }: { block: GroupBl
       ) : (
         <div className="flex flex-col gap-3">
           <p className="text-small text-surface-muted">
-            {block.pickup} of {block.blockSize} rooms booked so far — this reservation takes the block&rsquo;s own rate of {formatMoney(block.blockRate)}/night.
+            {block.pickup} of {block.blockSize} rooms booked so far — this reservation takes the block&rsquo;s own rate of {formatMoney(block.blockRate, currencySymbolFor(block.currency))}/night.
           </p>
           <Input id="block-booking-guest-name" label="Guest Name" value={guestName} onChange={(e) => setGuestName(e.target.value)} />
           <Input id="block-booking-guest-email" label="Guest Email (optional)" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} />
@@ -649,7 +649,9 @@ function RoomingListModal({ block, branchId, auth, onClose }: { block: GroupBloc
 function EventSpacesSection({ branchId, auth }: { branchId: string; auth: AuthOpts }) {
   const spacesQuery = useEventSpacesQuery(branchId, auth);
   const createSpaceMutation = useCreateEventSpaceMutation(branchId, auth);
-  const [{ from, to }] = useState(defaultMonthRange);
+  // Any window up to a year — an event booked for next quarter used to be
+  // impossible to see, open or cancel from here.
+  const [{ from, to }, setRange] = useState(defaultMonthRange);
   const fromIso = `${from}T00:00:00.000Z`;
   const toIso = `${to}T00:00:00.000Z`;
   const bookingsQuery = useEventBookingsQuery(branchId, fromIso, toIso, auth);
@@ -798,9 +800,37 @@ function EventSpacesSection({ branchId, auth }: { branchId: string; auth: AuthOp
               </Button>
             </Card>
 
-            <p className="text-small text-surface-muted">
-              Showing bookings from {from} to {to}.
-            </p>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="w-44">
+                <Input
+                  id="event-calendar-from"
+                  label="From"
+                  type="date"
+                  value={from}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    if (next) setRange((r) => ({ from: next, to: next < r.to && r.to <= addDays(next, 366) ? r.to : addDays(next, 30) }));
+                  }}
+                />
+              </div>
+              <div className="w-44">
+                <Input
+                  id="event-calendar-to"
+                  label="To (not included)"
+                  type="date"
+                  min={addDays(from, 1)}
+                  max={addDays(from, 366)}
+                  value={to}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    if (next && next > from && next <= addDays(from, 366)) setRange((r) => ({ ...r, to: next }));
+                  }}
+                />
+              </div>
+              <Button type="button" size="sm" variant="outline" className="mb-2" onClick={() => setRange(defaultMonthRange())}>
+                Next 30 Days
+              </Button>
+            </div>
             {bookingsQuery.isLoading ? (
               <p className="text-body text-surface-muted">Loading…</p>
             ) : (bookingsQuery.data ?? []).length === 0 ? (
@@ -848,9 +878,9 @@ function EventSpacesSection({ branchId, auth }: { branchId: string; auth: AuthOp
         }
         confirmLabel="Cancel Event"
         onCancel={() => setCancelling(null)}
+        loading={cancelBookingMutation.isPending}
         onConfirm={() => {
-          if (cancelling) cancelBookingMutation.mutate(cancelling.id);
-          setCancelling(null);
+          if (cancelling) cancelBookingMutation.mutate(cancelling.id, { onSettled: () => setCancelling(null) });
         }}
       />
     </Section>

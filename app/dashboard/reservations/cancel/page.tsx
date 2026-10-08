@@ -264,6 +264,7 @@ export default function CancelReservationPage() {
         confirmLabel="Confirm Cancellation"
         onCancel={() => setConfirming(false)}
         onConfirm={confirmCancel}
+        loading={cancelMutation.isPending || waiverMutation.isPending}
       />
     </Container>
   );

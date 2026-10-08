@@ -14,6 +14,11 @@ import { Button } from './Button';
  * deleted" payload) — the caller already has whatever id it needs in scope
  * via closures on `onConfirm`, so this only owns the copy and the two
  * buttons.
+ *
+ * `loading`: the caller keeps the dialog open while the action runs and
+ * closes it when it's done. Meanwhile the confirm button spins and can't be
+ * pressed again, and the dialog can't be dismissed — a refund paid out twice
+ * by a double click was the reason.
  */
 export function ConfirmDialog({
   open,
@@ -23,6 +28,7 @@ export function ConfirmDialog({
   cancelLabel = 'Cancel',
   onConfirm,
   onCancel,
+  loading = false,
 }: {
   open: boolean;
   title: string;
@@ -31,18 +37,22 @@ export function ConfirmDialog({
   cancelLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
+  loading?: boolean;
 }) {
   return (
-    <Modal open={open} onClose={onCancel} title={title}>
+    <Modal open={open} onClose={loading ? STAY_OPEN : onCancel} title={title}>
       <p className="text-body text-surface-muted">{description}</p>
       <div className="flex items-center gap-3">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
           {cancelLabel}
         </Button>
-        <Button type="button" variant="danger" onClick={onConfirm}>
+        <Button type="button" variant="danger" onClick={onConfirm} loading={loading}>
           {confirmLabel}
         </Button>
       </div>
     </Modal>
   );
 }
+
+/** Escape and the backdrop do nothing while the action is running. */
+const STAY_OPEN = () => {};

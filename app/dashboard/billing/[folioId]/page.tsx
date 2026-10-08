@@ -13,7 +13,10 @@ import { ForwardButton } from '@/components/ui/ForwardButton';
 import { ReceiptIcon } from '@/components/ui/Icons';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ApiError } from '@/lib/api';
-import { useFolioQuery, useTaxBreakdownQuery, useCloseFolioMutation, type LineItem } from '@/lib/folios';
+import { useFolioQuery, useTaxBreakdownQuery, useCloseFolioMutation, useReopenFolioMutation, type LineItem } from '@/lib/folios';
+import { Modal } from '@/components/ui/Modal';
+import { Textarea } from '@/components/ui/Textarea';
+import { isSupervisorAtBranch } from '@/lib/roles';
 import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
@@ -46,6 +49,21 @@ export default function GuestFolioPage() {
   const folioQuery = useFolioQuery(params.folioId, auth);
   const taxQuery = useTaxBreakdownQuery(params.folioId, auth);
   const closeMutation = useCloseFolioMutation(activeBranchId ?? '', params.folioId, auth);
+  const reopenMutation = useReopenFolioMutation(activeBranchId ?? '', params.folioId, auth);
+  const [reopening, setReopening] = useState(false);
+  const [reopenReason, setReopenReason] = useState('');
+  const [reopenError, setReopenError] = useState<string | null>(null);
+
+  async function handleReopen() {
+    setReopenError(null);
+    try {
+      await reopenMutation.mutateAsync(reopenReason.trim());
+      setReopening(false);
+      setReopenReason('');
+    } catch (error) {
+      setReopenError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
+    }
+  }
 
   const folio = folioQuery.data;
 
@@ -93,7 +111,15 @@ export default function GuestFolioPage() {
         subtitle="Live charges, line items, running balance"
         actions={
           isSettled ? (
-            <span className="inline-flex rounded-pill bg-status-inspected px-3 py-1 text-small font-semibold text-white">Settled</span>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex rounded-pill bg-status-inspected px-3 py-1 text-small font-semibold text-white">Settled</span>
+              {/* A charge found after the bill closed — the minibar after check-out — needs the bill open again. */}
+              {isSupervisorAtBranch(user, activeBranchId) ? (
+                <Button type="button" variant="outline" size="sm" onClick={() => setReopening(true)}>
+                  Reopen Bill
+                </Button>
+              ) : null}
+            </div>
           ) : (
             <Button type="button" variant="outline" size="sm" disabled={balance > 0} onClick={() => setConfirmClose(true)}>
               Close Folio
@@ -234,6 +260,20 @@ export default function GuestFolioPage() {
         <p className="text-body text-surface-muted">This folio is settled — no further charges or payments can be posted.</p>
       )}
 
+      <Modal open={reopening} onClose={() => (reopenMutation.isPending ? undefined : setReopening(false))} title="Reopen this bill?">
+        <p className="text-small text-surface-muted">It goes back to open so charges and payments can be posted to it again. Close it again once it&apos;s straight.</p>
+        <Textarea id="reopen-reason" label="Reason" value={reopenReason} onChange={(e) => setReopenReason(e.target.value)} maxLength={300} hint="Required — recorded in the audit trail with your name" />
+        {reopenError ? <p className="text-small text-red-600">{reopenError}</p> : null}
+        <div className="flex items-center gap-3">
+          <Button type="button" variant="outline" onClick={() => setReopening(false)} disabled={reopenMutation.isPending}>
+            Keep It Settled
+          </Button>
+          <Button type="button" onClick={handleReopen} loading={reopenMutation.isPending} disabled={reopenReason.trim().length < 3}>
+            Reopen Bill
+          </Button>
+        </div>
+      </Modal>
+
       <ConfirmDialog
         open={confirmClose}
         title="Close this folio?"
@@ -241,6 +281,7 @@ export default function GuestFolioPage() {
         confirmLabel="Close Folio"
         onCancel={() => setConfirmClose(false)}
         onConfirm={handleClose}
+        loading={closeMutation.isPending}
       />
     </Container>
   );

@@ -54,7 +54,6 @@ export default function TransferHistoryPage() {
   async function confirmReverse() {
     if (!reversing) return;
     const transfer = reversing;
-    setReversing(null);
     setError(null);
     setNotice(null);
     try {
@@ -62,6 +61,8 @@ export default function TransferHistoryPage() {
       setNotice(`Put back: ${formatMoney(transfer.amount, symbol)} returned to ${endName(transfer.sourceFolio)}.`);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Could not reverse the transfer.');
+    } finally {
+      setReversing(null);
     }
   }
 
@@ -141,6 +142,7 @@ export default function TransferHistoryPage() {
         confirmLabel="Reverse"
         onConfirm={confirmReverse}
         onCancel={() => setReversing(null)}
+        loading={reverseMutation.isPending}
       />
     </Container>
   );

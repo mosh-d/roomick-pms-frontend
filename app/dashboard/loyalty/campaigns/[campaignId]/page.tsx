@@ -144,10 +144,10 @@ function SendSection({ campaign, auth, staffEmail }: { campaign: Campaign; auth:
   }
 
   function sendNow() {
-    setConfirming(false);
     send.mutate(undefined, {
       onSuccess: (result) => setMessage({ kind: 'ok', text: `Queued ${result.recipientCount.toLocaleString()} ${result.recipientCount === 1 ? 'email' : 'emails'} for delivery.` }),
       onError: (err) => setMessage({ kind: 'error', text: errorText(err, 'Couldn’t send the campaign.') }),
+      onSettled: () => setConfirming(false),
     });
   }
 
@@ -217,6 +217,7 @@ function SendSection({ campaign, auth, staffEmail }: { campaign: Campaign; auth:
         confirmLabel="Send"
         onConfirm={sendNow}
         onCancel={() => setConfirming(false)}
+        loading={send.isPending}
       />
       <ConfirmDialog
         open={cancelling}
@@ -224,10 +225,13 @@ function SendSection({ campaign, auth, staffEmail }: { campaign: Campaign; auth:
         description={`“${campaign.name}” ${campaign.scheduledAt ? 'won’t be sent at its scheduled time' : 'won’t be sent'}. A cancelled campaign can’t be reopened — you’d make a new one.`}
         confirmLabel="Cancel Campaign"
         onConfirm={() => {
-          setCancelling(false);
-          cancel.mutate(undefined, { onError: (err) => setMessage({ kind: 'error', text: errorText(err, 'Couldn’t cancel the campaign.') }) });
+          cancel.mutate(undefined, {
+            onError: (err) => setMessage({ kind: 'error', text: errorText(err, 'Couldn’t cancel the campaign.') }),
+            onSettled: () => setCancelling(false),
+          });
         }}
         onCancel={() => setCancelling(false)}
+        loading={cancel.isPending}
       />
     </Section>
   );

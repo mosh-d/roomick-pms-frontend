@@ -74,6 +74,8 @@ export interface GuestStaySummary {
   checkOutDate: string;
   confirmedRate: string;
   roomType: { name: string };
+  /** The property it was at — its currency is the rate's. */
+  branch: { name: string; currency: string };
 }
 
 export interface GuestNoteSummary {
@@ -97,7 +99,8 @@ export interface GuestProfileDetail extends GuestSummary {
   marketingOptInSource: string | null;
   marketingUnsubscribedAt: string | null;
   stayHistory: GuestStaySummary[];
-  totalSpend: string;
+  /** Everything paid, totalled per currency — never added across currencies. */
+  spend: Array<{ currency: string; total: string }>;
   notesFeed: GuestNoteSummary[];
 }
 

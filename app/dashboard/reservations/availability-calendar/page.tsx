@@ -84,7 +84,8 @@ export default function AvailabilityCalendarPage() {
                 <th className="sticky left-0 bg-secondary/5 text-small font-bold text-secondary text-left py-2 pr-4 pl-1 whitespace-nowrap">Room Type</th>
                 {dates.map((date) => (
                   <th key={date} className="text-tiny font-semibold text-surface-muted text-center py-2 px-1 whitespace-nowrap">
-                    {new Date(date).getDate()}
+                    {/* From the date string: read through the browser's timezone it was a day early west of UTC. */}
+                    {Number(date.slice(8, 10))}
                   </th>
                 ))}
               </tr>

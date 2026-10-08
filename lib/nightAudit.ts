@@ -18,6 +18,8 @@ export interface NightAuditPreflight {
   pendingDates: string[];
   /** Nights already closed that come AFTER the oldest open one — closed out of order. */
   closedAhead: string[];
+  /** The oldest open night's last run, when it failed or was cut off part-way. Running it again carries on where it stopped — nothing is charged twice. */
+  lastStoppedRun: { auditDate: string; status: 'running' | 'failed'; chargesPosted: number; errorCount: number; reason: string | null } | null;
   checklist: PreflightCheck[];
   openFolios: { id: string; guestName: string }[];
   unresolvedNoShows: { id: string; confirmationNumber: string; guestName: string; checkInDate: string }[];

@@ -97,6 +97,23 @@ type ApiFetchOptions = Omit<RequestInit, 'body'> & {
  * not at module top level: `authStore.ts` already imports `apiFetch` from
  * this file, so a static import here would be circular.
  */
+/**
+ * After a 401 on a call that carried a token: a renewed token, or `null`
+ * when the session has ended. Renewed only for someone who's been working in
+ * the last hour — a terminal left alone that long has its session ended
+ * instead, however much the page itself has been polling (see
+ * lib/session.ts).
+ */
+async function renewedToken(): Promise<string | null> {
+  const { useAuthStore } = await import('./store/authStore');
+  const { hasBeenIdleTooLong } = await import('./session');
+  if (hasBeenIdleTooLong()) {
+    useAuthStore.getState().endSession();
+    return null;
+  }
+  return useAuthStore.getState().refreshAccessToken();
+}
+
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
   const { body, tenantId, accessToken, headers, _isRetry, ...rest } = options;
 
@@ -112,18 +129,9 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
   });
 
   if (response.status === 401 && accessToken && !_isRetry) {
-    const { useAuthStore } = await import('./store/authStore');
-    const { hasBeenIdleTooLong } = await import('./session');
-    // Renewed only for someone who's been working in the last hour — a
-    // terminal left alone that long has its session ended instead, however
-    // much the page itself has been polling (see lib/session.ts).
-    if (hasBeenIdleTooLong()) {
-      useAuthStore.getState().endSession();
-    } else {
-      const newToken = await useAuthStore.getState().refreshAccessToken();
-      if (newToken) {
-        return apiFetch<T>(path, { ...options, accessToken: newToken, _isRetry: true });
-      }
+    const newToken = await renewedToken();
+    if (newToken) {
+      return apiFetch<T>(path, { ...options, accessToken: newToken, _isRetry: true });
     }
   }
 
@@ -162,15 +170,24 @@ export async function downloadFile(
   /** A file built from a request body (the Custom Report Builder's CSV) is a POST. */
   post?: { body: unknown },
 ): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: post ? 'POST' : 'GET',
-    headers: {
-      ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      ...(post ? { 'Content-Type': 'application/json' } : {}),
-    },
-    body: post ? JSON.stringify(post.body) : undefined,
-  });
+  const request = (token: string | undefined) =>
+    fetch(`${API_BASE_URL}${path}`, {
+      method: post ? 'POST' : 'GET',
+      headers: {
+        ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(post ? { 'Content-Type': 'application/json' } : {}),
+      },
+      body: post ? JSON.stringify(post.body) : undefined,
+    });
+  let response = await request(accessToken);
+  // The same one renewal `apiFetch` makes: a download was the first thing
+  // many people did after a quiet quarter of an hour (the registration card
+  // at check-in), and it failed with "Could not download the file".
+  if (response.status === 401 && accessToken) {
+    const newToken = await renewedToken();
+    if (newToken) response = await request(newToken);
+  }
   if (!response.ok) {
     const problem = (await response.json().catch(() => null)) as { code?: string; detail?: string } | null;
     throw new ApiError(response.status, problem?.code ?? 'INTERNAL', problem?.detail ?? 'Could not download the file.');

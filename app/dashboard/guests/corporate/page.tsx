@@ -223,7 +223,7 @@ function AccountDialog({ account, branchId, auth, onClose }: { account: Corporat
   // if it's at another one — so editing doesn't silently drop it.
   const planOptions: SelectOption[] = [
     { value: '', label: 'No contracted rate' },
-    ...(plansQuery.data ?? []).filter((p) => p.type === 'negotiated' && p.isActive).map((p) => ({ value: p.id, label: `${p.name} — ${p.amount} a night` })),
+    ...(plansQuery.data ?? []).filter((p) => p.type === 'negotiated' && p.isActive).map((p) => ({ value: p.id, label: `${p.name} — ${formatMoney(p.amount, currencySymbolFor(p.currency))} a night` })),
     ...(account?.ratePlan && account.ratePlan.branchId !== branchId ? [{ value: account.ratePlan.id, label: `${account.ratePlan.name} (at ${account.ratePlan.branch.name})` }] : []),
   ];
 

@@ -144,7 +144,8 @@ function BranchDetailsSection({ branch, auth }: { branch: BranchDetail; auth: Au
         checkInTime: form.checkInTime,
         checkOutTime: form.checkOutTime,
         category: form.category || undefined,
-        policies: { ...(branch.policies ?? {}), cashVarianceThreshold: form.cashVarianceThreshold.trim() === '' ? undefined : Number(form.cashVarianceThreshold) },
+        // Only the policy this form owns: the API keeps the rest, and `null` clears it.
+        policies: { cashVarianceThreshold: form.cashVarianceThreshold.trim() === '' ? null : Number(form.cashVarianceThreshold) },
       });
       setSaved(true);
     } catch (err) {

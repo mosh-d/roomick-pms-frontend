@@ -213,10 +213,11 @@ export function RoomsLayoutSection({ branchId, auth }: { branchId: string; auth:
         description="It won't be sold or offered at check-in any more. Its history stays, and adding its number again brings it back."
         confirmLabel="Remove Room"
         onCancel={() => setRemoving(null)}
-        onConfirm={() => {
+        loading={changeMutation.isPending}
+        onConfirm={async () => {
           const room = removing;
+          if (room) await run({ kind: 'removeRoom', roomId: room.id }, `Room ${room.number} removed.`);
           setRemoving(null);
-          if (room) void run({ kind: 'removeRoom', roomId: room.id }, `Room ${room.number} removed.`);
         }}
       />
     </Section>

@@ -143,8 +143,8 @@ export interface PublicBookingDetail {
   roomTypeName: string;
   guestName: string;
   guestEmail: string | null;
-  guestPhone: string | null;
-  guestNationality: string | null;
+  /** The last four digits of the phone on file — the number itself is never sent to the booking page. */
+  guestPhoneEnding: string | null;
   totalRate: string;
   currency: string;
   preArrivalCompletedAt: string | null;

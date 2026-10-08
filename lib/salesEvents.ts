@@ -20,6 +20,7 @@ export interface GroupBlockSummary {
   roomTypeName: string;
   blockSize: number;
   blockRate: string;
+  currency: string;
   arrivalDate: string | null;
   departureDate: string | null;
   cutoffDate: string;
