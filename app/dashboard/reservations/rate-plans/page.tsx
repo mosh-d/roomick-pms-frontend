@@ -186,6 +186,9 @@ export default function RatePlansPage() {
       </Section>
 
       <Section label="Rate Plans">
+        <p className="text-small text-surface-muted">
+          A rate plan isn’t edited in place: retire it and create its replacement, so every booking keeps the plan it was priced on.
+        </p>
         {ratePlansQuery.isLoading ? (
           <p className="text-body text-surface-muted">Loading rate plans…</p>
         ) : (

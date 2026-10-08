@@ -1,7 +1,63 @@
 import type { NextConfig } from 'next';
 import { withSentryConfig } from '@sentry/nextjs';
 
+const isDev = process.env.NODE_ENV !== 'production';
+
+/** The API's origin, for `connect-src` — the same value `lib/api.ts` calls. */
+const apiOrigin = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3000/api/v1').origin;
+  } catch {
+    return '';
+  }
+})();
+
+/**
+ * Content Security Policy. Sessions live in localStorage, so a single
+ * cross-site-scripting bug anywhere would hand a session to whoever found
+ * it — this is the backstop that keeps an injected script from running or
+ * phoning out. Next.js's own bootstrap is an inline script, so inline
+ * scripts stay allowed (a nonce would need a middleware on every page);
+ * development also needs eval and a WebSocket for hot reloading.
+ *
+ * - Scripts, styles and fonts come from this app only (next/font self-hosts).
+ * - Images: this app, blobs and data URIs (camera captures, logo previews)
+ *   and any https host — room-type photos are pasted links.
+ * - Connections: this app, the API, and Sentry when a DSN is set.
+ * - Frames: only the email preview, a sandboxed `srcDoc` frame; nothing may
+ *   frame this app.
+ */
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' blob: data: https:",
+  "font-src 'self' data:",
+  `connect-src 'self' ${apiOrigin} https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io${isDev ? ' ws://localhost:* ws://127.0.0.1:*' : ''}`,
+  "frame-src 'self'",
+  "frame-ancestors 'none'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+]
+  .join('; ')
+  .replace(/\s+/g, ' ');
+
+const securityHeaders = [
+  { key: 'Content-Security-Policy', value: contentSecurityPolicy },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  // The camera is for ID capture at check-in; nothing here needs the rest.
+  { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=(), payment=(), usb=()' },
+  { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' },
+];
+
 const nextConfig: NextConfig = {
+  async headers() {
+    return [{ source: '/:path*', headers: securityHeaders }];
+  },
+
   // Pin the Turbopack workspace root to this project. Without it, Next.js
   // walks up looking for a workspace root and finds an unrelated
   // package-lock.json under the Windows user profile folder (this project

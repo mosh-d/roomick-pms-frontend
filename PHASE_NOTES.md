@@ -2624,3 +2624,30 @@ Page Access (Phase 84) treated My Account as a page a role has to be given, so a
 ### Verified
 - **Checks:** `npx tsc --noEmit` clean; `eslint` 0 errors (6 warnings, all the existing react-hook-form `watch()` ones); `next build` passes.
 - **Browser, against real Postgres:** every flow above with no email provider and again with email through a local SMTP server — 62/62 and 23/23; the colour audit over every page plus the new public ones finds nothing; no sideways scroll at 390px on any page touched; no console errors.
+
+## Phase 86 — Audit fixes: security headers, confirmations before destructive actions, night-audit gaps, real reservation counts, money formatting, a legend (2026-10-08)
+
+The web app's share of the audit (`docs/roomick-audit-2026-10-07.md`, outside the repos; see its fix-status table). The backend's share is in `roomick-pms-backend/PHASE_NOTES.md` under the same date.
+
+### Security headers (`next.config.ts`)
+Content-Security-Policy, `frame-ancestors 'none'` + `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy` (camera for ID capture only) and HSTS on every response. Sessions live in `localStorage`, so one cross-site-scripting bug meant a stolen session; this is the backstop. Inline scripts stay allowed (Next's bootstrap needs them; a nonce would need a middleware on every page), eval does not: Zod 4 probes for eval before falling back, so `lib/zod-config.ts` sets `jitless` from `instrumentation-client.ts`, which runs before any page code. Images may come from any https host (room photos are pasted links), connections only go to the API and Sentry.
+
+### Staff Management
+Deactivating someone, resetting their two-step sign-in and withdrawing an invitation open a `ConfirmDialog` first — deactivation signs the person out on the spot. Reactivating stays one click.
+
+### Night Audit
+The page lists every night still to close, oldest first ("3 nights still to close … each run closes one"), the button names the night it closes, and nights closed *ahead* of an open one are flagged in red to check.
+
+### Reservations
+`useReservationsQuery` asks for up to 500 (the server's ceiling; it stopped at 100 silently before) and `useReservationCountQuery` reads real counts — the Reservations hub showed "100 confirmed" for a branch with more.
+
+### Smaller
+- 429s with no server text read "Too many attempts — try again in a minute."; `TOO_MANY_REQUESTS`, `SHIFT_REQUIRED` and `EARLY_CHECK_IN` join the error codes.
+- Room Status Board has a colour legend, read from the same `STATUS_STYLES` as the chips.
+- Rate Plans says a plan is retired and replaced, not edited, so bookings keep the plan they were priced on.
+- The eight bare `toFixed(2)` money renders (shifts, operational report trends, loyalty) go through `formatMoney`.
+- `npm audit fix` — what's left is eslint-config-next's `braces` chain (lint tooling, a major upgrade).
+
+### Verified
+- **Checks:** `tsc` and lint clean; `next build` passes.
+- **Browser, against the production build and a real backend:** a headless tour of ten pages signed in as a fresh owner reports the headers present and **no CSP violations and no console errors**; the night-audit copy renders; the owner then deletes the organisation with their password (204).

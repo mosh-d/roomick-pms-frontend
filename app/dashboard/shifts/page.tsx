@@ -27,6 +27,7 @@ import {
 } from '@/lib/shifts';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatMoney } from '@/lib/numberFormat';
 
 const SHIFT_TYPE_OPTIONS: SelectOption[] = [
   { value: 'morning', label: 'Morning' },
@@ -86,7 +87,7 @@ function DenominationCounter({ rows, onChange }: { rows: CashDenomination[]; onC
           <div className="w-24">
             <Input name={`count-${i}`} label="Count" type="number" min={0} value={row.count || ''} onChange={(e) => updateRow(i, { count: Number(e.target.value) })} />
           </div>
-          <p className="text-small text-surface-muted pb-2">= {(row.denomination * row.count).toFixed(2)}</p>
+          <p className="text-small text-surface-muted pb-2">= {formatMoney(row.denomination * row.count)}</p>
           <button type="button" onClick={() => removeRow(i)} className="text-small text-red-600 pb-2 cursor-pointer">
             Remove
           </button>
@@ -96,7 +97,7 @@ function DenominationCounter({ rows, onChange }: { rows: CashDenomination[]; onC
         <Button type="button" variant="outline" onClick={addRow} className="self-start">
           Add Denomination
         </Button>
-        <p className="text-small font-semibold text-surface">Total: {sumDenominations(rows).toFixed(2)}</p>
+        <p className="text-small font-semibold text-surface">Total: {formatMoney(sumDenominations(rows))}</p>
       </div>
     </div>
   );
@@ -317,12 +318,12 @@ function OpenShiftDetail({ shiftId, branchId, auth }: { shiftId: string; branchI
           </div>
           <div>
             <p className="text-tiny text-surface-muted">Opening Float</p>
-            <p className="text-body font-semibold text-surface">{shift.openingFloat}</p>
+            <p className="text-body font-semibold text-surface">{formatMoney(shift.openingFloat)}</p>
           </div>
           <div>
             <p className="text-tiny text-surface-muted">Cash Taken So Far</p>
-            <p className="text-body font-semibold text-surface">{cashTakenSoFar.toFixed(2)}</p>
-            {posCashSoFar > 0 ? <p className="text-tiny text-surface-muted">incl. {posCashSoFar.toFixed(2)} at Point of Sale</p> : null}
+            <p className="text-body font-semibold text-surface">{formatMoney(cashTakenSoFar)}</p>
+            {posCashSoFar > 0 ? <p className="text-tiny text-surface-muted">incl. {formatMoney(posCashSoFar)} at Point of Sale</p> : null}
           </div>
         </Card>
       </Section>

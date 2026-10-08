@@ -23,6 +23,7 @@ import {
 } from '@/lib/loyalty';
 import { useAuthStore } from '@/lib/store/authStore';
 import { HubCard } from '../_components/HubCard';
+import { formatMoney } from '@/lib/numberFormat';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -159,7 +160,7 @@ function ProgramForm({ program, auth }: { program: LoyaltyProgram; auth: AuthOpt
       </div>
       {Number.isFinite(back) && back > 0 ? (
         <p className="text-small text-surface-muted">
-          A guest gets back about {currency} {back.toFixed(2)} for every {currency} 100 they spend ({back.toFixed(2)}%).
+          A guest gets back about {currency} {formatMoney(back)} for every {currency} 100 they spend ({back.toFixed(2)}%).
         </p>
       ) : null}
 

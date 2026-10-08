@@ -11,7 +11,7 @@ import {
   WaitlistIcon,
   RatePlanIcon,
 } from '@/components/ui/Icons';
-import { useReservationsQuery } from '@/lib/reservations';
+import { useReservationCountQuery } from '@/lib/reservations';
 import { useRatePlansQuery } from '@/lib/rate-resolver';
 import { useAuthStore } from '@/lib/store/authStore';
 import { HubCard } from '../_components/HubCard';
@@ -31,9 +31,10 @@ export default function ReservationsHubPage() {
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
   const auth = { accessToken: accessToken ?? undefined, tenantId: user?.tenantId };
 
-  const confirmedQuery = useReservationsQuery(activeBranchId, { status: 'confirmed' }, auth);
-  const waitlistQuery = useReservationsQuery(activeBranchId, { status: 'waitlisted' }, auth);
-  const cancelledQuery = useReservationsQuery(activeBranchId, { status: 'cancelled' }, auth);
+  // Counts, not list lengths — a list stops at its page size and would have said "100" for a branch with 340.
+  const confirmedQuery = useReservationCountQuery(activeBranchId, { status: 'confirmed' }, auth);
+  const waitlistQuery = useReservationCountQuery(activeBranchId, { status: 'waitlisted' }, auth);
+  const cancelledQuery = useReservationCountQuery(activeBranchId, { status: 'cancelled' }, auth);
   const ratePlansQuery = useRatePlansQuery(activeBranchId, auth);
   const activeRatePlanCount = (ratePlansQuery.data ?? []).filter((p) => p.isActive).length;
 
@@ -61,21 +62,21 @@ export default function ReservationsHubPage() {
             icon={<ModifyReservationIcon className="size-5" />}
             title="Modify Reservation"
             description="Date changes, room type changes"
-            stats={confirmedQuery.data ? [`${confirmedQuery.data.length} confirmed ${confirmedQuery.data.length === 1 ? 'reservation' : 'reservations'}`] : undefined}
+            stats={confirmedQuery.data ? [`${confirmedQuery.data.count} confirmed ${confirmedQuery.data.count === 1 ? 'reservation' : 'reservations'}`] : undefined}
             href="/dashboard/reservations/modify"
           />
           <HubCard
             icon={<CancelReservationIcon className="size-5" />}
             title="Cancel Reservation"
             description="Handle cancellations"
-            stats={cancelledQuery.data ? [`${cancelledQuery.data.length} recently cancelled`] : undefined}
+            stats={cancelledQuery.data ? [`${cancelledQuery.data.count} cancelled`] : undefined}
             href="/dashboard/reservations/cancel"
           />
           <HubCard
             icon={<WaitlistIcon className="size-5" />}
             title="Waitlist Management"
             description="Future bookings, earliest availability"
-            stats={waitlistQuery.data ? [`${waitlistQuery.data.length} ${waitlistQuery.data.length === 1 ? 'reservation' : 'reservations'} on waitlist`] : undefined}
+            stats={waitlistQuery.data ? [`${waitlistQuery.data.count} ${waitlistQuery.data.count === 1 ? 'reservation' : 'reservations'} on waitlist`] : undefined}
             href="/dashboard/reservations/waitlist"
           />
           <HubCard

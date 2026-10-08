@@ -11,6 +11,7 @@ import { useAuthStore } from '@/lib/store/authStore';
 import { RoomStatusFilters, type RoomStatusFiltersValue } from '../_components/RoomStatusFilters';
 import { RoomGrid } from '../_components/RoomGrid';
 import { RoomDetailPanel } from '../_components/RoomDetailPanel';
+import { RoomStatusLegend } from '../_components/RoomStatusLegend';
 import { deriveRoomStatus } from '@/lib/deriveRoomStatus';
 
 const EMPTY_FILTERS: RoomStatusFiltersValue = { status: '', buildingId: '', roomTypeId: '' };
@@ -72,6 +73,7 @@ export default function RoomStatusBoardPage() {
       <PageHeader icon={<CheckCircleIcon className="size-8" />} title="Room Status Board" subtitle="See all rooms and their respective statuses" />
 
       <RoomStatusFilters value={filters} onChange={setFilters} buildingOptions={buildingOptions} roomTypeOptions={roomTypeOptions} />
+      <RoomStatusLegend />
 
       {roomsQuery.isLoading ? (
         <p className="text-body text-surface-muted">Loading rooms…</p>

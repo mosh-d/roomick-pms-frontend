@@ -165,13 +165,22 @@ export default function NightAuditPage() {
           </Section>
 
           <div className="flex flex-col items-center gap-2">
+            {preflight.closedAhead.length > 0 ? (
+              <p className="text-small text-red-600 text-center max-w-xl" role="alert">
+                Out of order: {listDates(preflight.closedAhead)} {preflight.closedAhead.length === 1 ? 'was' : 'were'} closed before{' '}
+                {preflight.pendingDates.length === 1 ? 'the earlier night' : 'these earlier nights'} — check the room charges those runs posted once the
+                {preflight.pendingDates.length === 1 ? ' night below is' : ' nights below are'} closed.
+              </p>
+            ) : null}
             <Button type="button" onClick={() => setConfirmOpen(true)} disabled={preflight.alreadyRan} loading={runMutation.isPending}>
-              Trigger Audit
+              {preflight.alreadyRan ? 'Trigger Audit' : `Close ${preflight.auditDate}`}
             </Button>
-            <p className="text-small text-surface-muted">
+            <p className="text-small text-surface-muted text-center">
               {preflight.alreadyRan
                 ? `${preflight.auditDate} has already been audited for this property.`
-                : `Will close ${preflight.auditDate}.`}
+                : preflight.pendingDates.length > 1
+                  ? `${preflight.pendingDates.length} nights still to close, oldest first: ${listDates(preflight.pendingDates)}. Each run closes one.`
+                  : `Will close ${preflight.auditDate}.`}
             </p>
           </div>
         </>
@@ -217,13 +226,21 @@ export default function NightAuditPage() {
       <ConfirmDialog
         open={confirmOpen}
         title="Run the night audit?"
-        description={`This closes ${preflight?.auditDate ?? 'the pending date'}: it posts a room charge for every guest in-house that night and marks unarrived confirmed reservations as no-shows. It can only be run once per date and cannot be undone.`}
-        confirmLabel="Trigger Audit"
+        description={`This closes ${preflight?.auditDate ?? 'the pending date'}: it posts a room charge for every guest in-house that night and marks unarrived confirmed reservations as no-shows. It can only be run once per date and cannot be undone.${
+          preflight && preflight.pendingDates.length > 1 ? ` ${preflight.pendingDates.length - 1} more ${preflight.pendingDates.length === 2 ? 'night' : 'nights'} will still be open after this one.` : ''
+        }`}
+        confirmLabel={preflight?.alreadyRan ? 'Trigger Audit' : `Close ${preflight?.auditDate ?? 'this night'}`}
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleRun}
       />
     </Container>
   );
+}
+
+/** "2026-10-06, 2026-10-07 and 2026-10-08" — the dates as the audit names them, not re-read in the browser's timezone. */
+function listDates(dates: string[]): string {
+  if (dates.length <= 1) return dates.join('');
+  return `${dates.slice(0, -1).join(', ')} and ${dates[dates.length - 1]}`;
 }
 
 /** A `null` result is a check the backend couldn't answer — shown as untracked rather than a tick it hasn't earned. Every check answers today. */

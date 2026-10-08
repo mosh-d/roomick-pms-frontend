@@ -167,20 +167,39 @@ export function useCreateReservationMutation(branchId: string, { accessToken, te
  * search term yet, which every other query here treats as "nothing to
  * fetch" via a null id.
  */
-export function useReservationsQuery(
-  branchId: string | null,
-  filter: { status?: ReservationStatus; search?: string },
-  { accessToken, tenantId }: AuthOpts,
-  enabled = true,
-) {
+/** The most a list asks for at once — the server's own ceiling. A busy branch's older bookings are reached by search; the counts come from `useReservationCountQuery`. */
+export const RESERVATION_LIST_LIMIT = 500;
+
+function reservationListParams(filter: { status?: ReservationStatus; search?: string; limit?: number; offset?: number }): string {
   const params = new URLSearchParams();
   if (filter.status) params.set('status', filter.status);
   if (filter.search) params.set('search', filter.search);
-  const qs = params.toString();
+  if (filter.limit !== undefined) params.set('limit', String(filter.limit));
+  if (filter.offset) params.set('offset', String(filter.offset));
+  return params.toString();
+}
+
+export function useReservationsQuery(
+  branchId: string | null,
+  filter: { status?: ReservationStatus; search?: string; limit?: number; offset?: number },
+  { accessToken, tenantId }: AuthOpts,
+  enabled = true,
+) {
+  const qs = reservationListParams({ ...filter, limit: filter.limit ?? RESERVATION_LIST_LIMIT });
   return useQuery({
-    queryKey: ['reservations', 'search', branchId ?? '', filter.status ?? null, filter.search ?? ''] as const,
+    queryKey: ['reservations', 'search', branchId ?? '', filter.status ?? null, filter.search ?? '', filter.limit ?? RESERVATION_LIST_LIMIT, filter.offset ?? 0] as const,
     queryFn: () => apiFetch<ReservationSummary[]>(`/branches/${branchId}/reservations${qs ? `?${qs}` : ''}`, { accessToken, tenantId }),
     enabled: enabled && branchId !== null,
+  });
+}
+
+/** How many reservations match — the list above stops at its limit, so a count is read, not inferred from a page's length. */
+export function useReservationCountQuery(branchId: string | null, filter: { status?: ReservationStatus; search?: string }, { accessToken, tenantId }: AuthOpts) {
+  const qs = reservationListParams(filter);
+  return useQuery({
+    queryKey: ['reservations', 'count', branchId ?? '', filter.status ?? null, filter.search ?? ''] as const,
+    queryFn: () => apiFetch<{ count: number }>(`/branches/${branchId}/reservations/count${qs ? `?${qs}` : ''}`, { accessToken, tenantId }),
+    enabled: branchId !== null,
   });
 }
 

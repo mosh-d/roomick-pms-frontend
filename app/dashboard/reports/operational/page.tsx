@@ -12,6 +12,7 @@ import { ReportsIcon, DownloadIcon } from '@/components/ui/Icons';
 import { useOccupancyReportQuery, useAdrReportQuery, useRevparReportQuery, useRevenueReportQuery, reportPdfPath, type ReportGroupBy } from '@/lib/reports';
 import { useRoomTypesQuery } from '@/lib/rooms';
 import { currencySymbolFor } from '@/lib/currencies';
+import { formatMoney } from '@/lib/numberFormat';
 import { downloadFile, ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 
@@ -236,7 +237,7 @@ export default function OperationalReportsPage() {
               <KpiCard label="Room-Nights Sold" value={String(adrQuery.data.summary.roomNightsSold)} />
             </div>
             <Section label="Trend">
-              <TrendBars data={adrQuery.data.trend.map((t) => ({ label: t.period, value: Number(t.adr) }))} formatValue={(v) => `${symbol}${v.toFixed(2)}`} />
+              <TrendBars data={adrQuery.data.trend.map((t) => ({ label: t.period, value: Number(t.adr) }))} formatValue={(v) => formatMoney(v, symbol)} />
             </Section>
             <BreakdownSection
               title="Room Type Breakdown"
@@ -278,7 +279,7 @@ export default function OperationalReportsPage() {
               <KpiCard label="Room-Nights Available" value={String(revparQuery.data.summary.roomNightsAvailable)} />
             </div>
             <Section label="Trend">
-              <TrendBars data={revparQuery.data.trend.map((t) => ({ label: t.period, value: Number(t.revpar) }))} formatValue={(v) => `${symbol}${v.toFixed(2)}`} />
+              <TrendBars data={revparQuery.data.trend.map((t) => ({ label: t.period, value: Number(t.revpar) }))} formatValue={(v) => formatMoney(v, symbol)} />
             </Section>
             <BreakdownSection
               title="Room Type Breakdown"
@@ -318,7 +319,7 @@ export default function OperationalReportsPage() {
               <KpiCard label="Total Revenue" value={`${symbol}${revenueQuery.data.summary.totalRevenue}`} />
             </div>
             <Section label="Trend">
-              <TrendBars data={revenueQuery.data.trend.map((t) => ({ label: t.period, value: Number(t.amount) }))} formatValue={(v) => `${symbol}${v.toFixed(2)}`} />
+              <TrendBars data={revenueQuery.data.trend.map((t) => ({ label: t.period, value: Number(t.amount) }))} formatValue={(v) => formatMoney(v, symbol)} />
             </Section>
             <BreakdownSection
               title="Revenue by Department"

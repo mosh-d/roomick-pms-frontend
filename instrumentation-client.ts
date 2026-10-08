@@ -1,4 +1,7 @@
 import * as Sentry from '@sentry/nextjs';
+// Runs before any page code in the browser — the one place a setting every
+// form's schema must see before it's built can live. See lib/zod-config.ts.
+import '@/lib/zod-config';
 
 /**
  * Error tracking (MVP timeline Month 6: "Sentry integration — frontend +

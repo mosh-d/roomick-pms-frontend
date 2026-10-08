@@ -37,7 +37,10 @@ export type ApiErrorCode =
   | 'OVERBOOKING_NOT_ACKNOWLEDGED'
   | 'CANCELLATION_TERMS_CHANGED'
   | 'FOLIO_NOT_SETTLED'
-  | 'AUDIT_ALREADY_RAN';
+  | 'AUDIT_ALREADY_RAN'
+  | 'TOO_MANY_REQUESTS'
+  | 'SHIFT_REQUIRED'
+  | 'EARLY_CHECK_IN';
 
 /**
  * The backend's global ProblemJsonExceptionFilter always returns this shape
@@ -128,12 +131,8 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
 
   if (!response.ok) {
     const problem = (data ?? {}) as { code?: string; detail?: string; errors?: unknown };
-    throw new ApiError(
-      response.status,
-      problem.code ?? 'INTERNAL',
-      problem.detail ?? 'Something went wrong. Please try again.',
-      problem.errors,
-    );
+    const fallback = response.status === 429 ? 'Too many attempts — try again in a minute.' : 'Something went wrong. Please try again.';
+    throw new ApiError(response.status, problem.code ?? (response.status === 429 ? 'TOO_MANY_REQUESTS' : 'INTERNAL'), problem.detail ?? fallback, problem.errors);
   }
 
   return data as T;

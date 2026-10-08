@@ -11,8 +11,13 @@ export interface PreflightCheck {
 }
 
 export interface NightAuditPreflight {
+  /** The night the next run closes — the oldest still open. */
   auditDate: string;
   alreadyRan: boolean;
+  /** Every night still to close, oldest first; each run closes the first. */
+  pendingDates: string[];
+  /** Nights already closed that come AFTER the oldest open one — closed out of order. */
+  closedAhead: string[];
   checklist: PreflightCheck[];
   openFolios: { id: string; guestName: string }[];
   unresolvedNoShows: { id: string; confirmationNumber: string; guestName: string; checkInDate: string }[];
