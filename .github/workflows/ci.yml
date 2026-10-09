@@ -30,3 +30,106 @@ jobs:
 
       - name: Typecheck everything
         run: npx tsc --noEmit
+
+  browser:
+    # The production build in a real browser against the real API: the API is
+    # checked out from its own repository and runs on a database of its own,
+    # signed in as an ordinary role (never a superuser, which would skip the
+    # row-level security that keeps organisations apart), with 5-second
+    # sign-ins so the tests can watch a session expire.
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: roomick
+          POSTGRES_PASSWORD: roomick
+          POSTGRES_DB: roomick_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U roomick"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://roomick:roomick@localhost:5432/roomick_test?schema=public
+      JWT_ACCESS_SECRET: ci-only-access-secret-not-for-production-use
+      JWT_REFRESH_SECRET: ci-only-refresh-secret-not-for-production-use
+      ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: mosh-d/roomick-pms-backend
+          path: api
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            api/package-lock.json
+
+      - name: Install the API
+        working-directory: api
+        run: npm ci
+
+      - name: Set up the API's database
+        working-directory: api
+        run: |
+          npx prisma migrate deploy
+          npx prisma db execute --url "$DATABASE_URL" --stdin <<'SQL'
+          CREATE ROLE roomick_app LOGIN PASSWORD 'roomick_app' NOSUPERUSER NOBYPASSRLS;
+          GRANT USAGE ON SCHEMA public TO roomick_app;
+          GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO roomick_app;
+          GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO roomick_app;
+          SQL
+
+      - name: Start the API with 5-second sign-ins
+        working-directory: api
+        env:
+          DATABASE_URL: postgresql://roomick_app:roomick_app@localhost:5432/roomick_test?schema=public
+          NODE_ENV: test
+          JWT_ACCESS_TTL: 5s
+          PORT: '3096'
+          CORS_ORIGINS: http://localhost:3097
+        run: |
+          npm run build
+          nohup node dist/main > "$GITHUB_WORKSPACE/api.log" 2>&1 &
+          for i in $(seq 1 60); do curl -s -o /dev/null http://127.0.0.1:3096/api/v1/system/health && exit 0; sleep 2; done
+          echo "The API didn't start"; cat "$GITHUB_WORKSPACE/api.log"; exit 1
+
+      - name: Install the web app
+        run: npm ci
+
+      - name: Build and start the web app against that API
+        env:
+          NEXT_PUBLIC_API_URL: http://127.0.0.1:3096/api/v1
+        run: |
+          npm run build
+          nohup npx next start -p 3097 > web.log 2>&1 &
+          for i in $(seq 1 60); do curl -s -o /dev/null http://localhost:3097/login && exit 0; sleep 2; done
+          echo "The web app didn't start"; cat web.log; exit 1
+
+      - name: Install the browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser tests
+        run: npx playwright test
+
+      - name: Keep the logs and the report when something failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-test-output
+          path: |
+            api.log
+            web.log
+            playwright-report/
+            test-results/
