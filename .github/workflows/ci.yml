@@ -37,6 +37,10 @@ jobs:
     # signed in as an ordinary role (never a superuser, which would skip the
     # row-level security that keeps organisations apart), with 5-second
     # sign-ins so the tests can watch a session expire.
+    #
+    # The web app and the API sit side by side (web/, api/): checked out
+    # inside the web app, the API's own test files were type-checked by the
+    # web app's build ("Cannot find name 'expect'").
     runs-on: ubuntu-latest
 
     services:
@@ -60,8 +64,14 @@ jobs:
       JWT_REFRESH_SECRET: ci-only-refresh-secret-not-for-production-use
       ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
 
+    defaults:
+      run:
+        working-directory: web
+
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: web
 
       - uses: actions/checkout@v4
         with:
@@ -73,7 +83,7 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: |
-            package-lock.json
+            web/package-lock.json
             api/package-lock.json
 
       - name: Install the API
@@ -113,9 +123,9 @@ jobs:
           NEXT_PUBLIC_API_URL: http://127.0.0.1:3096/api/v1
         run: |
           npm run build
-          nohup npx next start -p 3097 > web.log 2>&1 &
+          nohup npx next start -p 3097 > "$GITHUB_WORKSPACE/web.log" 2>&1 &
           for i in $(seq 1 60); do curl -s -o /dev/null http://localhost:3097/login && exit 0; sleep 2; done
-          echo "The web app didn't start"; cat web.log; exit 1
+          echo "The web app didn't start"; cat "$GITHUB_WORKSPACE/web.log"; exit 1
 
       - name: Install the browser
         run: npx playwright install --with-deps chromium
@@ -131,5 +141,5 @@ jobs:
           path: |
             api.log
             web.log
-            playwright-report/
-            test-results/
+            web/playwright-report/
+            web/test-results/
