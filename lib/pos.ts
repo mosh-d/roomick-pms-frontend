@@ -3,7 +3,10 @@ import { apiFetch } from './api';
 
 /** Mirrors `OutletCategory` (roomick-pms-backend/prisma/schema.prisma). The category fixes the charge type on everything the outlet sells. */
 export type OutletCategory = 'restaurant' | 'bar' | 'spa' | 'laundry' | 'retail' | 'room_service';
-export type PosSettlement = 'room' | 'cash' | 'card';
+export type PosSettlement = 'room' | 'cash' | 'card' | 'split';
+
+/** Taken off an order's items before tax — a percentage, or an amount. The reason goes with the order. */
+export type PosDiscount = { type: 'percentage' | 'fixed'; value: number; reason?: string };
 
 export const OUTLET_CATEGORY_LABELS: Record<OutletCategory, string> = {
   restaurant: 'Restaurant',
@@ -18,6 +21,7 @@ export const SETTLEMENT_LABELS: Record<PosSettlement, string> = {
   room: 'Room charge',
   cash: 'Cash',
   card: 'Card',
+  split: 'Cash + card',
 };
 
 /** Mirrors `PosService.listOutlets` (roomick-pms-backend/src/modules/pos/pos.service.ts). */
@@ -29,6 +33,8 @@ export interface Outlet {
   chargeType: string;
   isActive: boolean;
   sortOrder: number | null;
+  /** The most till staff may take off an order, in %; managers any amount. Null = only a manager discounts. */
+  staffDiscountLimitPct: string | null;
   menuItemCount: number;
   /** Managers only — who's assigned to ring up here. */
   assignedStaff?: Array<{ id: string; name: string }>;
@@ -81,6 +87,10 @@ export interface PosQuote {
   currency: string;
   lines: PricedLine[];
   /** The items added up, at menu prices. */
+  itemsTotal: string;
+  /** Taken off the items before tax. */
+  discount: string;
+  /** The items less any discount — what tax is worked out on. */
   subtotal: string;
   /** Tax added on top. */
   taxTotal: string;
@@ -109,6 +119,11 @@ export interface PosOrder {
   subtotal: string;
   taxTotal: string;
   total: string;
+  discountTotal: string;
+  discountReason: string | null;
+  /** What the outlet took each way — the two parts of a split sale; nothing for a room charge. */
+  cashAmount: string;
+  cardAmount: string;
   currency: string;
   reservationId: string | null;
   folioId: string | null;
@@ -124,7 +139,7 @@ export interface PosOrder {
 export interface OutletDay {
   date: string;
   currency: string;
-  summary: { orderCount: number; voidCount: number; total: string; room: string; cash: string; card: string };
+  summary: { orderCount: number; voidCount: number; total: string; room: string; cash: string; card: string; discounts: string };
   orders: PosOrder[];
 }
 
@@ -143,7 +158,7 @@ export function useOutletsQuery(branchId: string | null, auth: AuthOpts) {
 export function useCreateOutletMutation(branchId: string, auth: AuthOpts) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { name: string; category: OutletCategory }) =>
+    mutationFn: (body: { name: string; category: OutletCategory; staffDiscountLimitPct?: number | null }) =>
       apiFetch<Outlet>(`/branches/${branchId}/pos/outlets`, { method: 'POST', ...auth, body }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pos-outlets', branchId] }),
   });
@@ -152,7 +167,7 @@ export function useCreateOutletMutation(branchId: string, auth: AuthOpts) {
 export function useUpdateOutletMutation(branchId: string, auth: AuthOpts) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ outletId, ...body }: { outletId: string; name?: string; isActive?: boolean }) =>
+    mutationFn: ({ outletId, ...body }: { outletId: string; name?: string; isActive?: boolean; staffDiscountLimitPct?: number | null }) =>
       apiFetch<Outlet>(`/pos/outlets/${outletId}`, { method: 'PATCH', ...auth, body }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pos-outlets', branchId] }),
   });
@@ -220,10 +235,11 @@ export function useDeleteMenuItemMutation(outletId: string, auth: AuthOpts) {
 // --- Selling ----------------------------------------------------------------------
 
 /** The basket's price from the server — the terminal never adds anything up itself. Keeps the last figures on screen while a change re-prices. */
-export function usePosQuoteQuery(outletId: string | null, lines: BasketLine[], auth: AuthOpts) {
+export function usePosQuoteQuery(outletId: string | null, lines: BasketLine[], auth: AuthOpts, discount?: PosDiscount) {
+  const priced = discount ? { type: discount.type, value: discount.value } : undefined;
   return useQuery({
-    queryKey: ['pos-quote', outletId ?? '', lines] as const,
-    queryFn: () => apiFetch<PosQuote>(`/pos/outlets/${outletId}/quote`, { method: 'POST', ...auth, body: { items: lines } }),
+    queryKey: ['pos-quote', outletId ?? '', lines, priced ?? null] as const,
+    queryFn: () => apiFetch<PosQuote>(`/pos/outlets/${outletId}/quote`, { method: 'POST', ...auth, body: { items: lines, discount: priced } }),
     enabled: outletId !== null && lines.length > 0,
     placeholderData: keepPreviousData,
     retry: false,
@@ -251,7 +267,16 @@ function invalidateAfterSale(queryClient: QueryClient, outletId: string) {
 export function useCreateOrderMutation(auth: AuthOpts) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { outletId: string; settlement: PosSettlement; items: BasketLine[]; reservationId?: string; tableNumber?: string }) =>
+    mutationFn: (body: {
+      outletId: string;
+      settlement: PosSettlement;
+      items: BasketLine[];
+      reservationId?: string;
+      tableNumber?: string;
+      discount?: PosDiscount;
+      /** A split sale: the part paid in cash — the rest is by card. */
+      cashAmount?: number;
+    }) =>
       apiFetch<PosOrder>('/pos/orders', { method: 'POST', ...auth, body }),
     onSuccess: (order) => invalidateAfterSale(queryClient, order.outletId),
   });

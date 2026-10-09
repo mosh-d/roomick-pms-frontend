@@ -15,12 +15,14 @@ import { useReservationsQuery } from '@/lib/reservations';
 import { useRoomTypesQuery } from '@/lib/rooms';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+import { hotelToday } from '@/lib/dates';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
+/** This month at the hotel. */
 function currentYearMonth(): { year: number; month: number } {
-  const now = new Date();
-  return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  const [year, month] = hotelToday().split('-').map(Number);
+  return { year, month };
 }
 
 /** Green when comfortably under capacity, amber once the alert threshold is crossed, red once actually overbooked — same three-way read Availability Calendar's own `availabilityTone` uses, inverted (here more reserved is the risk signal, not less available). */

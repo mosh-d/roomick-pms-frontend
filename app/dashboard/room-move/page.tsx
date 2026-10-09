@@ -161,7 +161,7 @@ export default function RoomMovePage() {
                 ]}
               />
               <p className="text-small text-surface-muted">
-                From {quote.firstNight ? new Date(`${quote.firstNight}T00:00:00`).toLocaleDateString() : 'tonight'}.
+                From {quote.firstNight ? formatDateOnly(quote.firstNight) : 'tonight'}.
                 {quote.tonightAlreadyBilled ? ' Tonight is already on the bill from check-in, at the old rate — it stays as billed.' : ''} Tax applies to each night as usual.
               </p>
             </>

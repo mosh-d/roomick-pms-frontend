@@ -287,7 +287,7 @@ function warrantyBadge(warrantyUntil: string | null): { text: string; className:
   const daysLeft = Math.ceil((new Date(warrantyUntil).getTime() - Date.now()) / 86_400_000);
   if (daysLeft < 0) return { text: 'Expired', className: 'text-red-600 font-semibold' };
   if (daysLeft <= 30) return { text: `${daysLeft}d left`, className: 'text-orange-600 font-semibold' };
-  return { text: new Date(warrantyUntil).toLocaleDateString(), className: 'text-surface-muted' };
+  return { text: formatDateOnly(warrantyUntil), className: 'text-surface-muted' };
 }
 
 function AssetRegistrySection({ branchId, auth }: { branchId: string; auth: AuthOpts }) {

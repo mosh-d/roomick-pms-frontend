@@ -4,6 +4,16 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3000/api/v1';
 
 /**
+ * The routes that start, renew or end a session go to the web app's own
+ * address instead, and `proxy.ts` forwards them to the API. The API keeps the
+ * refresh token in an httpOnly cookie no script on the page can read; coming
+ * back through this site's own address makes it this site's own cookie, which
+ * a browser that blocks other sites' cookies (Safari does) keeps all the same.
+ * Everything else goes straight to the API with the access token.
+ */
+export const SESSION_BASE_URL = '/api/v1';
+
+/**
  * Mirrors the backend's stable error codes exactly
  * (roomick-pms-backend/src/common/errors/error-codes.ts) — kept as a
  * literal union, not imported, since the two are separate npm packages/
@@ -74,6 +84,8 @@ type ApiFetchOptions = Omit<RequestInit, 'body'> & {
   body?: unknown;
   tenantId?: string;
   accessToken?: string;
+  /** A route that sets or reads the session cookie — sent through the web app's own address (`SESSION_BASE_URL`). */
+  session?: boolean;
   /** Internal only — set by apiFetch's own 401 retry so it can't loop forever if the refreshed token *also* comes back unauthorized. Callers never pass this. */
   _isRetry?: boolean;
 };
@@ -86,8 +98,8 @@ type ApiFetchOptions = Omit<RequestInit, 'body'> & {
  *
  * A 401 on a call that *did* carry an access token gets exactly one
  * transparent retry: refresh via `authStore.refreshAccessToken()` (which
- * exchanges the stored refresh token — single-use, a week's life — for a
- * new pair), then re-run the original request with the new token. Unless
+ * renews the session in its cookie — single-use, a week's life — for a
+ * fresh access token), then re-run the original request with the new token. Unless
  * the person has been idle for an hour: then the session ends instead. Real bug this fixes, not a
  * hypothetical: the access token's own TTL is 15 minutes
  * (`JWT_ACCESS_TTL=900s`), well under how long a multi-branch onboarding
@@ -115,17 +127,20 @@ async function renewedToken(): Promise<string | null> {
 }
 
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
-  const { body, tenantId, accessToken, headers, _isRetry, ...rest } = options;
+  const { body, tenantId, accessToken, headers, session, _isRetry, ...rest } = options;
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  // A file upload goes as the browser builds it, with its own multipart Content-Type.
+  const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
+  const response = await fetch(`${session ? SESSION_BASE_URL : API_BASE_URL}${path}`, {
     ...rest,
+    ...(session ? { credentials: 'same-origin' as const } : {}),
     headers: {
-      'Content-Type': 'application/json',
+      ...(isForm ? {} : { 'Content-Type': 'application/json' }),
       ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...headers,
     },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: isForm ? (body as FormData) : body !== undefined ? JSON.stringify(body) : undefined,
   });
 
   if (response.status === 401 && accessToken && !_isRetry) {

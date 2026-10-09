@@ -15,7 +15,7 @@ import { useActiveBlocksQuery, useBlockRoomMutation, useUnblockRoomMutation, typ
 import { useRoomsQuery } from '@/lib/rooms';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
-import { formatDateOnly } from '@/lib/dates';
+import { formatDateOnly, hotelToday } from '@/lib/dates';
 
 const REASON_OPTIONS: SelectOption[] = [
   { value: 'maintenance', label: 'Maintenance' },
@@ -24,9 +24,9 @@ const REASON_OPTIONS: SelectOption[] = [
   { value: 'other', label: 'Other' },
 ];
 
+/** Today at the hotel — the branch's calendar, not the device's. */
 function todayString(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  return hotelToday();
 }
 
 /**

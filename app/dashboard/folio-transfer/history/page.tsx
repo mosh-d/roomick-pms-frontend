@@ -15,6 +15,7 @@ import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { isSupervisorAtBranch } from '@/lib/roles';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatMoment } from '@/lib/dates';
 
 function endName(end: TransferEnd | undefined): string {
   if (!end) return '—';
@@ -105,7 +106,7 @@ export default function TransferHistoryPage() {
                           {endName(t.sourceFolio)} → {endName(t.targetFolio)}
                         </p>
                         <p className="text-tiny text-surface-muted">
-                          {new Date(t.createdAt).toLocaleString()} · {t.approvedByUser?.name ?? 'Unknown'} · {t.lineItemIds.length} line{t.lineItemIds.length === 1 ? '' : 's'}
+                          {formatMoment(t.createdAt)} · {t.approvedByUser?.name ?? 'Unknown'} · {t.lineItemIds.length} line{t.lineItemIds.length === 1 ? '' : 's'}
                           {sameStay ? ' · within one stay' : ''}
                         </p>
                       </div>

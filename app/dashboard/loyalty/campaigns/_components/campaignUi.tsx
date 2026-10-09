@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/Card';
 import { CAMPAIGN_STATUS_LABELS, useDeliveryStatusQuery, type CampaignStatus } from '@/lib/marketing';
+import { formatMoment } from '@/lib/dates';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -18,7 +19,7 @@ export function CampaignStatusBadge({ status }: { status: CampaignStatus }) {
 }
 
 export function formatWhen(iso: string | null): string {
-  return iso ? new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+  return iso ? formatMoment(iso, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 }
 
 /** Says, before anyone builds a campaign, whether a send will reach real inboxes. */

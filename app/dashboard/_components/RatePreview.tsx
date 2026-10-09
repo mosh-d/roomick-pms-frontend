@@ -18,6 +18,9 @@ export function RatePreview({
   checkOutDate,
   promoCode,
   corporateAccountId,
+  adults,
+  childrenCount,
+  packageIds,
   accessToken,
   tenantId,
 }: {
@@ -28,10 +31,19 @@ export function RatePreview({
   checkOutDate: string | null;
   promoCode?: string;
   corporateAccountId?: string;
+  /** Who is staying — the room type's extra-adult and child charges are priced in. */
+  adults?: number;
+  childrenCount?: number;
+  /** Packages added to the stay — priced below the room, with their tax. */
+  packageIds?: string[];
   accessToken: string | undefined;
   tenantId: string | undefined;
 }) {
-  const quoteQuery = useCalculateRateQuery(branchId, { roomTypeId, checkInDate, checkOutDate, promoCode, corporateAccountId }, { accessToken, tenantId });
+  const quoteQuery = useCalculateRateQuery(
+    branchId,
+    { roomTypeId, checkInDate, checkOutDate, promoCode, corporateAccountId, adults, children: childrenCount, packageIds },
+    { accessToken, tenantId },
+  );
 
   if (!roomTypeId || !checkInDate || !checkOutDate || checkOutDate <= checkInDate) return null;
 
@@ -54,6 +66,12 @@ export function RatePreview({
               {quoteQuery.data.ruleApplied.type === 'base' ? 'Standard Rate' : (quoteQuery.data.ruleApplied.planName ?? 'Adjusted Rate')}
             </span>
           </div>
+          {Number(quoteQuery.data.occupancySurcharge) > 0 ? (
+            <div className="flex items-center justify-between">
+              <span className="text-small text-surface">Includes extra guests</span>
+              <span className="text-small text-surface">{formatMoney(quoteQuery.data.occupancySurcharge, symbol)}/night</span>
+            </div>
+          ) : null}
           <div className="flex items-center justify-between">
             <span className="text-small text-surface">Subtotal</span>
             <span className="text-small text-surface">{formatMoney(quoteQuery.data.subtotal, symbol)}</span>
@@ -65,9 +83,23 @@ export function RatePreview({
             </div>
           ) : null}
           <div className="flex items-center justify-between border-t border-accent-dark/20 pt-1 mt-1">
-            <span className="text-small font-semibold text-surface">Total</span>
+            <span className="text-small font-semibold text-surface">{quoteQuery.data.packages ? 'Room total' : 'Total'}</span>
             <span className="text-body font-semibold text-surface">{formatMoney(quoteQuery.data.totalWithTax, symbol)}</span>
           </div>
+          {quoteQuery.data.packages ? (
+            <>
+              {quoteQuery.data.packages.lines.map((line) => (
+                <div key={line.packageId} className="flex items-center justify-between">
+                  <span className="text-small text-surface">{line.name}</span>
+                  <span className="text-small text-surface">{formatMoney(line.total, symbol)}</span>
+                </div>
+              ))}
+              <div className="flex items-center justify-between border-t border-accent-dark/20 pt-1 mt-1">
+                <span className="text-small font-semibold text-surface">Total with packages</span>
+                <span className="text-body font-semibold text-surface">{formatMoney(quoteQuery.data.grandTotal, symbol)}</span>
+              </div>
+            </>
+          ) : null}
           {Number(quoteQuery.data.taxIncluded) > 0 ? (
             <p className="text-tiny text-surface-muted text-right">Includes {formatMoney(quoteQuery.data.taxIncluded, symbol)} tax</p>
           ) : null}

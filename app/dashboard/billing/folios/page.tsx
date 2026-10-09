@@ -134,7 +134,7 @@ export default function GuestFolioListPage() {
   );
 }
 
-/** City Ledger = departed and still owing (collections). Still In-House = owing but the guest is here, so front desk can resolve it before departure. Refund Due = the folio holds a credit the guest is owed back. */
+/** City Ledger = departed and still owing (collections). Still In-House = owing but the guest is here, so front desk can resolve it before departure. Refund Due = the folio holds a credit the guest is owed back. Deposit Held = a credit on a stay still to come — its deposit. */
 function GuestStatusBadge({ status }: { status: FolioListRow['guestStatus'] }) {
   if (status === 'city_ledger') {
     return <span className="inline-flex rounded-pill bg-status-out-of-order px-3 py-1 text-tiny font-semibold text-white">City Ledger</span>;
@@ -144,6 +144,9 @@ function GuestStatusBadge({ status }: { status: FolioListRow['guestStatus'] }) {
   }
   if (status === 'refund_due') {
     return <span className="inline-flex rounded-pill bg-status-vacant px-3 py-1 text-tiny font-semibold text-white">Refund Due</span>;
+  }
+  if (status === 'deposit_held') {
+    return <span className="inline-flex rounded-pill bg-status-inspected px-3 py-1 text-tiny font-semibold text-white">Deposit Held</span>;
   }
   return <span className="text-surface-muted">—</span>;
 }

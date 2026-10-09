@@ -15,6 +15,7 @@ import {
   useStartTaskMutation,
   useCompleteTaskMutation,
   useReportIssueMutation,
+  isTurndown,
   type HousekeepingTask,
 } from '@/lib/housekeeping';
 import { ApiError } from '@/lib/api';
@@ -46,10 +47,9 @@ export default function TaskBoardPage() {
   const completeMutation = useCompleteTaskMutation(activeBranchId ?? '', auth);
   const reportIssueMutation = useReportIssueMutation(activeBranchId ?? '', auth);
 
-  const dirtyRooms = useMemo(
-    () => (pendingQuery.data ?? []).filter((t) => !t.assigneeId || t.assigneeId === user?.id),
-    [pendingQuery.data, user?.id],
-  );
+  const mine = useMemo(() => (pendingQuery.data ?? []).filter((t) => !t.assigneeId || t.assigneeId === user?.id), [pendingQuery.data, user?.id]);
+  const dirtyRooms = useMemo(() => mine.filter((t) => !isTurndown(t)), [mine]);
+  const turndowns = useMemo(() => mine.filter(isTurndown), [mine]);
   const myInProgress = useMemo(
     () => (inProgressQuery.data ?? []).filter((t) => t.assigneeId === user?.id),
     [inProgressQuery.data, user?.id],
@@ -124,6 +124,27 @@ export default function TaskBoardPage() {
         )}
       </Section>
 
+      {turndowns.length > 0 ? (
+        <Section label="Evening Turndowns">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {turndowns.map((task) => (
+              <Card key={task.id} tone="secondary" className="flex flex-col gap-3">
+                <span className="text-body font-bold text-surface">Room {task.room.number}</span>
+                <p className="text-small text-surface-muted border-b border-secondary/20 pb-2">Turn the room down for the night — the guest is staying</p>
+                <div className="flex gap-2">
+                  <Button size="sm" loading={startMutation.isPending} onClick={() => handleStart(task.id)}>
+                    Start Turndown
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setIssueTask(task)}>
+                    Report Issue
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </Section>
+      ) : null}
+
       <Section label="In Progress">
         {inProgressQuery.isLoading ? (
           <p className="text-body text-surface-muted">Loading tasks…</p>
@@ -134,7 +155,7 @@ export default function TaskBoardPage() {
             {myInProgress.map((task) => (
               <Card key={task.id} tone="secondary" className="flex flex-col gap-3">
                 <span className="text-body font-bold text-surface">Room {task.room.number}</span>
-                <p className="text-small text-surface-muted border-b border-secondary/20 pb-2">Currently cleaning</p>
+                <p className="text-small text-surface-muted border-b border-secondary/20 pb-2">{isTurndown(task) ? 'Turning down' : 'Currently cleaning'}</p>
                 <div className="flex gap-2">
                   <Button size="sm" loading={completeMutation.isPending} onClick={() => handleComplete(task.id)}>
                     Complete

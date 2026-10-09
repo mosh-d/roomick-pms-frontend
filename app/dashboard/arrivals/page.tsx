@@ -12,6 +12,7 @@ import { Table, type TableColumn } from '@/components/ui/Table';
 import { useArrivalsQuery, type ReservationSummary } from '@/lib/reservations';
 import { useAuthStore } from '@/lib/store/authStore';
 import { GuestNameCell } from '../_components/GuestNameCell';
+import { DepositDialog, DepositStatus, depositState } from '../_components/DepositDialog';
 
 /**
  * Arrivals Dashboard (Roomick-UI.pdf page 11) — confirmed reservations
@@ -30,8 +31,10 @@ export default function ArrivalsDashboardPage() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
   const [search, setSearch] = useState('');
+  const [takingDeposit, setTakingDeposit] = useState<ReservationSummary | null>(null);
+  const auth = { accessToken: accessToken ?? undefined, tenantId: user?.tenantId };
 
-  const arrivalsQuery = useArrivalsQuery(activeBranchId, undefined, { accessToken: accessToken ?? undefined, tenantId: user?.tenantId });
+  const arrivalsQuery = useArrivalsQuery(activeBranchId, undefined, auth);
 
   const rows = useMemo(() => {
     const all = arrivalsQuery.data ?? [];
@@ -81,13 +84,27 @@ export default function ArrivalsDashboardPage() {
       sortValue: (r) => (r.preArrivalCompletedAt ? 'Checked in online' : 'Pending Check-In'),
     },
     {
+      key: 'deposit',
+      label: 'Deposit',
+      render: (r) => <DepositStatus reservation={r} />,
+      sortValue: (r) => depositState(r).tone,
+      exportValue: (r) => depositState(r).label,
+    },
+    {
       key: 'action',
       label: 'Action',
       align: 'right',
       render: (r) => (
-        <Button size="sm" onClick={() => router.push(`/dashboard/check-in/${r.id}`)}>
-          Check-In
-        </Button>
+        <div className="flex items-center justify-end gap-2">
+          {Number(r.depositAmount ?? 0) > Number(r.depositPaid ?? 0) ? (
+            <Button size="sm" variant="outline" onClick={() => setTakingDeposit(r)}>
+              Take Deposit
+            </Button>
+          ) : null}
+          <Button size="sm" onClick={() => router.push(`/dashboard/check-in/${r.id}`)}>
+            Check-In
+          </Button>
+        </div>
       ),
     },
   ];
@@ -119,6 +136,8 @@ export default function ArrivalsDashboardPage() {
           />
         </Card>
       )}
+
+      <DepositDialog reservation={takingDeposit} branchId={activeBranchId} auth={auth} onClose={() => setTakingDeposit(null)} />
     </Container>
   );
 }

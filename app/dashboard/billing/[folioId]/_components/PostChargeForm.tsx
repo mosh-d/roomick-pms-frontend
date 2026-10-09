@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { ApiError } from '@/lib/api';
 import { usePostChargeMutation, type ChargeType } from '@/lib/folios';
 import { postChargeSchema, CHARGE_TYPE_OPTIONS, type PostChargeFormValues } from '@/lib/schemas/folios';
-import { addDays, todayLocal } from '@/lib/dates';
+import { addDays, hotelToday } from '@/lib/dates';
 
 /**
  * "Post a Charge" (ref p33's Add Charge section). The reference shows a
@@ -39,7 +39,7 @@ export function PostChargeForm({
   // The field's own hint claims "Defaults to today" — true only if
   // `defaultValues` (and the post-submit reset below) actually say so; an
   // empty string here left the field genuinely blank despite the hint.
-  const today = () => todayLocal();
+  const today = () => hotelToday();
 
   const {
     register,

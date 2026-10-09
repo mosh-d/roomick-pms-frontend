@@ -14,8 +14,10 @@ import {
   usePublicRoomTypesQuery,
   usePublicAvailabilityQuery,
   usePublicQuoteQuery,
+  usePublicPackagesQuery,
   usePublicBookingMutation,
   type PublicBookingConfirmation,
+  type PublicPackage,
   type PublicProperty,
   type PublicRoomType,
 } from '@/lib/publicBooking';
@@ -143,6 +145,15 @@ function BookingConfirmed({
             </dd>
           </div>
         </dl>
+        {confirmation.deposit ? (
+          <p className="text-small text-surface">
+            <span className="font-semibold">
+              A deposit of {confirmation.currency} {confirmation.deposit.amount} is due
+              {confirmation.deposit.dueDate ? ` by ${formatDateOnly(confirmation.deposit.dueDate)}` : ''}.
+            </span>{' '}
+            {property.name} will be in touch about paying it.
+          </p>
+        ) : null}
         <p className="text-small text-surface-muted">
           Payment is taken at the property on arrival. Please quote your confirmation number when you check in.
         </p>
@@ -266,6 +277,7 @@ function BookingFlow({
           checkOutDate={checkOutDate}
           adults={Number(adults)}
           childGuests={Number(children || '0')}
+          currency={property.currency}
           promoCode={promoCode}
           onPromoCodeChange={setPromoCode}
           privacyNotice={property.privacyNotice}
@@ -407,6 +419,7 @@ function GuestDetailsSection({
   // Not `children`: that's React's own reserved prop name for nested JSX,
   // and passing a number under it is a real error, not a style nit.
   childGuests,
+  currency,
   promoCode,
   onPromoCodeChange,
   privacyNotice,
@@ -419,6 +432,7 @@ function GuestDetailsSection({
   checkOutDate: string;
   adults: number;
   childGuests: number;
+  currency: string;
   promoCode: string;
   onPromoCodeChange: (value: string) => void;
   privacyNotice: string | null;
@@ -426,7 +440,12 @@ function GuestDetailsSection({
   onBooked: (confirmation: PublicBookingConfirmation) => void;
 }) {
   const [appliedPromo, setAppliedPromo] = useState('');
-  const quoteQuery = usePublicQuoteQuery(slug, roomTypeId, checkInDate, checkOutDate, appliedPromo, true);
+  const packagesQuery = usePublicPackagesQuery(slug, roomTypeId);
+  const [pickedPackages, setPickedPackages] = useState<string[]>([]);
+  // Only what this room comes with — a package picked for another room isn't carried over.
+  const offeredPackages = packagesQuery.data ?? [];
+  const packageIds = pickedPackages.filter((id) => offeredPackages.some((p) => p.id === id));
+  const quoteQuery = usePublicQuoteQuery(slug, roomTypeId, checkInDate, checkOutDate, appliedPromo, true, { adults, children: childGuests, packageIds });
   const bookingMutation = usePublicBookingMutation(slug);
 
   const [guestName, setGuestName] = useState('');
@@ -459,6 +478,7 @@ function GuestDetailsSection({
         promoCode: appliedPromo.trim() || undefined,
         marketingOptIn: marketingOptIn || undefined,
         acceptTerms: termsRequired ? acceptTerms : undefined,
+        packageIds: packageIds.length ? packageIds : undefined,
       });
       onBooked(confirmation);
     } catch (err) {
@@ -489,6 +509,21 @@ function GuestDetailsSection({
         </div>
       ) : null}
 
+      {offeredPackages.length > 0 ? (
+        <fieldset className="flex flex-col gap-2" id="stay-packages">
+          <legend className="text-small font-semibold text-surface mb-1">Add to your stay (optional)</legend>
+          {offeredPackages.map((pkg) => (
+            <PackageChoice
+              key={pkg.id}
+              pkg={pkg}
+              currency={currency}
+              checked={packageIds.includes(pkg.id)}
+              onChange={(on) => setPickedPackages((ids) => (on ? [...ids.filter((id) => id !== pkg.id), pkg.id] : ids.filter((id) => id !== pkg.id)))}
+            />
+          ))}
+        </fieldset>
+      ) : null}
+
       <div className="flex flex-wrap items-end gap-3">
         <div className="w-48">
           <Input id="promo-code" label="Promo Code (optional)" value={promoCode} onChange={(e) => onPromoCodeChange(e.target.value)} />
@@ -517,6 +552,11 @@ function GuestDetailsSection({
                 {quoteQuery.data.currency} {quoteQuery.data.subtotal}
               </dd>
             </div>
+            {Number(quoteQuery.data.occupancySurcharge) > 0 ? (
+              <p className="text-tiny text-surface-muted">
+                Includes {quoteQuery.data.currency} {quoteQuery.data.occupancySurcharge} a night for the extra guests
+              </p>
+            ) : null}
             {Number(quoteQuery.data.taxTotal) > 0 ? (
               <div className="flex justify-between">
                 <dt>Taxes</dt>
@@ -525,8 +565,8 @@ function GuestDetailsSection({
                 </dd>
               </div>
             ) : null}
-            <div className="flex justify-between border-t border-secondary/20 pt-1 text-body font-bold">
-              <dt>Total</dt>
+            <div className={`flex justify-between border-t border-secondary/20 pt-1 ${quoteQuery.data.packages ? '' : 'text-body font-bold'}`}>
+              <dt>{quoteQuery.data.packages ? 'Room' : 'Total'}</dt>
               <dd>
                 {quoteQuery.data.currency} {quoteQuery.data.totalWithTax}
               </dd>
@@ -535,6 +575,24 @@ function GuestDetailsSection({
               <p className="text-tiny text-surface-muted text-right">
                 Includes {quoteQuery.data.currency} {quoteQuery.data.taxIncluded} in taxes
               </p>
+            ) : null}
+            {quoteQuery.data.packages ? (
+              <>
+                {quoteQuery.data.packages.lines.map((line) => (
+                  <div key={line.packageId} className="flex justify-between">
+                    <dt>{line.name}</dt>
+                    <dd>
+                      {quoteQuery.data.currency} {line.total}
+                    </dd>
+                  </div>
+                ))}
+                <div className="flex justify-between border-t border-secondary/20 pt-1 text-body font-bold">
+                  <dt>Total</dt>
+                  <dd>
+                    {quoteQuery.data.currency} {quoteQuery.data.grandTotal}
+                  </dd>
+                </div>
+              </>
             ) : null}
           </dl>
         )}
@@ -558,5 +616,24 @@ function GuestDetailsSection({
         </Button>
       </div>
     </Section>
+  );
+}
+
+const PACKAGE_BASIS_TEXT: Record<PublicPackage['basis'], string> = {
+  per_night: 'a night',
+  per_stay: 'for the stay',
+  per_person_per_night: 'a guest, a night',
+};
+
+/** One package a guest can add — its price as the property set it, before tax; the quote prices it for the stay. */
+function PackageChoice({ pkg, currency, checked, onChange }: { pkg: PublicPackage; currency: string; checked: boolean; onChange: (on: boolean) => void }) {
+  return (
+    <label className="flex items-start gap-2 text-small text-surface cursor-pointer">
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="size-4 mt-0.5 accent-secondary" />
+      <span>
+        <span className="font-semibold">{pkg.name}</span> — {currency} {pkg.price} {PACKAGE_BASIS_TEXT[pkg.basis]}
+        {pkg.description ? <span className="block text-tiny text-surface-muted">{pkg.description}</span> : null}
+      </span>
+    </label>
   );
 }

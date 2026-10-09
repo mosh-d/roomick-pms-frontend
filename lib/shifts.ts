@@ -40,13 +40,17 @@ export interface Shift {
   closingCashCounted: string | null;
   closingBreakdown: CashDenomination[] | null;
   variance: string | null;
+  /** Cash in other currencies the drawer took, counted apart — worked out at close. */
+  foreignCashTotals: Array<{ currency: string; amount: string }> | null;
   varianceExplanation: string | null;
   handoverNotes: string | null;
   agent?: { id: string; name: string };
   issues?: ShiftIssue[];
-  payments?: Array<{ id: string; method: string; amount: string; recordedAt: string }>;
+  /** In the branch's currency; `foreignCurrency`/`foreignAmount` when handed over in another one. */
+  payments?: Array<{ id: string; method: string; amount: string; recordedAt: string; foreignCurrency: string | null; foreignAmount: string | null }>;
   /** Point of Sale cash sales rung up this shift, voids excluded — the same drawer as `payments` (`getShift`). */
-  posOrders?: Array<{ id: string; orderNo: number; total: string; createdAt: string; outlet: { name: string } }>;
+  /** The outlet sales whose cash went into this drawer — `cashAmount` is that cash (part of a split sale's total). */
+  posOrders?: Array<{ id: string; orderNo: number; total: string; cashAmount: string; createdAt: string; outlet: { name: string } }>;
 }
 
 export interface HandoverContext {

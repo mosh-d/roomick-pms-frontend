@@ -35,6 +35,7 @@ import {
 import { API_BASE_URL, ApiError } from '@/lib/api';
 import { useMyBranches } from '@/lib/dashboardBranches';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatMoment } from '@/lib/dates';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -42,7 +43,7 @@ type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined 
 const EVERY_BRANCH = 'all';
 
 const errorText = (err: unknown) => (err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
-const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—');
+const when = (iso: string | null) => (iso ? formatMoment(iso, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—');
 
 /** Shown once, straight after creating a key or a webhook — the only time its secret is readable. */
 function ShownOnce({ title, value, onDone }: { title: string; value: string; onDone: () => void }) {

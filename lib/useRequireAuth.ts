@@ -14,8 +14,10 @@ import { useHasHydrated } from './useHasHydrated';
  * `ready` stays `false` until the persisted `authStore` has actually
  * hydrated (see `useHasHydrated`'s own header comment on why this can't be
  * skipped — it's what avoids a login-form flash on a reload with an
- * existing session) — a caller should render `null` while `!ready`, same
- * as `/login/page.tsx` already did. Once hydrated, an absent `user`
+ * existing session) and, after a page load, the session cookie has given
+ * back an access token — `restoring` meanwhile, `restoreFailed` when the API
+ * couldn't be reached. A caller renders `SessionPending` (or `null`) while
+ * `!ready`. Once hydrated, an absent `user`
  * redirects to `/login` via `router.replace` (not `push` — a signed-out
  * visit to a protected route shouldn't leave a back-button trail into it).
  */
@@ -24,6 +26,8 @@ export function useRequireAuth() {
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
   const signedOut = useAuthStore((s) => s.signedOut);
+  const restoring = useAuthStore((s) => s.restoring);
+  const restoreFailed = useAuthStore((s) => s.restoreFailed);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -33,5 +37,7 @@ export function useRequireAuth() {
     if (hydrated && !user) router.replace(signedOut ? '/login' : `/login?next=${encodeURIComponent(pathname)}`);
   }, [hydrated, user, router, signedOut, pathname]);
 
-  return { ready: hydrated && !!user, user, accessToken };
+  // Signed in, but the page has just loaded: no access token until the
+  // session cookie gives one (authStore's `restoreSession`).
+  return { ready: hydrated && !!user && !!accessToken, user, accessToken, restoring: hydrated && restoring, restoreFailed: hydrated && restoreFailed };
 }

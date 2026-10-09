@@ -5,6 +5,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { hasBeenIdleTooLong, markActivity } from '@/lib/session';
 import { useMyBranches } from '@/lib/dashboardBranches';
+import { setHotelTimezone } from '@/lib/dates';
+import { SessionPending } from '@/components/SessionPending';
 import { useAuthStore } from '@/lib/store/authStore';
 import { MenuIcon } from '@/components/ui/Icons';
 import { BranchPicker } from './_components/BranchPicker';
@@ -37,7 +39,7 @@ import { Sidebar } from './_components/Sidebar';
  *    the shared shell (property/user name, Log out) wraps `children`.
  */
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { ready, user, accessToken } = useRequireAuth();
+  const { ready, user, accessToken, restoring, restoreFailed } = useRequireAuth();
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
   const setActiveBranchId = useAuthStore((s) => s.setActiveBranchId);
   const logout = useAuthStore((s) => s.logout);
@@ -105,7 +107,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
   }, [branches, activeBranchId, setActiveBranchId]);
 
-  if (!ready) return null;
+  if (!ready) return restoring || restoreFailed ? <SessionPending failed={restoreFailed} /> : null;
 
   if (branchesQuery.isLoading) {
     return (
@@ -140,6 +142,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   // one tick rather than flash the shell with a stale/empty branch name.
   if (!activeBranchId) return null;
 
+  // The hotel's clock for every page below: times and "today" in the branch's timezone.
+  setHotelTimezone(branches?.find((b) => b.id === activeBranchId)?.timezone);
 
   // `h-screen` + `overflow-hidden` (not `min-h-screen`) — same reasoning as
   // `WizardShell.tsx`'s identical shell: the browser window itself never

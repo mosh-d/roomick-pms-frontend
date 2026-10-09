@@ -63,6 +63,12 @@ export interface PublicQuote {
   taxIncluded: string;
   totalWithTax: string;
   nights: number;
+  /** What the extra adults and children add to each night — already inside `nightlyRate`. */
+  occupancySurcharge: string;
+  /** Packages added to the quote, each priced for the stay with its tax; null when none. */
+  packages: { lines: Array<{ packageId: string; name: string; total: string }>; total: string } | null;
+  /** The room and the packages, tax included. */
+  grandTotal: string;
   /** The terms this stay would book under — `freeCancellationAvailable: false` when it starts so soon the free window has already closed. */
   cancellation: { summary: string; freeCancellationUntil: string; freeCancellationAvailable: boolean };
 }
@@ -75,6 +81,15 @@ export interface PublicBookingConfirmation {
   guestName: string;
   totalRate: string;
   currency: string;
+  /** The deposit the property asks, and by when — it arranges payment; there's no paying online yet. */
+  deposit: PublicDeposit | null;
+}
+
+/** A booking's deposit as its guest sees it. */
+export interface PublicDeposit {
+  amount: string;
+  dueDate: string | null;
+  paid: string;
 }
 
 export interface PublicBookingRequest {
@@ -92,6 +107,25 @@ export interface PublicBookingRequest {
   marketingOptIn?: boolean;
   /** The guest ticked "I accept the booking terms and privacy notice" — required when the property has published either. */
   acceptTerms?: boolean;
+  /** Packages offered online, added to the stay. */
+  packageIds?: string[];
+}
+
+/** A package a guest can add to their stay online. */
+export interface PublicPackage {
+  id: string;
+  name: string;
+  description: string | null;
+  price: string;
+  basis: 'per_night' | 'per_stay' | 'per_person_per_night';
+}
+
+export function usePublicPackagesQuery(slug: string, roomTypeId: string | null) {
+  return useQuery({
+    queryKey: ['public-packages', slug, roomTypeId] as const,
+    queryFn: () => apiFetch<PublicPackage[]>(`/public/properties/${slug}/packages?roomTypeId=${roomTypeId}`, {}),
+    enabled: roomTypeId !== null,
+  });
 }
 
 export function usePublicPropertyQuery(slug: string) {
@@ -120,12 +154,24 @@ export function usePublicAvailabilityQuery(slug: string, from: string, to: strin
   });
 }
 
-export function usePublicQuoteQuery(slug: string, roomTypeId: string | null, checkInDate: string, checkOutDate: string, promoCode: string, enabled: boolean) {
+export function usePublicQuoteQuery(
+  slug: string,
+  roomTypeId: string | null,
+  checkInDate: string,
+  checkOutDate: string,
+  promoCode: string,
+  enabled: boolean,
+  party: { adults: number; children: number; packageIds: string[] } = { adults: 0, children: 0, packageIds: [] },
+) {
   return useQuery({
-    queryKey: ['public-quote', slug, roomTypeId, checkInDate, checkOutDate, promoCode] as const,
+    queryKey: ['public-quote', slug, roomTypeId, checkInDate, checkOutDate, promoCode, party.adults, party.children, party.packageIds.join(',')] as const,
     queryFn: () => {
       const params = new URLSearchParams({ roomTypeId: roomTypeId ?? '', checkInDate, checkOutDate });
       if (promoCode.trim()) params.set('promoCode', promoCode.trim());
+      // Who is staying prices the extra-guest charges; a count mid-edit is left out rather than refused.
+      if (Number.isInteger(party.adults) && party.adults >= 1 && party.adults <= 20) params.set('adults', String(party.adults));
+      if (Number.isInteger(party.children) && party.children >= 0 && party.children <= 20) params.set('children', String(party.children));
+      if (party.packageIds.length) params.set('packageIds', party.packageIds.join(','));
       return apiFetch<PublicQuote>(`/public/properties/${slug}/quote?${params.toString()}`, {});
     },
     enabled: enabled && roomTypeId !== null,
@@ -152,6 +198,8 @@ export interface PublicBookingDetail {
   houseRules: string | null;
   /** The terms THIS booking was made under — the property's policy can change later without changing them. */
   cancellationPolicySummary: string;
+  /** The deposit asked, its due date and what has been paid of it; null = none asked. */
+  deposit: PublicDeposit | null;
   property: PublicProperty;
 }
 

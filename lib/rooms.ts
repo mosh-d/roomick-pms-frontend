@@ -11,6 +11,8 @@ export interface RoomWithDetails {
   occupancyStatus: OccupancyStatus;
   cleanlinessStatus: CleanlinessStatus;
   heldStatus: HeldStatus;
+  /** The hotel date a held room comes back into service (YYYY-MM-DD…); null = until released by hand. */
+  heldUntil: string | null;
   roomType: { id: string; name: string; bedType: string | null };
   floor: {
     id: string;
@@ -46,6 +48,14 @@ export interface RoomTypeSummary {
   amenities: string[];
   photoUrls: string[];
   sortOrder: number | null;
+  /** Adults the rate covers (null = all); each extra adult adds `extraAdultRate` a night. */
+  adultsIncluded: number | null;
+  extraAdultRate: string | null;
+  /** Children who stay free; each one beyond adds `childRate` a night (null = children free). */
+  childrenIncluded: number;
+  childRate: string | null;
+  /** The price of the room for the day; null = not sold for day use. */
+  dayUseRate: string | null;
 }
 
 function roomTypesQueryKey(branchId: string) {
@@ -73,6 +83,11 @@ interface RoomTypeInput {
   amenities?: string[];
   photoUrls?: string[];
   sortOrder?: number;
+  adultsIncluded?: number | null;
+  extraAdultRate?: number | null;
+  childrenIncluded?: number;
+  childRate?: number | null;
+  dayUseRate?: number | null;
 }
 
 /** Property Config's own "add a room type after onboarding" — the same `POST` onboarding already uses, just callable from a real page instead of only the signup wizard's local draft state. */
@@ -80,6 +95,29 @@ export function useCreateRoomTypeMutation(branchId: string, { accessToken, tenan
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: RoomTypeInput) => apiFetch<RoomTypeSummary>(`/branches/${branchId}/room-types`, { method: 'POST', accessToken, tenantId, body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: roomTypesQueryKey(branchId) }),
+  });
+}
+
+/** Whether photos can be uploaded here — the property's storage is set up — and the largest one taken. */
+export function usePhotoUploadsQuery(branchId: string | null, { accessToken, tenantId }: { accessToken: string | undefined; tenantId: string | undefined }) {
+  return useQuery({
+    queryKey: ['room-photo-uploads', branchId ?? ''] as const,
+    queryFn: () => apiFetch<{ enabled: boolean; maxBytes: number }>(`/branches/${branchId}/room-photo-uploads`, { accessToken, tenantId }),
+    enabled: branchId !== null,
+    staleTime: 5 * 60_000,
+  });
+}
+
+/** Uploads one photo of a room type; it's added to the type's photos straight away. Returns the room type as saved. */
+export function useUploadRoomPhotoMutation(branchId: string, { accessToken, tenantId }: { accessToken: string | undefined; tenantId: string | undefined }) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ roomTypeId, file }: { roomTypeId: string; file: File }) => {
+      const body = new FormData();
+      body.append('photo', file);
+      return apiFetch<RoomTypeSummary>(`/room-types/${roomTypeId}/photos`, { method: 'POST', accessToken, tenantId, body });
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: roomTypesQueryKey(branchId) }),
   });
 }
@@ -99,6 +137,8 @@ interface ChangeRoomStatusInput {
   occupancyStatus?: OccupancyStatus;
   cleanlinessStatus?: CleanlinessStatus;
   heldStatus?: HeldStatus;
+  /** The date a held room comes back into service; null clears it. */
+  heldUntil?: string | null;
   reason?: string;
 }
 

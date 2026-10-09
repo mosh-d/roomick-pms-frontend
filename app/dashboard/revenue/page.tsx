@@ -22,9 +22,15 @@ import {
   useUpdateCompetitorMutation,
   useSetCompetitorRatesMutation,
   useCompSetQuery,
+  useChannelAllotmentsQuery,
+  useCreateChannelAllotmentMutation,
+  useUpdateChannelAllotmentMutation,
+  useRemoveChannelAllotmentMutation,
+  type ChannelAllotment,
   type CompSetDay,
   type MarketPosition,
 } from '@/lib/revenueManagement';
+import { CHANNEL_LABELS, type ReservationChannel } from '@/lib/reservations';
 import { useRoomTypesQuery } from '@/lib/rooms';
 import { ApiError } from '@/lib/api';
 import { currencySymbolFor } from '@/lib/currencies';
@@ -65,6 +71,7 @@ export default function RevenueManagementPage() {
       <RestrictionsSection branchId={activeBranchId} auth={auth} />
       <DemandForecastSection branchId={activeBranchId} auth={auth} />
       <RateRecommendationsSection branchId={activeBranchId} auth={auth} />
+      <ChannelAllotmentsSection branchId={activeBranchId} auth={auth} />
 
       <CompSetSection branchId={activeBranchId} auth={auth} />
     </Container>
@@ -227,7 +234,7 @@ function DemandForecastSection({ branchId, auth }: { branchId: string; auth: Aut
             <tbody>
               {(forecastQuery.data ?? []).map((day) => (
                 <tr key={day.date} className="border-t border-secondary/10 text-small text-surface">
-                  <td className="py-2 pr-4">{new Date(`${day.date}T00:00:00.000Z`).toLocaleDateString()}</td>
+                  <td className="py-2 pr-4">{formatDateOnly(day.date)}</td>
                   <td className="py-2 pr-4">{day.dayOfWeek}</td>
                   <td className="py-2 pr-4">{day.forecastOccupancyPct !== null ? `${day.forecastOccupancyPct}%` : '—'}</td>
                   <td className="py-2 pr-4">{day.historicalSampleSize} weeks</td>
@@ -292,7 +299,7 @@ function RateRecommendationsSection({ branchId, auth }: { branchId: string; auth
             <tbody>
               {(recommendationsQuery.data ?? []).map((rec) => (
                 <tr key={rec.date} className="border-t border-secondary/10 text-small text-surface align-top">
-                  <td className="py-2 pr-4">{new Date(`${rec.date}T00:00:00.000Z`).toLocaleDateString()}</td>
+                  <td className="py-2 pr-4">{formatDateOnly(rec.date)}</td>
                   <td className="py-2 pr-4">{rec.dayOfWeek}</td>
                   <td className="py-2 pr-4">{formatMoney(rec.currentBaseRate, currencySymbolFor(rec.currency))}</td>
                   <td className="py-2 pr-4">
@@ -540,6 +547,166 @@ function CompSetSection({ branchId, auth }: { branchId: string; auth: AuthOpts }
           </table>
         </Card>
       ) : null}
+    </Section>
+  );
+}
+
+/** The website first — the one channel selling on its own today; the OTAs once a channel manager connects them. */
+const ALLOTMENT_CHANNELS: ReservationChannel[] = ['website', 'booking_com', 'expedia', 'agoda', 'airbnb', 'direct', 'walk_in'];
+
+/**
+ * Channel allotments: the most of a room type one channel may sell a night
+ * over a date range. A ceiling, not a set-aside — every other channel still
+ * sells what's left, and a channel with no allotment sells from the whole
+ * house. Stays already booked are never undone by a lower number; it only
+ * stops the next one.
+ */
+function ChannelAllotmentsSection({ branchId, auth }: { branchId: string; auth: AuthOpts }) {
+  const allotmentsQuery = useChannelAllotmentsQuery(branchId, auth);
+  const roomTypesQuery = useRoomTypesQuery(branchId, auth);
+  const createMutation = useCreateChannelAllotmentMutation(branchId, auth);
+  const updateMutation = useUpdateChannelAllotmentMutation(branchId, auth);
+  const removeMutation = useRemoveChannelAllotmentMutation(branchId, auth);
+
+  const [roomTypeId, setRoomTypeId] = useState<string | null>(null);
+  const [channel, setChannel] = useState<string | null>('website');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [rooms, setRooms] = useState('');
+  const [editing, setEditing] = useState<{ id: string; rooms: string } | null>(null);
+  const [removing, setRemoving] = useState<ChannelAllotment | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const roomTypeOptions = useMemo(() => (roomTypesQuery.data ?? []).map((rt) => ({ value: rt.id, label: rt.name })), [roomTypesQuery.data]);
+  const channelOptions = ALLOTMENT_CHANNELS.map((value) => ({ value, label: CHANNEL_LABELS[value] }));
+  const fail = (err: unknown) => setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
+
+  async function create() {
+    if (!roomTypeId || !channel || !fromDate || !toDate || rooms === '') return;
+    setError(null);
+    try {
+      await createMutation.mutateAsync({ roomTypeId, channel: channel as ReservationChannel, fromDate, toDate, rooms: Number(rooms) });
+      setFromDate('');
+      setToDate('');
+      setRooms('');
+    } catch (err) {
+      fail(err);
+    }
+  }
+
+  async function saveRooms() {
+    if (!editing || editing.rooms === '') return;
+    setError(null);
+    try {
+      await updateMutation.mutateAsync({ allotmentId: editing.id, rooms: Number(editing.rooms) });
+      setEditing(null);
+    } catch (err) {
+      fail(err);
+    }
+  }
+
+  return (
+    <Section label="Channel Allotments">
+      <p className="text-small text-surface-muted">
+        The most of a room type one channel may sell a night. Other channels still sell what&apos;s left; a channel with no allotment sells from the whole house.
+        Set it to 0 to close the channel for those nights.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2 max-w-3xl">
+        <Select id="allotment-channel" label="Channel" options={channelOptions} value={channel} onChange={setChannel} />
+        <Select id="allotment-room-type" label="Room Type" options={roomTypeOptions} value={roomTypeId} onChange={setRoomTypeId} />
+        <Input id="allotment-rooms" label="Rooms a night" type="number" min={0} value={rooms} onChange={(e) => setRooms(e.target.value)} />
+        <Input id="allotment-from" label="First Night" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+        <Input id="allotment-to" label="Last Night" type="date" min={fromDate || undefined} value={toDate} onChange={(e) => setToDate(e.target.value)} />
+      </div>
+      {error ? <p className="text-small text-red-600">{error}</p> : null}
+      <div>
+        <Button type="button" onClick={create} loading={createMutation.isPending} disabled={!roomTypeId || !channel || !fromDate || !toDate || rooms === ''}>
+          Add Allotment
+        </Button>
+      </div>
+
+      {allotmentsQuery.isLoading ? (
+        <p className="text-body text-surface-muted">Loading…</p>
+      ) : (allotmentsQuery.data ?? []).length === 0 ? (
+        <p className="text-body text-surface-muted">No allotments — every channel sells from the whole house.</p>
+      ) : (
+        <Card tone="secondary" className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="text-small font-bold text-surface text-left">
+                <th className="py-2 pr-4">Channel</th>
+                <th className="py-2 pr-4">Room Type</th>
+                <th className="py-2 pr-4">Nights</th>
+                <th className="py-2 pr-4">Rooms a Night</th>
+                <th className="py-2 pr-4">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(allotmentsQuery.data ?? []).map((a) => (
+                <tr key={a.id} className="border-t border-secondary/10 text-small text-surface">
+                  <td className="py-2 pr-4">{CHANNEL_LABELS[a.channel] ?? a.channel}</td>
+                  <td className="py-2 pr-4">{a.roomTypeName}</td>
+                  <td className="py-2 pr-4">
+                    {formatDateOnly(a.fromDate)} – {formatDateOnly(a.toDate)}
+                  </td>
+                  <td className="py-2 pr-4">
+                    {editing?.id === a.id ? (
+                      <Input
+                        id={`allotment-rooms-${a.id}`}
+                        label="Rooms a night"
+                        type="number"
+                        min={0}
+                        value={editing.rooms}
+                        onChange={(e) => setEditing({ id: a.id, rooms: e.target.value })}
+                      />
+                    ) : (
+                      a.rooms
+                    )}
+                  </td>
+                  <td className="py-2 pr-4">
+                    <div className="flex gap-2">
+                      {editing?.id === a.id ? (
+                        <>
+                          <Button size="sm" loading={updateMutation.isPending} disabled={editing.rooms === ''} onClick={saveRooms}>
+                            Save
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setEditing(null)}>
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button size="sm" variant="outline" onClick={() => setEditing({ id: a.id, rooms: String(a.rooms) })}>
+                            Change
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setRemoving(a)}>
+                            Remove
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
+      <ConfirmDialog
+        open={removing !== null}
+        title="Remove this allotment?"
+        description={
+          removing
+            ? `${CHANNEL_LABELS[removing.channel] ?? removing.channel}, ${removing.roomTypeName}, ${formatDateOnly(removing.fromDate)} to ${formatDateOnly(removing.toDate)}: the channel sells from the whole house again.`
+            : ''
+        }
+        confirmLabel="Remove"
+        onCancel={() => setRemoving(null)}
+        loading={removeMutation.isPending}
+        onConfirm={() => {
+          if (removing) removeMutation.mutate(removing.id, { onSettled: () => setRemoving(null), onError: fail });
+        }}
+      />
     </Section>
   );
 }

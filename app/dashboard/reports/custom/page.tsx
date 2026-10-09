@@ -26,11 +26,11 @@ import {
 import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
-import { addDays, todayLocal } from '@/lib/dates';
+import { addDays, hotelToday } from '@/lib/dates';
 
-/** The last thirty days where the viewer is — not Lagos's, which it was hard-coded to. */
+/** The last thirty days at the hotel. */
 function lastThirtyDays(): { from: string; to: string } {
-  const today = todayLocal();
+  const today = hotelToday();
   return { from: addDays(today, -29), to: addDays(today, 1) };
 }
 

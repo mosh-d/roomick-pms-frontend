@@ -16,7 +16,7 @@ import { formatMoney } from '@/lib/numberFormat';
 import { downloadFile, ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 import { csvCell } from '@/lib/csv';
-import { addDays, todayLocal } from '@/lib/dates';
+import { addDays, hotelToday } from '@/lib/dates';
 
 type ReportType = 'occupancy' | 'adr' | 'revpar' | 'revenue';
 
@@ -34,7 +34,7 @@ const GROUP_BY_OPTIONS: SelectOption[] = [
 ];
 
 function defaultRange(): { from: string; to: string } {
-  const to = todayLocal();
+  const to = hotelToday();
   return { from: addDays(to, -29), to };
 }
 

@@ -20,7 +20,7 @@ import { RoomPicker, isReady } from '../../_components/RoomPicker';
 import { ApiError, apiFetch } from '@/lib/api';
 import type { IdDocType, IdDocumentInput } from '@/lib/guests';
 import { COUNTRIES } from '@/lib/countries';
-import { formatDateOnly, todayLocal } from '@/lib/dates';
+import { formatDateOnly, formatMomentDate, hotelToday } from '@/lib/dates';
 import { useAuthStore } from '@/lib/store/authStore';
 
 const ID_DOC_TYPE_OPTIONS: SelectOption[] = [
@@ -98,7 +98,7 @@ function CheckInFlow() {
 
   // Nights between the booked arrival and today — they post at check-in, and the agent should know before pressing the button.
   const missedNights = reservation
-    ? Math.max(0, Math.round((new Date(`${todayLocal()}T00:00:00.000Z`).getTime() - new Date(`${reservation.checkInDate.slice(0, 10)}T00:00:00.000Z`).getTime()) / 86_400_000))
+    ? Math.max(0, Math.round((new Date(`${hotelToday()}T00:00:00.000Z`).getTime() - new Date(`${reservation.checkInDate.slice(0, 10)}T00:00:00.000Z`).getTime()) / 86_400_000))
     : 0;
 
   const chosenRoomId = overrideMode ? (overrideRoom?.id ?? null) : selectedRoomId;
@@ -171,7 +171,7 @@ function CheckInFlow() {
               payoff of online check-in, which is invisible without this. */}
           {reservation.preArrivalCompletedAt ? (
             <p className="text-small text-green-700 font-semibold">
-              Guest checked in online on {new Date(reservation.preArrivalCompletedAt).toLocaleDateString()} — details below are confirmed by them
+              Guest checked in online on {formatMomentDate(reservation.preArrivalCompletedAt)} — details below are confirmed by them
               {reservation.estimatedArrivalTime ? `, arriving around ${reservation.estimatedArrivalTime}` : ''}. Photo ID still needs checking.
             </p>
           ) : null}

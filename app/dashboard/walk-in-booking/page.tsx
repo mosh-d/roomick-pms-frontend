@@ -17,7 +17,7 @@ import { walkInBookingSchema, type WalkInBookingFormValues } from '@/lib/schemas
 import { useRoomsQuery, useRoomTypesQuery } from '@/lib/rooms';
 import { groupRoomsByFloor } from '@/lib/groupRoomsByFloor';
 import { useCreateReservationMutation, useCreateWalkInMutation } from '@/lib/reservations';
-import { dayAfter } from '@/lib/dates';
+import { dayAfter, hotelToday } from '@/lib/dates';
 import { ApiError, apiFetch } from '@/lib/api';
 import type { GuestMatch, IdDocType, IdDocumentInput } from '@/lib/guests';
 import { COUNTRIES } from '@/lib/countries';
@@ -27,11 +27,11 @@ import { RatePreview } from '../_components/RatePreview';
 import { CapacityWarning } from '../_components/CapacityWarning';
 import { GuestLookupFields } from '../_components/GuestLookupFields';
 import { CompanyField, useCompanyChoice } from '../_components/CompanyField';
+import { DayUseField, DayUsePreview, PackagesField, useDayUseOffer } from '../_components/StayExtras';
 
-/** Browser-local "today" for the date input's default/min — the backend is the actual authority on "today" (branch timezone, via `todayInTimezone`) and re-derives it server-side for the walk-in path regardless of what's shown here. */
+/** Today at the hotel for the date input's default/min — the backend still re-derives "today" (branch timezone) for the walk-in itself. */
 function todayString(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  return hotelToday();
 }
 
 const ID_DOC_TYPE_OPTIONS: SelectOption[] = [
@@ -76,6 +76,7 @@ export default function WalkInBookingPage() {
   const [formError, setFormError] = useState<string | null>(null);
   // A returning guest picked from the suggestions: the booking goes on their profile instead of a new one.
   const [linkedGuest, setLinkedGuest] = useState<GuestMatch | null>(null);
+  const [packageIds, setPackageIds] = useState<string[]>([]);
 
   const [idDocType, setIdDocType] = useState<string | null>(null);
   const [idDocNumber, setIdDocNumber] = useState('');
@@ -116,6 +117,9 @@ export default function WalkInBookingPage() {
   const roomsQuery = useRoomsQuery(activeBranchId, auth);
   const createReservationMutation = useCreateReservationMutation(activeBranchId ?? '', auth);
   const createWalkInMutation = useCreateWalkInMutation(activeBranchId ?? '', auth);
+  const dayUseOffer = useDayUseOffer(activeBranchId, roomTypesQuery.data?.find((rt) => rt.id === roomTypeId), auth);
+  // Day use: the room for the day, no night — check-out is the check-in day.
+  const isDayUse = watch('dayUse') === true && dayUseOffer !== null;
 
   const roomTypeOptions: SelectOption[] = useMemo(
     () => (roomTypesQuery.data ?? []).map((rt) => ({ value: rt.id, label: rt.name })),
@@ -178,11 +182,13 @@ export default function WalkInBookingPage() {
           corporateAccountId: company.companyId ?? undefined,
           roomTypeId: values.roomTypeId,
           roomId: selectedRoomId,
-          checkOutDate: values.checkOutDate,
+          checkOutDate: isDayUse ? undefined : values.checkOutDate,
           adults: values.adults,
           children: values.children,
           specialRequests: values.specialRequests || undefined,
           idDocument,
+          dayUse: isDayUse || undefined,
+          packageIds: packageIds.length ? packageIds : undefined,
         });
         // A walk-in IS a check-in — same auto-generated registration card,
         // same "send the agent to sign it" redirect as Check-In Flow's own.
@@ -195,11 +201,13 @@ export default function WalkInBookingPage() {
         corporateAccountId: company.companyId ?? undefined,
         roomTypeId: values.roomTypeId,
         checkInDate: values.checkInDate,
-        checkOutDate: values.checkOutDate,
+        checkOutDate: isDayUse ? values.checkInDate : values.checkOutDate,
         adults: values.adults,
         children: values.children,
         specialRequests: values.specialRequests || undefined,
         channel: 'direct',
+        dayUse: isDayUse || undefined,
+        packageIds: packageIds.length ? packageIds : undefined,
       });
       router.push('/dashboard/arrivals');
     } catch (error) {
@@ -249,30 +257,48 @@ export default function WalkInBookingPage() {
                   label="Room Type"
                   options={roomTypeOptions}
                   value={field.value || null}
-                  onChange={field.onChange}
+                  onChange={(value) => {
+                    field.onChange(value);
+                    // A package or day use offered with one room type may not be with the next.
+                    setPackageIds([]);
+                    setValue('dayUse', false);
+                  }}
                   error={errors.roomTypeId?.message}
                 />
               )}
             />
             <div className="hidden sm:block" aria-hidden />
-            <Input label="Check-In Date" type="date" min={today} {...register('checkInDate')} error={errors.checkInDate?.message} />
-            <Input label="Check-Out Date" type="date" min={checkInDate ? dayAfter(checkInDate) : today} {...register('checkOutDate')} error={errors.checkOutDate?.message} />
+            <Input label={isDayUse ? 'Date' : 'Check-In Date'} type="date" min={today} {...register('checkInDate')} error={errors.checkInDate?.message} />
+            {isDayUse ? (
+              <div className="hidden sm:block" aria-hidden />
+            ) : (
+              <Input label="Check-Out Date" type="date" min={checkInDate ? dayAfter(checkInDate) : today} {...register('checkOutDate')} error={errors.checkOutDate?.message} />
+            )}
             <Input label="Adults" type="number" min={1} max={20} {...register('adults', { valueAsNumber: true })} error={errors.adults?.message} />
             <Input label="Children" type="number" min={0} max={20} {...register('children', { valueAsNumber: true })} error={errors.children?.message} />
           </div>
           <CapacityWarning roomType={roomTypesQuery.data?.find((rt) => rt.id === roomTypeId)} adults={watch('adults')} childrenCount={watch('children')} />
+          <DayUseField offer={dayUseOffer} value={isDayUse} onChange={(on) => setValue('dayUse', on, { shouldValidate: true })} />
+          <PackagesField branchId={activeBranchId} roomTypeId={roomTypeId || null} value={packageIds} onChange={setPackageIds} auth={auth} />
           <CompanyField accounts={company.accounts} companyId={company.companyId} suggested={company.suggested} onChange={company.setChoice} />
           <Textarea label="Special Requests" {...register('specialRequests')} error={errors.specialRequests?.message} />
-          <RatePreview
-            branchId={activeBranchId}
-            currency={undefined}
-            roomTypeId={roomTypeId || null}
-            checkInDate={checkInDate || null}
-            checkOutDate={checkOutDate || null}
-            corporateAccountId={company.companyId ?? undefined}
-            accessToken={auth.accessToken}
-            tenantId={auth.tenantId}
-          />
+          {isDayUse && dayUseOffer ? (
+            <DayUsePreview offer={dayUseOffer} />
+          ) : (
+            <RatePreview
+              branchId={activeBranchId}
+              currency={undefined}
+              roomTypeId={roomTypeId || null}
+              checkInDate={checkInDate || null}
+              checkOutDate={checkOutDate || null}
+              corporateAccountId={company.companyId ?? undefined}
+              adults={watch('adults')}
+              childrenCount={watch('children')}
+              packageIds={packageIds}
+              accessToken={auth.accessToken}
+              tenantId={auth.tenantId}
+            />
+          )}
         </Section>
 
         {isImmediate && roomTypeId ? (

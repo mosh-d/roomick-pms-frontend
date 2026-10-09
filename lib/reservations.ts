@@ -2,9 +2,21 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from './api';
 import { roomsQueryKey } from './rooms';
 import type { GuestSummary, GuestInput, IdDocumentInput } from './guests';
+import type { PackageSnapshot } from './packages';
 
 export type ReservationStatus = 'waitlisted' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show' | 'walked';
-export type ReservationChannel = 'direct' | 'walk_in' | 'booking_com' | 'expedia' | 'agoda' | 'airbnb';
+export type ReservationChannel = 'direct' | 'website' | 'walk_in' | 'booking_com' | 'expedia' | 'agoda' | 'airbnb';
+
+/** How each channel is named on screen — the backend's own `CHANNEL_LABELS`. */
+export const CHANNEL_LABELS: Record<ReservationChannel, string> = {
+  direct: 'Direct',
+  website: 'Website',
+  walk_in: 'Walk-in',
+  booking_com: 'Booking.com',
+  expedia: 'Expedia',
+  agoda: 'Agoda',
+  airbnb: 'Airbnb',
+};
 
 export type PenaltyType = 'first_night' | 'full_stay' | 'flat_fee' | 'none';
 
@@ -58,6 +70,31 @@ export interface ReservationSummary {
   preArrivalCompletedAt: string | null;
   /** The guest's own stated arrival time (HH:mm, branch timezone) — an intention, not a commitment. */
   estimatedArrivalTime: string | null;
+  /** The deposit the booking was asked for (the branch's deposit policy when it was made), and by when. Null = none. */
+  depositAmount?: string | null;
+  depositDueDate?: string | null;
+  /** Deposits paid so far — on lists and a single booking (`withDepositsPaid`). */
+  depositPaid?: string;
+  /** A room for the day, not a night — check-out is the same day. */
+  isDayUse?: boolean;
+  /** The packages sold with the stay, each at the price it was added at. */
+  packages?: PackageSnapshot[] | null;
+}
+
+/** What the booking screens need of the branch — `GET /branches/:branchId/booking-options`. */
+export interface BookingOptions {
+  /** The branch's day-use hours (HH:mm, its own clock), or null when it sells no day use. */
+  dayUseHours: { from: string; until: string } | null;
+  /** ISO 4217 — feed to `currencySymbolFor`. */
+  currency: string;
+}
+
+export function useBookingOptionsQuery(branchId: string | null, { accessToken, tenantId }: AuthOpts) {
+  return useQuery({
+    queryKey: ['booking-options', branchId] as const,
+    queryFn: () => apiFetch<BookingOptions>(`/branches/${branchId}/booking-options`, { accessToken, tenantId }),
+    enabled: branchId !== null,
+  });
 }
 
 export interface AvailabilityNight {
@@ -153,6 +190,9 @@ export function useCreateReservationMutation(branchId: string, { accessToken, te
         joinWaitlist?: boolean;
         /** Books the stay under a company account — its contracted rate applies. */
         corporateAccountId?: string;
+        /** A room for the day, not a night — `checkOutDate` is then the check-in day. */
+        dayUse?: boolean;
+        packageIds?: string[];
       },
     ) => apiFetch<ReservationSummary>(`/branches/${branchId}/reservations`, { method: 'POST', accessToken, tenantId, body }),
     onSuccess: () => invalidateAfterLifecycleChange(queryClient, branchId),
@@ -278,13 +318,16 @@ export function useCreateWalkInMutation(branchId: string, { accessToken, tenantI
       body: GuestRef & {
         roomTypeId: string;
         roomId: string;
-        checkOutDate: string;
+        /** Left out for a day-use stay — it ends today. */
+        checkOutDate?: string;
         adults: number;
         children?: number;
         specialRequests?: string;
         idDocument?: IdDocumentInput;
         /** Books the stay under a company account — its contracted rate applies. */
         corporateAccountId?: string;
+        dayUse?: boolean;
+        packageIds?: string[];
       },
     ) => apiFetch<ReservationSummary>(`/branches/${branchId}/reservations/walk-in`, { method: 'POST', accessToken, tenantId, body }),
     onSuccess: () => invalidateAfterLifecycleChange(queryClient, branchId),
@@ -351,12 +394,31 @@ export function useGroupCheckInMutation(branchId: string, { accessToken, tenantI
   });
 }
 
+/** Checks a guest out. The branch's late check-out / early departure fees go on the bill unless a manager waives them (`waiveFees` with a reason). */
 export function useCheckOutMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (reservationId: string) =>
-      apiFetch<ReservationSummary>(`/reservations/${reservationId}/check-out`, { method: 'POST', accessToken, tenantId }),
+    mutationFn: (input: string | { reservationId: string; waiveFees?: boolean; waiverReason?: string }) => {
+      const { reservationId, ...body } = typeof input === 'string' ? { reservationId: input } : input;
+      return apiFetch<ReservationSummary>(`/reservations/${reservationId}/check-out`, { method: 'POST', accessToken, tenantId, body });
+    },
     onSuccess: () => invalidateAfterLifecycleChange(queryClient, branchId),
+  });
+}
+
+/** What checking out now adds to the bill — mirrors `ReservationsService.getCheckOutQuote`. */
+export interface CheckOutQuote {
+  currency: string;
+  fees: Array<{ kind: 'late_checkout' | 'early_departure'; description: string; amount: string; tax: string; total: string }>;
+}
+
+export function useCheckOutQuoteQuery(reservationId: string | null, { accessToken, tenantId }: AuthOpts) {
+  return useQuery({
+    queryKey: ['check-out-quote', reservationId] as const,
+    queryFn: () => apiFetch<CheckOutQuote>(`/reservations/${reservationId}/check-out-quote`, { accessToken, tenantId }),
+    enabled: reservationId !== null,
+    // A late fee starts at a time of day: always the fees as of now.
+    staleTime: 0,
   });
 }
 

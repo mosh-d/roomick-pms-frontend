@@ -29,6 +29,7 @@ import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
+import { formatMoment, formatMomentDate } from '@/lib/dates';
 
 const SHIFT_TYPE_OPTIONS: SelectOption[] = [
   { value: 'morning', label: 'Morning' },
@@ -163,14 +164,19 @@ export default function ShiftManagementPage() {
                   <tr key={shift.id} className="border-t border-secondary/10 text-small text-surface">
                     <td className="py-2 pr-4">{shift.agent?.name ?? '—'}</td>
                     <td className="py-2 pr-4 capitalize">{shift.shiftType}</td>
-                    <td className="py-2 pr-4">{new Date(shift.openedAt).toLocaleString()}</td>
-                    <td className="py-2 pr-4">{shift.closedAt ? new Date(shift.closedAt).toLocaleString() : 'Open'}</td>
+                    <td className="py-2 pr-4">{formatMoment(shift.openedAt)}</td>
+                    <td className="py-2 pr-4">{shift.closedAt ? formatMoment(shift.closedAt) : 'Open'}</td>
                     <td className="py-2 pr-4">
                       {shift.variance !== null ? (
                         <span className={`inline-flex items-center rounded-pill px-2 py-0.5 text-tiny font-semibold ${varianceTone(shift.variance)}`}>{shift.variance}</span>
                       ) : (
                         '—'
                       )}
+                      {(shift.foreignCashTotals ?? []).map((cash) => (
+                        <span key={cash.currency} className="block text-tiny text-surface-muted">
+                          + {cash.currency} {Number(cash.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })} counted apart
+                        </span>
+                      ))}
                     </td>
                     <td className="py-2 pr-4">{(shift.issues ?? []).filter((i) => i.status !== 'resolved').length} unresolved</td>
                   </tr>
@@ -264,7 +270,7 @@ function IssueRow({ issue, branchId, auth }: { issue: ShiftIssue; branchId: stri
           <p className="text-body text-surface">{issue.description}</p>
           {issue.shift ? (
             <p className="text-tiny text-surface-muted">
-              From {issue.shift.agent.name}&rsquo;s {issue.shift.shiftType} shift, {new Date(issue.shift.openedAt).toLocaleDateString()}
+              From {issue.shift.agent.name}&rsquo;s {issue.shift.shiftType} shift, {formatMomentDate(issue.shift.openedAt)}
             </p>
           ) : null}
         </div>
@@ -293,9 +299,14 @@ function OpenShiftDetail({ shiftId, branchId, auth }: { shiftId: string; branchI
   if (!shift) return <p className="text-body text-surface-muted">Loading…</p>;
   const symbol = currencySymbolFor(shift.branch?.currency);
 
-  const cashPayments = (shift.payments ?? []).filter((p) => p.method === 'cash');
+  // Notes in another currency are counted apart from the branch's own.
+  const cashPayments = (shift.payments ?? []).filter((p) => p.method === 'cash' && !p.foreignCurrency);
+  const foreignCash = new Map<string, number>();
+  for (const p of shift.payments ?? []) {
+    if (p.method === 'cash' && p.foreignCurrency) foreignCash.set(p.foreignCurrency, (foreignCash.get(p.foreignCurrency) ?? 0) + Number(p.foreignAmount ?? 0));
+  }
   // Point of Sale cash lands in the same drawer — closing the shift expects both.
-  const posCashSoFar = (shift.posOrders ?? []).reduce((sum, o) => sum + Number(o.total), 0);
+  const posCashSoFar = (shift.posOrders ?? []).reduce((sum, o) => sum + Number(o.cashAmount), 0);
   const cashTakenSoFar = cashPayments.reduce((sum, p) => sum + Number(p.amount), 0) + posCashSoFar;
   const unresolvedIssues = (shift.issues ?? []).filter((i) => i.status !== 'resolved');
 
@@ -316,7 +327,7 @@ function OpenShiftDetail({ shiftId, branchId, auth }: { shiftId: string; branchI
           </div>
           <div>
             <p className="text-tiny text-surface-muted">Opened</p>
-            <p className="text-body font-semibold text-surface">{new Date(shift.openedAt).toLocaleString()}</p>
+            <p className="text-body font-semibold text-surface">{formatMoment(shift.openedAt)}</p>
           </div>
           <div>
             <p className="text-tiny text-surface-muted">Opening Float</p>
@@ -327,6 +338,16 @@ function OpenShiftDetail({ shiftId, branchId, auth }: { shiftId: string; branchI
             <p className="text-body font-semibold text-surface">{formatMoney(cashTakenSoFar, symbol)}</p>
             {posCashSoFar > 0 ? <p className="text-tiny text-surface-muted">incl. {formatMoney(posCashSoFar, symbol)} at Point of Sale</p> : null}
           </div>
+          {foreignCash.size > 0 ? (
+            <div>
+              <p className="text-tiny text-surface-muted">Other Currencies (count apart)</p>
+              {[...foreignCash.entries()].map(([currency, amount]) => (
+                <p key={currency} className="text-body font-semibold text-surface">
+                  {currency} {amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              ))}
+            </div>
+          ) : null}
         </Card>
       </Section>
 

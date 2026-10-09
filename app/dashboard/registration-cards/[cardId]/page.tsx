@@ -15,7 +15,7 @@ import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { ApiError, downloadFile } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
-import { formatDateOnly } from '@/lib/dates';
+import { formatDateOnly, formatMoment } from '@/lib/dates';
 
 /**
  * Guest Registration Card (ref: Month 3) — "auto-generated when check-in
@@ -129,7 +129,7 @@ export default function RegistrationCardPage() {
                   // eslint-disable-next-line @next/next/no-img-element -- a base64 data: URL, not an app asset next/image can optimize
                   <img src={card.signatureData} alt="Guest signature" className="h-24 w-auto rounded-card border border-secondary-light/40 bg-white" />
                 ) : null}
-                <p className="text-small text-surface-muted">Signed {new Date(card.signedAt).toLocaleString()}</p>
+                <p className="text-small text-surface-muted">Signed {formatMoment(card.signedAt)}</p>
                 <Button type="button" variant="outline" onClick={() => window.print()} className="self-start print:hidden">
                   Print
                 </Button>

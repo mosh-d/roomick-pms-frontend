@@ -85,6 +85,7 @@ function ProgramForm({ program, auth }: { program: LoyaltyProgram; auth: AuthOpt
   const [currency, setCurrency] = useState<string | null>(program.currency);
   const [pointsPer100, setPointsPer100] = useState(perHundred(program.pointsPerUnit));
   const [pointValue, setPointValue] = useState(String(Number(program.pointValue)));
+  const [expireMonths, setExpireMonths] = useState(program.pointsExpireAfterMonths ? String(program.pointsExpireAfterMonths) : '');
   const [tiers, setTiers] = useState<TierDraft[]>(program.tiers.map((t) => ({ name: t.name, threshold: String(t.threshold), benefits: t.benefits })));
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
 
@@ -101,6 +102,10 @@ function ProgramForm({ program, auth }: { program: LoyaltyProgram; auth: AuthOpt
       setMessage({ kind: 'error', text: 'Give an earning rate of at least 0.01 points per 100 and a point value above zero.' });
       return;
     }
+    if (expireMonths !== '' && !(Number.isInteger(Number(expireMonths)) && Number(expireMonths) >= 1 && Number(expireMonths) <= 120)) {
+      setMessage({ kind: 'error', text: 'Points lapse after 1 to 120 whole months — or leave it blank for never.' });
+      return;
+    }
     if (tiers.some((t) => !t.name.trim() || t.threshold === '' || !Number.isInteger(Number(t.threshold)) || Number(t.threshold) < 0)) {
       setMessage({ kind: 'error', text: 'Every tier needs a name and a whole number of points to reach it.' });
       return;
@@ -112,6 +117,7 @@ function ProgramForm({ program, auth }: { program: LoyaltyProgram; auth: AuthOpt
         pointsPerUnit: rate,
         pointValue: Number(pointValue),
         tiers: tiers.map((t) => ({ name: t.name.trim(), threshold: Number(t.threshold), benefits: t.benefits })),
+        pointsExpireAfterMonths: expireMonths === '' ? null : Number(expireMonths),
       });
       setMessage({ kind: 'ok', text: 'Saved. Every member’s tier now follows these thresholds.' });
     } catch (err) {
@@ -128,7 +134,7 @@ function ProgramForm({ program, auth }: { program: LoyaltyProgram; auth: AuthOpt
         <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="size-4 accent-secondary" />
         Programme on — guests earn at check-out and can redeem on their bill
       </label>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-2 max-w-3xl">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 max-w-3xl">
         <Select
           id="loyalty-currency"
           label="Currency"
@@ -156,6 +162,16 @@ function ProgramForm({ program, auth }: { program: LoyaltyProgram; auth: AuthOpt
           value={pointValue}
           onChange={(e) => setPointValue(e.target.value)}
           hint="Off a bill, when redeemed."
+        />
+        <Input
+          id="loyalty-expire-months"
+          label="Points lapse after (months)"
+          type="number"
+          min={1}
+          max={120}
+          value={expireMonths}
+          onChange={(e) => setExpireMonths(e.target.value)}
+          hint="If unspent. Blank: never. Points already earned keep the date they were earned with."
         />
       </div>
       {Number.isFinite(back) && back > 0 ? (

@@ -131,9 +131,12 @@ function OutletsSection({ branchId, auth }: { branchId: string; auth: AuthOpts }
             <p className="text-small text-surface">
               POS staff: {outlet.assignedStaff && outlet.assignedStaff.length > 0 ? outlet.assignedStaff.map((s) => s.name).join(', ') : 'none assigned'}
             </p>
+            <p className="text-small text-surface-muted">
+              Discounts: {outlet.staffDiscountLimitPct && Number(outlet.staffDiscountLimitPct) > 0 ? `staff up to ${Number(outlet.staffDiscountLimitPct)}%, managers any` : 'managers only'}
+            </p>
             <div className="flex flex-wrap gap-2">
               <Button type="button" size="sm" variant="outline" onClick={() => setRenaming(outlet)}>
-                Rename
+                Settings
               </Button>
               <Button type="button" size="sm" variant="outline" onClick={() => setStaffing(outlet)}>
                 Assign staff
@@ -172,30 +175,51 @@ function OutletsSection({ branchId, auth }: { branchId: string; auth: AuthOpts }
   );
 }
 
+/** An outlet's name, and how much its till staff may take off an order without a manager. */
 function RenameOutletDialog({ outlet, branchId, auth, onClose }: { outlet: Outlet; branchId: string; auth: AuthOpts; onClose: () => void }) {
   const mutation = useUpdateOutletMutation(branchId, auth);
   const [name, setName] = useState(outlet.name);
+  const [limit, setLimit] = useState(outlet.staffDiscountLimitPct && Number(outlet.staffDiscountLimitPct) > 0 ? String(Number(outlet.staffDiscountLimitPct)) : '');
   const [error, setError] = useState<string | null>(null);
+  const limitValue = limit === '' ? null : Number(limit);
+  const limitBefore = outlet.staffDiscountLimitPct && Number(outlet.staffDiscountLimitPct) > 0 ? Number(outlet.staffDiscountLimitPct) : null;
+  const changed = name.trim() !== outlet.name || limitValue !== limitBefore;
 
   async function save() {
     setError(null);
     try {
-      await mutation.mutateAsync({ outletId: outlet.id, name: name.trim() });
+      await mutation.mutateAsync({ outletId: outlet.id, name: name.trim(), staffDiscountLimitPct: limitValue });
       onClose();
     } catch (err) {
-      setError(errorText(err, "Couldn't rename the outlet."));
+      setError(errorText(err, "Couldn't save the outlet."));
     }
   }
 
   return (
-    <Modal open onClose={onClose} title={`Rename ${outlet.name}`}>
+    <Modal open onClose={onClose} title={`${outlet.name} settings`}>
       <Input name="renameOutlet" label="Name" value={name} onChange={(e) => setName(e.target.value)} maxLength={150} />
+      <Input
+        name="staffDiscountLimit"
+        label="Staff may discount up to (%)"
+        type="number"
+        min={0}
+        max={100}
+        step="0.5"
+        value={limit}
+        onChange={(e) => setLimit(e.target.value)}
+        hint="Blank: only a manager can give a discount here. Managers can always give any discount, with a reason."
+      />
       {error ? <p className="text-small text-red-600">{error}</p> : null}
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button type="button" onClick={save} loading={mutation.isPending} disabled={!name.trim() || name.trim() === outlet.name}>
+        <Button
+          type="button"
+          onClick={save}
+          loading={mutation.isPending}
+          disabled={!name.trim() || !changed || (limitValue !== null && !(limitValue >= 0 && limitValue <= 100))}
+        >
           Save
         </Button>
       </div>

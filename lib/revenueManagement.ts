@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from './api';
+import type { ReservationChannel } from './reservations';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -190,5 +191,55 @@ export function useCompSetQuery(branchId: string | null, roomTypeId: string | nu
     queryKey: ['comp-set', branchId ?? '', roomTypeId ?? '', days] as const,
     queryFn: () => apiFetch<CompSetAnalysis>(`/branches/${branchId}/comp-set?roomTypeId=${roomTypeId}&days=${days}`, { accessToken, tenantId }),
     enabled: branchId !== null && roomTypeId !== null,
+  });
+}
+
+/** Mirrors `ChannelAllotmentView` (roomick-pms-backend/src/modules/revenue-management/channel-allotments.service.ts). */
+export interface ChannelAllotment {
+  id: string;
+  roomTypeId: string;
+  roomTypeName: string;
+  channel: ReservationChannel;
+  /** The first and last night it covers — both included. */
+  fromDate: string;
+  toDate: string;
+  rooms: number;
+}
+
+function channelAllotmentsQueryKey(branchId: string) {
+  return ['channel-allotments', branchId] as const;
+}
+
+export function useChannelAllotmentsQuery(branchId: string | null, { accessToken, tenantId }: AuthOpts) {
+  return useQuery({
+    queryKey: channelAllotmentsQueryKey(branchId ?? ''),
+    queryFn: () => apiFetch<ChannelAllotment[]>(`/branches/${branchId}/channel-allotments`, { accessToken, tenantId }),
+    enabled: branchId !== null,
+  });
+}
+
+export function useCreateChannelAllotmentMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { roomTypeId: string; channel: ReservationChannel; fromDate: string; toDate: string; rooms: number }) =>
+      apiFetch<ChannelAllotment>(`/branches/${branchId}/channel-allotments`, { method: 'POST', accessToken, tenantId, body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: channelAllotmentsQueryKey(branchId) }),
+  });
+}
+
+export function useUpdateChannelAllotmentMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ allotmentId, ...body }: { allotmentId: string; fromDate?: string; toDate?: string; rooms?: number }) =>
+      apiFetch<ChannelAllotment>(`/channel-allotments/${allotmentId}`, { method: 'PATCH', accessToken, tenantId, body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: channelAllotmentsQueryKey(branchId) }),
+  });
+}
+
+export function useRemoveChannelAllotmentMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (allotmentId: string) => apiFetch<{ removed: true }>(`/channel-allotments/${allotmentId}`, { method: 'DELETE', accessToken, tenantId }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: channelAllotmentsQueryKey(branchId) }),
   });
 }

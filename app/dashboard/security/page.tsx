@@ -39,7 +39,7 @@ import {
 import { useGuestSearchQuery, type GuestSummary } from '@/lib/guests';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
-import { formatDateOnly } from '@/lib/dates';
+import { formatDateOnly, formatMoment } from '@/lib/dates';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -389,7 +389,7 @@ function AuditLogSection({ auth }: { auth: AuthOpts }) {
   const query = useAuditLogsQuery({ action: action || undefined, entityType: entityType.trim() || undefined, entityId: entityId.trim() || undefined, from: from || undefined, to: to || undefined, page, limit }, auth);
 
   const columns: TableColumn<AuditLogRow>[] = [
-    { key: 'timestamp', label: 'Timestamp', render: (r) => new Date(r.timestamp).toLocaleString(), sortValue: (r) => r.timestamp },
+    { key: 'timestamp', label: 'Timestamp', render: (r) => formatMoment(r.timestamp), sortValue: (r) => r.timestamp },
     { key: 'user', label: 'User', render: (r) => r.user?.name ?? 'System', sortValue: (r) => r.user?.name ?? '' },
     { key: 'action', label: 'Action', render: (r) => r.action, sortValue: (r) => r.action },
     {

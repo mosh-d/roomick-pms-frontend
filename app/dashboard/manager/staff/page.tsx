@@ -32,11 +32,12 @@ import { useMyBranches } from '@/lib/dashboardBranches';
 import { roleLabel } from '@/lib/roles';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatMoment } from '@/lib/dates';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
 const errorText = (err: unknown) => (err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
-const when = (iso: string) => new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const when = (iso: string) => formatMoment(iso, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 /** A link to pass on: emailed already, or to copy and send yourself. */
 function LinkToHandOver({ id, emailed, email, link, emailedText, handOverText }: { id: string; emailed: boolean; email: string; link: string; emailedText: string; handOverText: string }) {
@@ -293,7 +294,7 @@ function StaffSection({ branchId, auth }: { branchId: string; auth: AuthOpts }) 
     {
       key: 'lastLoginAt',
       label: 'Last Login',
-      render: (s) => (s.lastLoginAt ? new Date(s.lastLoginAt).toLocaleString() : 'Never'),
+      render: (s) => (s.lastLoginAt ? formatMoment(s.lastLoginAt) : 'Never'),
       sortValue: (s) => s.lastLoginAt ?? '',
     },
     {

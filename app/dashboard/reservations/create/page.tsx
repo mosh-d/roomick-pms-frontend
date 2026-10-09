@@ -16,17 +16,18 @@ import { RatePreview } from '../../_components/RatePreview';
 import { CapacityWarning } from '../../_components/CapacityWarning';
 import { GuestLookupFields } from '../../_components/GuestLookupFields';
 import { CompanyField, useCompanyChoice } from '../../_components/CompanyField';
+import { DayUseField, DayUsePreview, PackagesField, useDayUseOffer } from '../../_components/StayExtras';
 import type { GuestMatch } from '@/lib/guests';
 import { createReservationSchema, type CreateReservationFormValues } from '@/lib/schemas/reservations';
 import { useRoomTypesQuery } from '@/lib/rooms';
 import { useCreateReservationMutation } from '@/lib/reservations';
-import { dayAfter } from '@/lib/dates';
+import { dayAfter, hotelToday } from '@/lib/dates';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 
+/** Today at the hotel — the branch's calendar, not the device's. */
 function todayString(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  return hotelToday();
 }
 
 /**
@@ -62,6 +63,7 @@ export default function CreateReservationPage() {
   // A returning guest picked from the suggestions: the booking goes on their profile instead of a new one.
   const [linkedGuest, setLinkedGuest] = useState<GuestMatch | null>(null);
   const [offerWaitlist, setOfferWaitlist] = useState(false);
+  const [packageIds, setPackageIds] = useState<string[]>([]);
 
   const {
     register,
@@ -97,6 +99,9 @@ export default function CreateReservationPage() {
 
   const roomTypesQuery = useRoomTypesQuery(activeBranchId, auth);
   const createMutation = useCreateReservationMutation(activeBranchId ?? '', auth);
+  const dayUseOffer = useDayUseOffer(activeBranchId, roomTypesQuery.data?.find((rt) => rt.id === watchedRoomTypeId), auth);
+  // Day use: the room for the day, no night — check-out is the check-in day.
+  const isDayUse = watch('dayUse') === true && dayUseOffer !== null;
 
   const roomTypeOptions: SelectOption[] = useMemo(
     () => (roomTypesQuery.data ?? []).map((rt) => ({ value: rt.id, label: rt.name })),
@@ -116,12 +121,14 @@ export default function CreateReservationPage() {
         corporateAccountId: company.companyId ?? undefined,
         roomTypeId: values.roomTypeId,
         checkInDate: values.checkInDate,
-        checkOutDate: values.checkOutDate,
+        checkOutDate: isDayUse ? values.checkInDate : values.checkOutDate,
         adults: values.adults,
         children: values.children,
         specialRequests: values.specialRequests || undefined,
         channel: 'direct',
         joinWaitlist,
+        dayUse: isDayUse || undefined,
+        packageIds: packageIds.length ? packageIds : undefined,
       });
       router.push(joinWaitlist ? '/dashboard/reservations/waitlist' : '/dashboard/arrivals');
     } catch (error) {
@@ -168,30 +175,48 @@ export default function CreateReservationPage() {
                   label="Room Type"
                   options={roomTypeOptions}
                   value={field.value || null}
-                  onChange={field.onChange}
+                  onChange={(value) => {
+                    field.onChange(value);
+                    // A package or day use offered with one room type may not be with the next.
+                    setPackageIds([]);
+                    setValue('dayUse', false);
+                  }}
                   error={errors.roomTypeId?.message}
                 />
               )}
             />
             <div className="hidden sm:block" aria-hidden />
-            <Input label="Check-In Date" type="date" min={today} {...register('checkInDate')} error={errors.checkInDate?.message} />
-            <Input label="Check-Out Date" type="date" min={watchedCheckInDate ? dayAfter(watchedCheckInDate) : today} {...register('checkOutDate')} error={errors.checkOutDate?.message} />
+            <Input label={isDayUse ? 'Date' : 'Check-In Date'} type="date" min={today} {...register('checkInDate')} error={errors.checkInDate?.message} />
+            {isDayUse ? (
+              <div className="hidden sm:block" aria-hidden />
+            ) : (
+              <Input label="Check-Out Date" type="date" min={watchedCheckInDate ? dayAfter(watchedCheckInDate) : today} {...register('checkOutDate')} error={errors.checkOutDate?.message} />
+            )}
             <Input label="Adults" type="number" min={1} max={20} {...register('adults', { valueAsNumber: true })} error={errors.adults?.message} />
             <Input label="Children" type="number" min={0} max={20} {...register('children', { valueAsNumber: true })} error={errors.children?.message} />
           </div>
           <CapacityWarning roomType={roomTypesQuery.data?.find((rt) => rt.id === watchedRoomTypeId)} adults={watchedAdults} childrenCount={watchedChildren} />
+          <DayUseField offer={dayUseOffer} value={isDayUse} onChange={(on) => setValue('dayUse', on, { shouldValidate: true })} />
+          <PackagesField branchId={activeBranchId} roomTypeId={watchedRoomTypeId || null} value={packageIds} onChange={setPackageIds} auth={auth} />
           <CompanyField accounts={company.accounts} companyId={company.companyId} suggested={company.suggested} onChange={company.setChoice} />
           <Textarea label="Special Requests" {...register('specialRequests')} error={errors.specialRequests?.message} />
-          <RatePreview
-            branchId={activeBranchId}
-            currency={undefined}
-            roomTypeId={watchedRoomTypeId || null}
-            checkInDate={watchedCheckInDate || null}
-            checkOutDate={watchedCheckOutDate || null}
-            corporateAccountId={company.companyId ?? undefined}
-            accessToken={auth.accessToken}
-            tenantId={auth.tenantId}
-          />
+          {isDayUse && dayUseOffer ? (
+            <DayUsePreview offer={dayUseOffer} />
+          ) : (
+            <RatePreview
+              branchId={activeBranchId}
+              currency={undefined}
+              roomTypeId={watchedRoomTypeId || null}
+              checkInDate={watchedCheckInDate || null}
+              checkOutDate={watchedCheckOutDate || null}
+              corporateAccountId={company.companyId ?? undefined}
+              adults={watchedAdults}
+              childrenCount={watchedChildren}
+              packageIds={packageIds}
+              accessToken={auth.accessToken}
+              tenantId={auth.tenantId}
+            />
+          )}
         </Section>
 
         {formError ? (

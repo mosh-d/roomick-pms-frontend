@@ -16,13 +16,15 @@ import { ApiError } from '@/lib/api';
 import { useFolioQuery, useTaxBreakdownQuery, useCloseFolioMutation, useReopenFolioMutation, type LineItem } from '@/lib/folios';
 import { Modal } from '@/components/ui/Modal';
 import { Textarea } from '@/components/ui/Textarea';
-import { isSupervisorAtBranch } from '@/lib/roles';
+import { isSupervisorAtBranch, mayActAtBranch } from '@/lib/roles';
 import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
 import { PostChargeForm } from './_components/PostChargeForm';
 import { RecordPaymentForm } from './_components/RecordPaymentForm';
 import { RedeemPointsCard } from './_components/RedeemPointsCard';
+import { PaymentsList } from './_components/PaymentsList';
+import { InvoicesCard } from './_components/InvoicesCard';
 import { formatDateOnly } from '@/lib/dates';
 
 /**
@@ -30,7 +32,10 @@ import { formatDateOnly } from '@/lib/dates';
  * ledger with its running totals, the per-rule tax breakdown, and the two
  * forms that move money.
  *
- * Deferred from the reference and named rather than faked: Print / Send
+ * Payments received are listed (a supervisor can void one recorded in
+ * error), and the bill can be invoiced — a numbered PDF.
+ *
+ * Deferred from the reference and named rather than faked: Send
  * Email (the comms module is stubbed — `communication_log` rows only),
  * per-charge tax-rule pickers (rules already declare which charge types
  * they apply to, so the engine picks them), and Split Billing / Refunds &
@@ -98,6 +103,8 @@ export default function GuestFolioPage() {
   const balance = Number(folio.totals.balanceDue);
   const isSettled = folio.status === 'settled';
   const symbol = currencySymbolFor(folio.currency);
+  // Deposits are payments too; shown on their own line, the rest under "Payments".
+  const otherPayments = Number(folio.totals.paymentsTotal) - Number(folio.totals.depositsTotal);
 
   return (
     <Container className="max-w-6xl py-10 flex flex-col gap-8">
@@ -129,6 +136,14 @@ export default function GuestFolioPage() {
       />
 
       {closeError ? <p className="text-small text-red-600">{closeError}</p> : null}
+      {folio.guestStatus === 'deposit_held' ? (
+        <Card tone="accent">
+          <p className="text-small text-surface">
+            <span className="font-bold">Deposit held.</span> The guest hasn&apos;t arrived yet: the {formatMoney(Math.abs(balance), symbol)} on this bill goes
+            towards the stay when they check in.
+          </p>
+        </Card>
+      ) : null}
       {folio.guestStatus === 'city_ledger' ? (
         <Card tone="accent">
           <p className="text-small text-surface">
@@ -179,7 +194,7 @@ export default function GuestFolioPage() {
             {Number(folio.totals.depositsTotal) > 0 ? (
               <TotalRow label="Deposit Applied" value={`-${folio.totals.depositsTotal}`} symbol={symbol} />
             ) : null}
-            <TotalRow label="Payments" value={`-${folio.totals.paymentsTotal}`} symbol={symbol} />
+            <TotalRow label="Payments" value={`-${otherPayments.toFixed(2)}`} symbol={symbol} />
             {folio.reservation ? (
               <div className="flex items-center justify-between gap-2 pt-2 border-t border-secondary/20">
                 <span className="text-small text-surface-muted">Projected stay total</span>
@@ -198,6 +213,27 @@ export default function GuestFolioPage() {
             </div>
           </Card>
         </div>
+      </Section>
+
+      <Section label="Payments Received">
+        <PaymentsList
+          payments={folio.payments}
+          branchId={activeBranchId}
+          folioId={params.folioId}
+          symbol={symbol}
+          canVoid={!isSettled && mayActAtBranch(user, activeBranchId, ['owner', 'manager', 'accountant'])}
+          auth={auth}
+        />
+      </Section>
+
+      <Section label="Invoices">
+        <InvoicesCard
+          folioId={params.folioId}
+          symbol={symbol}
+          canIssue={mayActAtBranch(user, activeBranchId, ['owner', 'manager', 'front_desk', 'accountant'])}
+          pending={folio.status === 'pending'}
+          auth={auth}
+        />
       </Section>
 
       <Section label="Tax Breakdown">

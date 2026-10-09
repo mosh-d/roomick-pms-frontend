@@ -14,7 +14,8 @@ import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
 import { csvCell } from '@/lib/csv';
-import { addDays, todayLocal } from '@/lib/dates';
+import { addDays, hotelToday } from '@/lib/dates';
+import { ArAgeingSection } from './_components/ArAgeingSection';
 
 const GROUP_BY_OPTIONS: SelectOption[] = [
   { value: 'day', label: 'Day' },
@@ -48,9 +49,9 @@ const DEPARTMENT_COLOURS: Record<string, string> = {
 const METHOD_LABELS: Record<string, string> = { cash: 'Cash', card: 'Card', bank_transfer: 'Bank transfer', voucher: 'Voucher' };
 const METHOD_COLOURS: Record<string, string> = { cash: '#3f8f5c', card: '#cca000', bank_transfer: '#2e7d8c', voucher: '#9a5a2e' };
 
-/** This month so far, where the viewer is — not Lagos, which it was hard-coded to. */
+/** This month so far, at the hotel. */
 function monthToDate(): { from: string; to: string } {
-  const today = todayLocal();
+  const today = hotelToday();
   return { from: `${today.slice(0, 8)}01`, to: addDays(today, 1) };
 }
 
@@ -258,6 +259,8 @@ export default function FinancialReportsPage() {
           </Section>
         </>
       )}
+
+      <ArAgeingSection branchId={activeBranchId} auth={auth} />
     </Container>
   );
 }

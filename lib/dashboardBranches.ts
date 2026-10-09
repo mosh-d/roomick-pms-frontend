@@ -3,7 +3,8 @@ import { apiFetch } from './api';
 import { getDistinctBranchIds } from './branches';
 import type { AuthUser } from './store/authStore';
 
-export type DashboardBranch = { id: string; name: string };
+/** `timezone` is the hotel's clock — what staff pages show times and "today" on (see `setHotelTimezone`). */
+export type DashboardBranch = { id: string; name: string; timezone?: string };
 
 /**
  * Resolves which branch(es) `app/dashboard/layout.tsx` should offer —

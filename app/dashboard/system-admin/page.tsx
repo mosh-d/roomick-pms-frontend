@@ -21,6 +21,7 @@ import {
 } from '@/lib/systemAdmin';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatMoment, formatMomentDate } from '@/lib/dates';
 
 function formatBytes(sizeBytes: string | null): string {
   if (sizeBytes === null) return '—';
@@ -185,12 +186,12 @@ function BackupRow({ record, auth }: { record: BackupRecordSummary; auth: AuthOp
 
   return (
     <tr className="border-t border-secondary/10 text-small text-surface align-top">
-      <td className="py-2 pr-4">{new Date(record.startedAt).toLocaleString()}</td>
+      <td className="py-2 pr-4">{formatMoment(record.startedAt)}</td>
       <td className="py-2 pr-4">
         <span className={`inline-flex items-center rounded-pill px-2 py-0.5 text-tiny font-semibold ${STATUS_TONE[record.status] ?? 'bg-secondary-light/20 text-secondary'}`}>{record.status}</span>
       </td>
       <td className="py-2 pr-4">{formatBytes(record.sizeBytes)}</td>
-      <td className="py-2 pr-4">{record.retainUntil ? new Date(record.retainUntil).toLocaleDateString() : '—'}</td>
+      <td className="py-2 pr-4">{record.retainUntil ? formatMomentDate(record.retainUntil) : '—'}</td>
       <td className="py-2 pr-4">
         {record.status !== 'completed' ? (
           '—'

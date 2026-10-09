@@ -25,7 +25,7 @@ import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { isSupervisorAtBranch } from '@/lib/roles';
 import { useAuthStore } from '@/lib/store/authStore';
-import { formatDateOnly } from '@/lib/dates';
+import { formatDateOnly, formatMoment } from '@/lib/dates';
 
 const PENALTY_LABELS: Record<CancellationQuote['penaltyType'], string> = {
   first_night: 'first night',
@@ -186,8 +186,8 @@ export default function CancelReservationPage() {
                 <p className="text-small text-surface">{quote.policy.summary}</p>
                 <p className={`text-small font-semibold ${quote.withinFreeWindow ? 'text-green-700' : 'text-red-600'}`}>
                   {quote.withinFreeWindow
-                    ? `Free to cancel until ${new Date(quote.freeCancellationUntil).toLocaleString()}.`
-                    : `The free cancellation window closed ${new Date(quote.freeCancellationUntil).toLocaleString()}.`}
+                    ? `Free to cancel until ${formatMoment(quote.freeCancellationUntil)}.`
+                    : `The free cancellation window closed ${formatMoment(quote.freeCancellationUntil)}.`}
                 </p>
                 {!quote.policy.allowOnlineCancellation ? (
                   <p className="text-tiny text-surface-muted">Guests can&apos;t cancel online at this property — cancellations come through the desk.</p>

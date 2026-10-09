@@ -27,7 +27,7 @@ import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { isSupervisorAtBranch } from '@/lib/roles';
 import { useAuthStore } from '@/lib/store/authStore';
-import { formatDateOnly } from '@/lib/dates';
+import { formatDateOnly, formatMoment, formatMomentDate } from '@/lib/dates';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -189,7 +189,7 @@ function NotesFeedSection({ guest, auth }: { guest: GuestProfileDetail; auth: Au
               <Card key={note.id} tone="secondary" className="flex flex-col gap-1">
                 <p className="text-body text-surface">{note.body}</p>
                 <p className="text-tiny text-surface-muted">
-                  {note.author?.name ?? 'System'} — {new Date(note.createdAt).toLocaleString()}
+                  {note.author?.name ?? 'System'} — {formatMoment(note.createdAt)}
                 </p>
               </Card>
             ))}
@@ -294,6 +294,11 @@ function LoyaltySection({ guestId, auth, canAdjust }: { guestId: string; auth: A
             {loyalty.tier && loyalty.tier.benefits.length > 0 ? (
               <p className="text-small text-surface">Benefits: {loyalty.tier.benefits.map(benefitLabel).join(', ')}</p>
             ) : null}
+            {loyalty.expiring ? (
+              <p className="text-small text-surface">
+                {loyalty.expiring.points.toLocaleString()} points lapse on {formatMomentDate(loyalty.expiring.on)} if they aren&apos;t spent.
+              </p>
+            ) : null}
             {!loyalty.programActive ? <p className="text-tiny text-surface-muted">The programme is switched off — nothing is earned or redeemed until it’s back on.</p> : null}
           </>
         )}
@@ -311,7 +316,7 @@ function LoyaltySection({ guestId, auth, canAdjust }: { guestId: string; auth: A
               <tbody>
                 {loyalty.transactions.map((t) => (
                   <tr key={t.id} className="border-t border-secondary/10">
-                    <td className="py-1 pr-4 whitespace-nowrap">{new Date(t.createdAt).toLocaleDateString()}</td>
+                    <td className="py-1 pr-4 whitespace-nowrap">{formatMomentDate(t.createdAt)}</td>
                     <td className="py-1 pr-4">{t.description}</td>
                     <td className={`py-1 text-right whitespace-nowrap ${t.points < 0 ? 'text-red-700' : 'text-green-700'}`}>
                       {t.points > 0 ? '+' : ''}
@@ -355,7 +360,7 @@ function LoyaltySection({ guestId, auth, canAdjust }: { guestId: string; auth: A
 function MarketingConsentSection({ guest, auth }: { guest: GuestProfileDetail; auth: AuthOpts }) {
   const setConsent = useSetMarketingConsentMutation(guest.id, auth);
   const [error, setError] = useState<string | null>(null);
-  const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : null);
+  const date = (iso: string | null) => (iso ? formatMomentDate(iso, { day: 'numeric', month: 'short', year: 'numeric' }) : null);
 
   function change(optIn: boolean) {
     setError(null);

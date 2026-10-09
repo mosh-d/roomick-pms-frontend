@@ -20,6 +20,7 @@ import { ReviewStep } from './_steps/ReviewStep';
 import { WizardShell, type WizardPhaseKey, type BranchTreeFocus } from './_steps/WizardShell';
 import { useWizardStore, type WizardStep, type SignupMode, type BranchDraft } from '@/lib/store/wizardStore';
 import { useAuthStore } from '@/lib/store/authStore';
+import { SessionPending } from '@/components/SessionPending';
 import { useHasHydrated } from '@/lib/useHasHydrated';
 
 /**
@@ -99,6 +100,9 @@ function SignupPageInner() {
 
   const wizardHydrated = useHasHydrated(useWizardStore);
   const authHydrated = useHasHydrated(useAuthStore);
+  // A reload part-way through: the session comes back from its cookie before any step asks for data.
+  const restoringSession = useAuthStore((state) => state.restoring);
+  const restoreFailed = useAuthStore((state) => state.restoreFailed);
 
   const mode = useWizardStore((state) => state.mode);
   const step = useWizardStore((state) => state.step);
@@ -174,6 +178,7 @@ function SignupPageInner() {
   }
 
   if (!wizardHydrated || !authHydrated) return null;
+  if (restoringSession || restoreFailed) return <SessionPending failed={restoreFailed} />;
 
   if (mode === null) {
     return (

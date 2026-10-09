@@ -6,6 +6,7 @@ import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { SearchInput } from '@/components/ui/SearchInput';
 import { Input } from '@/components/ui/Input';
 import { Select, type SelectOption } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
@@ -15,7 +16,7 @@ import { Table, type TableColumn } from '@/components/ui/Table';
 import { CorporateAccountsIcon } from '@/components/ui/Icons';
 import {
   useCorporateAccountQuery,
-  useCorporateAccountsQuery,
+  useCorporateAccountsPageQuery,
   useSaveCorporateAccountMutation,
   type CorporateAccount,
   type CorporateStay,
@@ -48,13 +49,18 @@ function contractLabel(account: CorporateAccount): string {
  * negotiated rate plan (set up in Rate Resolver); travelers are everyone who
  * has stayed under the account.
  */
+/** Companies a page at a time — the list is searched and paged on the server. */
+const PAGE_SIZE = 25;
+
 export default function CorporateAccountsPage() {
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
   const auth = { accessToken: accessToken ?? undefined, tenantId: user?.tenantId };
 
-  const accountsQuery = useCorporateAccountsQuery(auth);
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(0);
+  const accountsQuery = useCorporateAccountsPageQuery({ search, page, pageSize: PAGE_SIZE }, auth);
   const saveMutation = useSaveCorporateAccountMutation(auth);
   const [editing, setEditing] = useState<{ account: CorporateAccount | null } | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -62,7 +68,9 @@ export default function CorporateAccountsPage() {
 
   if (!activeBranchId) return null;
   const canManage = isSupervisorAtBranch(user, activeBranchId);
-  const accounts = accountsQuery.data ?? [];
+  const accounts = accountsQuery.data?.rows ?? [];
+  const total = accountsQuery.data?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const columns: TableColumn<CorporateAccount>[] = [
     {
@@ -132,12 +140,40 @@ export default function CorporateAccountsPage() {
           the company&apos;s domains. A contracted rate is a negotiated rate plan from Rate Resolver; a company with none still gets any corporate discount a
           property runs.
         </p>
+        <SearchInput
+          label="Search companies by name, contact or email domain"
+          placeholder="Search companies"
+          value={search}
+          onChange={(value) => {
+            setSearch(value);
+            setPage(0);
+          }}
+        />
         {error ? <p className="text-small text-red-600">{error}</p> : null}
         {accountsQuery.isLoading ? (
           <p className="text-body text-surface-muted">Loading companies…</p>
         ) : (
-          <Card tone="secondary">
-            <Table columns={columns} rows={accounts} emptyMessage="No company accounts yet." exportFileName="corporate-accounts" />
+          <Card tone="secondary" className="flex flex-col gap-3">
+            <Table
+              columns={columns}
+              rows={accounts}
+              pageSize={PAGE_SIZE}
+              emptyMessage={search.trim() ? 'No company matches that search.' : 'No company accounts yet.'}
+              exportFileName="corporate-accounts"
+            />
+            {pageCount > 1 ? (
+              <div className="flex items-center gap-3">
+                <Button type="button" size="sm" variant="outline" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>
+                  Previous
+                </Button>
+                <span className="text-small text-surface tabular-nums">
+                  {page * PAGE_SIZE + 1}–{Math.min(total, (page + 1) * PAGE_SIZE)} of {total}
+                </span>
+                <Button type="button" size="sm" variant="outline" disabled={page >= pageCount - 1} onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}>
+                  Next
+                </Button>
+              </div>
+            ) : null}
           </Card>
         )}
       </Section>
@@ -190,6 +226,11 @@ function AccountDetail({ accountId, auth, onClose }: { accountId: string; auth: 
               <p>
                 <span className="font-semibold">Contact:</span> {[detail.contactName, detail.contactEmail].filter(Boolean).join(' · ') || '—'}
               </p>
+              <p>
+                <span className="font-semibold">Invoices due:</span>{' '}
+                {detail.paymentTermsDays === null ? 'on receipt' : `${detail.paymentTermsDays} day${detail.paymentTermsDays === 1 ? '' : 's'} after issue`}
+                {detail.billingInfo?.address ? ` · billed to ${detail.billingInfo.address}` : ''}
+              </p>
             </div>
             <Button size="sm" variant="outline" onClick={onClose}>
               Close
@@ -217,6 +258,8 @@ function AccountDialog({ account, branchId, auth, onClose }: { account: Corporat
   const [ratePlanId, setRatePlanId] = useState<string | null>(account?.ratePlanId ?? null);
   const [contactName, setContactName] = useState(account?.contactName ?? '');
   const [contactEmail, setContactEmail] = useState(account?.contactEmail ?? '');
+  const [terms, setTerms] = useState(account?.paymentTermsDays !== null && account?.paymentTermsDays !== undefined ? String(account.paymentTermsDays) : '');
+  const [billingAddress, setBillingAddress] = useState(account?.billingInfo?.address ?? '');
   const [error, setError] = useState<string | null>(null);
 
   // Negotiated plans at this property, plus the account's current contract
@@ -233,10 +276,22 @@ function AccountDialog({ account, branchId, auth, onClose }: { account: Corporat
       setError('Give the company a name');
       return;
     }
+    if (terms !== '' && !(/^\d+$/.test(terms) && Number(terms) <= 365)) {
+      setError('Payment terms are a number of days, up to 365 — or blank for on receipt');
+      return;
+    }
     try {
       await saveMutation.mutateAsync({
         accountId: account?.id ?? null,
-        body: { name: name.trim(), emailDomains: domains, ratePlanId, contactName: contactName.trim(), contactEmail: contactEmail.trim() || undefined },
+        body: {
+          name: name.trim(),
+          emailDomains: domains,
+          ratePlanId,
+          contactName: contactName.trim(),
+          contactEmail: contactEmail.trim() || undefined,
+          paymentTermsDays: terms === '' ? null : Number(terms),
+          billingAddress: billingAddress.trim(),
+        },
       });
       onClose();
     } catch (err) {
@@ -268,6 +323,17 @@ function AccountDialog({ account, branchId, auth, onClose }: { account: Corporat
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
         <Input id="corporate-contact-name" label="Contact name (optional)" value={contactName} onChange={(e) => setContactName(e.target.value)} maxLength={200} />
         <Input id="corporate-contact-email" label="Contact email (optional)" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} maxLength={320} />
+        <Input
+          id="corporate-terms"
+          label="Payment terms (days)"
+          type="number"
+          min={0}
+          max={365}
+          value={terms}
+          onChange={(e) => setTerms(e.target.value)}
+          hint="An invoice's due date — blank for due on receipt."
+        />
+        <Input id="corporate-billing-address" label="Billing address (optional)" value={billingAddress} onChange={(e) => setBillingAddress(e.target.value)} maxLength={500} hint="Printed on its invoices" />
       </div>
       {error ? <p className="text-small text-red-600">{error}</p> : null}
       <div className="flex items-center gap-3">

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
@@ -18,6 +19,7 @@ import {
   seatsFor,
   useBookIntoGroupBlockMutation,
   useCancelEventBookingMutation,
+  useBillEventBookingMutation,
   useCreateEventBookingMutation,
   useCreateEventSpaceMutation,
   useCreateGroupBlockMutation,
@@ -36,12 +38,13 @@ import {
   type RoomingListRow,
   type SetupStyle,
 } from '@/lib/salesEvents';
+import { useFoliosQuery } from '@/lib/folios';
 import { useRoomTypesQuery } from '@/lib/rooms';
 import { ApiError } from '@/lib/api';
 import { currencySymbolFor } from '@/lib/currencies';
 import { formatMoney } from '@/lib/numberFormat';
 import { useAuthStore } from '@/lib/store/authStore';
-import { addDays, todayLocal } from '@/lib/dates';
+import { addDays, formatMoment, hotelToday } from '@/lib/dates';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -58,7 +61,7 @@ function errorText(err: unknown): string {
 }
 
 function defaultMonthRange(): { from: string; to: string } {
-  const from = todayLocal();
+  const from = hotelToday();
   return { from, to: addDays(from, 30) };
 }
 
@@ -66,10 +69,9 @@ function formatDay(value: string): string {
   return new Date(`${value.slice(0, 10)}T00:00:00.000Z`).toLocaleDateString(undefined, { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-/** Whole days from today (the viewer's calendar) to a date-only value. */
+/** Whole days from today (the hotel's calendar) to a date-only value. */
 function daysUntil(dateOnly: string): number {
-  const now = new Date();
-  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const today = new Date(`${hotelToday()}T00:00:00.000Z`).getTime();
   return Math.round((new Date(`${dateOnly.slice(0, 10)}T00:00:00.000Z`).getTime() - today) / 86_400_000);
 }
 
@@ -842,7 +844,7 @@ function EventSpacesSection({ branchId, auth }: { branchId: string; auth: AuthOp
                     <div className="min-w-0">
                       <p className="text-body font-semibold text-surface">{booking.title}</p>
                       <p className="text-tiny text-surface-muted">
-                        {spaceById.get(booking.eventSpaceId)?.name ?? 'Unknown space'} · {new Date(booking.startsAt).toLocaleString()} – {new Date(booking.endsAt).toLocaleString()}
+                        {spaceById.get(booking.eventSpaceId)?.name ?? 'Unknown space'} · {formatMoment(booking.startsAt)} – {formatMoment(booking.endsAt)}
                       </p>
                       {booking.setupStyle || booking.headcount ? (
                         <p className="text-tiny text-surface-muted">
@@ -873,7 +875,7 @@ function EventSpacesSection({ branchId, auth }: { branchId: string; auth: AuthOp
         title={cancelling ? `Cancel “${cancelling.title}”?` : ''}
         description={
           cancelling
-            ? `${spaceById.get(cancelling.eventSpaceId)?.name ?? 'The space'} is free again for ${new Date(cancelling.startsAt).toLocaleString()}. The event stays on record with its BEO, but it can’t be reinstated — you’d book it again.`
+            ? `${spaceById.get(cancelling.eventSpaceId)?.name ?? 'The space'} is free again for ${formatMoment(cancelling.startsAt)}. The event stays on record with its BEO, but it can’t be reinstated — you’d book it again.`
             : ''
         }
         confirmLabel="Cancel Event"
@@ -926,6 +928,8 @@ function EventDetailsForm({ detail, branchId, from, to, auth }: { detail: EventB
   );
   const [avRequirements, setAvRequirements] = useState(detail.avRequirements ?? '');
   const [notes, setNotes] = useState(detail.notes ?? '');
+  const [hireFee, setHireFee] = useState(detail.spaceHireFee ?? '');
+  const billed = detail.billedAt !== null;
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [downloading, setDownloading] = useState(false);
   const symbol = currencySymbolFor(detail.currency);
@@ -946,15 +950,20 @@ function EventDetailsForm({ detail, branchId, from, to, auth }: { detail: EventB
       }
       catering.push({ description: line.description.trim(), quantity, unitPrice });
     }
+    if (hireFee !== '' && !(Number(hireFee) >= 0)) {
+      setMessage({ kind: 'error', text: 'The space hire is an amount, or leave it blank.' });
+      return false;
+    }
     try {
       await mutation.mutateAsync({
         bookingId: detail.id,
+        // Once billed, what it costs is on the bill — the server refuses changes to it.
+        ...(billed ? {} : { catering, spaceHireFee: hireFee === '' ? null : Number(hireFee) }),
         setupStyle: (setupStyle as SetupStyle | null) ?? null,
         headcount: headcount ? Number(headcount) : null,
         contactName: contactName.trim() || null,
         contactPhone: contactPhone.trim() || null,
         contactEmail: contactEmail.trim() || null,
-        catering,
         avRequirements: avRequirements.trim() || null,
         notes: notes.trim() || null,
       });
@@ -981,7 +990,7 @@ function EventDetailsForm({ detail, branchId, from, to, auth }: { detail: EventB
   return (
     <div className="flex flex-col gap-3 max-h-[70vh] overflow-y-auto pr-1">
       <p className="text-small text-surface-muted">
-        {space.name} · {new Date(detail.startsAt).toLocaleString()} – {new Date(detail.endsAt).toLocaleString()}
+        {space.name} · {formatMoment(detail.startsAt)} – {formatMoment(detail.endsAt)}
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Select
@@ -998,10 +1007,22 @@ function EventDetailsForm({ detail, branchId, from, to, auth }: { detail: EventB
         <Input id="event-detail-contact-email" label="Contact Email" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
       </div>
 
+      <Input
+        id="event-detail-hire-fee"
+        label={`Space Hire (${symbol || detail.currency}, before tax)`}
+        type="number"
+        min={0}
+        step="0.01"
+        value={hireFee}
+        onChange={(e) => setHireFee(e.target.value)}
+        disabled={billed}
+        hint="Blank for no hire charge — catering only."
+      />
+
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <p className="text-small font-semibold text-surface">Catering</p>
-          <Button type="button" size="sm" variant="outline" onClick={() => setLines((current) => [...current, { description: '', quantity: '', unitPrice: '' }])}>
+          <Button type="button" size="sm" variant="outline" disabled={billed} onClick={() => setLines((current) => [...current, { description: '', quantity: '', unitPrice: '' }])}>
             Add Line
           </Button>
         </div>
@@ -1033,14 +1054,20 @@ function EventDetailsForm({ detail, branchId, from, to, auth }: { detail: EventB
             </div>
           </Card>
         ))}
-        {detail.cateringLines.length > 0 ? (
+        {detail.cateringLines.length > 0 || Number(detail.totals.hire) > 0 ? (
           <dl className="flex flex-col gap-1 border-t border-secondary/20 pt-2 text-small text-surface">
+            {Number(detail.totals.hire) > 0 ? (
+              <div className="flex justify-between">
+                <dt>Space hire</dt>
+                <dd>{formatMoney(detail.totals.hire, symbol)}</dd>
+              </div>
+            ) : null}
             <div className="flex justify-between">
               <dt>Subtotal</dt>
               <dd>{formatMoney(detail.totals.subtotal, symbol)}</dd>
             </div>
             <div className="flex justify-between">
-              <dt>Tax (estimate, branch F&amp;B rules)</dt>
+              <dt>Tax (by the branch&apos;s rules)</dt>
               <dd>{formatMoney(detail.totals.taxTotal, symbol)}</dd>
             </div>
             <div className="flex justify-between font-bold">
@@ -1061,6 +1088,8 @@ function EventDetailsForm({ detail, branchId, from, to, auth }: { detail: EventB
       <Textarea id="event-detail-av" label="AV & Equipment" value={avRequirements} onChange={(e) => setAvRequirements(e.target.value)} placeholder="Projector, 2 wireless mics" maxLength={2000} />
       <Textarea id="event-detail-notes" label="Notes & Special Instructions" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={2000} />
 
+      <BillEventCard detail={detail} branchId={branchId} from={from} to={to} auth={auth} />
+
       {message ? <p className={`text-small ${message.kind === 'error' ? 'text-red-600' : 'text-green-700'}`}>{message.text}</p> : null}
       <div className="flex flex-wrap gap-2">
         <Button type="button" onClick={save} loading={mutation.isPending && !downloading}>
@@ -1071,5 +1100,60 @@ function EventDetailsForm({ detail, branchId, from, to, auth }: { detail: EventB
         </Button>
       </div>
     </div>
+  );
+}
+
+/**
+ * Billing the event: its space hire and catering go on an open bill at the
+ * property — the organiser's own, or a group's master bill — taxed like any
+ * charge. Once; a mistake is corrected on the bill.
+ */
+function BillEventCard({ detail, branchId, from, to, auth }: { detail: EventBookingDetail; branchId: string; from: string; to: string; auth: AuthOpts }) {
+  const foliosQuery = useFoliosQuery(detail.billedAt ? null : branchId, 'in_house', auth);
+  const billMutation = useBillEventBookingMutation(branchId, from, to, auth);
+  const [folioId, setFolioId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const symbol = currencySymbolFor(detail.currency);
+
+  if (detail.billedTo) {
+    return (
+      <Card tone="accent" className="flex flex-col gap-1">
+        <p className="text-small text-surface">
+          <span className="font-semibold">Billed</span> to {detail.billedTo.guestName}
+          {detail.billedTo.roomNumber ? `, room ${detail.billedTo.roomNumber}` : ''}
+          {detail.billedTo.confirmationNumber ? ` (${detail.billedTo.confirmationNumber})` : ''}
+          {detail.billedAt ? ` on ${formatMoment(detail.billedAt)}` : ''}.
+        </p>
+        <Link href={`/dashboard/billing/${detail.billedTo.folioId}`} className="text-tiny text-surface underline underline-offset-2">
+          Open the bill
+        </Link>
+      </Card>
+    );
+  }
+  if (detail.status === 'cancelled' || Number(detail.totals.subtotal) <= 0) return null;
+
+  const options = (foliosQuery.data ?? []).map((f) => ({
+    value: f.id,
+    label: `${f.guest.name}${f.label ? ` — ${f.label}` : ''}${f.reservation?.room ? ` · room ${f.reservation.room.number}` : ''}`,
+  }));
+  async function bill() {
+    if (!folioId) return;
+    setError(null);
+    try {
+      await billMutation.mutateAsync({ bookingId: detail.id, folioId });
+    } catch (err) {
+      setError(errorText(err));
+    }
+  }
+  return (
+    <Card tone="accent" className="flex flex-col gap-2">
+      <p className="text-small font-semibold text-surface">Bill this event — {formatMoney(detail.totals.total, symbol)}</p>
+      <Select id="event-bill-folio" label="To the bill of" options={options} value={folioId} onChange={setFolioId} placeholder={foliosQuery.isLoading ? 'Loading in-house bills…' : 'Pick an in-house guest'} />
+      <p className="text-tiny text-surface-muted">Space hire and each catering line go on as charges, taxed by the branch&apos;s rules. Save any changes first — it bills what was last saved.</p>
+      {error ? <p className="text-small text-red-600">{error}</p> : null}
+      <Button type="button" size="sm" className="self-start" onClick={bill} loading={billMutation.isPending} disabled={!folioId}>
+        Bill Event
+      </Button>
+    </Card>
   );
 }

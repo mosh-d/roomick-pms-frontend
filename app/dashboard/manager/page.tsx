@@ -21,15 +21,15 @@ import { currencySymbolFor } from '@/lib/currencies';
 import { ApiError } from '@/lib/api';
 import { HubCard } from '../_components/HubCard';
 import { useAuthStore } from '@/lib/store/authStore';
-import { addDays, todayLocal } from '@/lib/dates';
+import { addDays, hotelToday } from '@/lib/dates';
 
-// The viewer's own calendar day, not the UTC date — which in Lagos is still
-// yesterday until one in the morning, so "today's" figures were a day out.
+// The hotel's calendar day — not the UTC date (in Lagos still yesterday until
+// one in the morning) nor the viewer's, if they are somewhere else.
 function today(): string {
-  return todayLocal();
+  return hotelToday();
 }
 function tomorrow(): string {
-  return addDays(todayLocal(), 1);
+  return addDays(hotelToday(), 1);
 }
 
 function KpiCard({ label, value }: { label: string; value: string }) {

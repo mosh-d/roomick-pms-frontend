@@ -29,13 +29,14 @@ import {
   type MenuItem,
   type ModifierGroup,
   type Outlet,
+  type PosDiscount,
   type PosOrder,
   type PosSettlement,
 } from '@/lib/pos';
 import { isSupervisorAtBranch } from '@/lib/roles';
 import { useAuthStore } from '@/lib/store/authStore';
 import { printReceipt } from '../_components/printReceipt';
-import { formatDateOnly } from '@/lib/dates';
+import { formatDateOnly, formatMoment } from '@/lib/dates';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -51,10 +52,11 @@ function basketKey(menuItemId: string, modifiers: BasketLine['modifiers']): stri
   return `${menuItemId}|${JSON.stringify(modifiers ?? [])}`;
 }
 
-function settledText(order: PosOrder): string {
+function settledText(order: PosOrder, symbol = ''): string {
   if (order.settlement === 'room' && order.reservation) {
     return `Room ${order.reservation.room?.number ?? '—'} · ${order.reservation.guest.name}`;
   }
+  if (order.settlement === 'split') return `${formatMoney(order.cashAmount, symbol)} cash + ${formatMoney(order.cardAmount, symbol)} card`;
   return order.settlement === 'cash' ? 'Paid in cash' : 'Paid by card';
 }
 
@@ -232,7 +234,7 @@ function OutletTerminal({ outlet, branchId, auth }: { outlet: Outlet; branchId: 
             <p className="text-body font-semibold text-surface">
               Order #{lastOrder.orderNo} — {formatMoney(lastOrder.total, symbol)}
             </p>
-            <p className="text-small text-surface-muted">{settledText(lastOrder)}</p>
+            <p className="text-small text-surface-muted">{settledText(lastOrder, symbol)}</p>
             <div>
               <Button type="button" size="sm" variant="outline" onClick={() => printReceipt(lastOrder)}>
                 Print receipt
@@ -278,9 +280,16 @@ function OrderPanel({
   onSold: (order: PosOrder) => void;
 }) {
   const lines = useMemo<BasketLine[]>(() => basket.map(({ menuItemId, qty, modifiers }) => ({ menuItemId, qty, modifiers })), [basket]);
-  const quoteQuery = usePosQuoteQuery(outlet.id, lines, auth);
+  const [discountOpen, setDiscountOpen] = useState(false);
+  const [discountType, setDiscountType] = useState<string | null>('percentage');
+  const [discountValue, setDiscountValue] = useState('');
+  const [discountReason, setDiscountReason] = useState('');
+  const discount: PosDiscount | undefined =
+    discountOpen && Number(discountValue) > 0 ? { type: discountType === 'fixed' ? 'fixed' : 'percentage', value: Number(discountValue), reason: discountReason.trim() } : undefined;
+  const quoteQuery = usePosQuoteQuery(outlet.id, lines, auth, discount);
   const createMutation = useCreateOrderMutation(auth);
   const [settlement, setSettlement] = useState<PosSettlement | null>(null);
+  const [cashPart, setCashPart] = useState('');
   const [roomInput, setRoomInput] = useState('');
   const [lookupRoom, setLookupRoom] = useState<string | null>(null);
   const [tableNumber, setTableNumber] = useState('');
@@ -293,18 +302,27 @@ function OrderPanel({
   const lookupCurrent = lookupRoom !== null && lookupRoom === roomInput.trim();
   const guest = settlement === 'room' && lookupCurrent ? lookup.data : undefined;
   const total = quote ? formatMoney(quote.total, symbol) : '';
+  // A split sale: the cash part into the drawer, the rest by card.
+  const cashPartValue = Number(cashPart);
+  const cardPart = quote ? Math.round((Number(quote.total) - cashPartValue) * 100) / 100 : 0;
+  const splitValid = settlement !== 'split' || (cashPartValue > 0 && cardPart > 0);
+  const discountReady = !discount || discount.reason!.length >= 3;
   const ready =
     basket.length > 0 &&
     quote !== undefined &&
     !quoteQuery.isError &&
     !repricing &&
     settlement !== null &&
+    splitValid &&
+    discountReady &&
     (settlement !== 'room' || (guest !== undefined && !guest.billClosed));
 
   let submitLabel = 'Choose how it’s paid';
   if (settlement === 'room') submitLabel = guest ? `Charge ${total} to Room ${guest.roomNumber}` : 'Find the guest first';
   if (settlement === 'cash') submitLabel = `Take ${total} cash`;
   if (settlement === 'card') submitLabel = `Take ${total} by card`;
+  if (settlement === 'split') submitLabel = splitValid && cashPart ? `Take ${formatMoney(cashPartValue, symbol)} cash + ${formatMoney(cardPart, symbol)} card` : 'Enter the cash part';
+  if (!discountReady) submitLabel = 'Give the reason for the discount';
 
   async function submit() {
     if (!ready || settlement === null) return;
@@ -316,11 +334,17 @@ function OrderPanel({
         items: lines,
         reservationId: settlement === 'room' ? guest?.reservationId : undefined,
         tableNumber: tableNumber.trim() || undefined,
+        discount,
+        cashAmount: settlement === 'split' ? cashPartValue : undefined,
       });
       setSettlement(null);
       setRoomInput('');
       setLookupRoom(null);
       setTableNumber('');
+      setCashPart('');
+      setDiscountOpen(false);
+      setDiscountValue('');
+      setDiscountReason('');
       onSold(order);
     } catch (err) {
       setError(errorText(err, "Couldn't ring this order up."));
@@ -361,6 +385,18 @@ function OrderPanel({
       )}
 
       <dl className={`flex flex-col gap-1 border-t border-secondary/20 pt-3 ${repricing ? 'opacity-50' : ''}`} aria-busy={repricing}>
+        {quote && Number(quote.discount) > 0 ? (
+          <>
+            <div className="flex justify-between text-small text-surface">
+              <dt>Items</dt>
+              <dd>{formatMoney(quote.itemsTotal, symbol)}</dd>
+            </div>
+            <div className="flex justify-between text-small text-surface">
+              <dt>Discount</dt>
+              <dd>−{formatMoney(quote.discount, symbol)}</dd>
+            </div>
+          </>
+        ) : null}
         <div className="flex justify-between text-small text-surface">
           <dt>Subtotal</dt>
           <dd>{quote ? formatMoney(quote.subtotal, symbol) : '—'}</dd>
@@ -386,10 +422,51 @@ function OrderPanel({
         <Input name="tableNumber" label="Table (optional)" value={tableNumber} onChange={(e) => setTableNumber(e.target.value)} placeholder="T4" maxLength={20} />
       ) : null}
 
+      {basket.length > 0 ? (
+        discountOpen ? (
+          <div className="flex flex-col gap-2 rounded-card border border-secondary/20 p-3">
+            <div className="grid grid-cols-2 gap-2">
+              <Select
+                name="discountType"
+                label="Discount"
+                options={[
+                  { value: 'percentage', label: '% off' },
+                  { value: 'fixed', label: `${symbol || 'Amount'} off` },
+                ]}
+                value={discountType}
+                onChange={setDiscountType}
+              />
+              <Input name="discountValue" label={discountType === 'fixed' ? 'Amount' : 'Percent'} type="number" min={0} step="0.01" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} />
+            </div>
+            <Input name="discountReason" label="Reason" value={discountReason} onChange={(e) => setDiscountReason(e.target.value)} maxLength={300} placeholder="Regular guest" />
+            <div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setDiscountOpen(false);
+                  setDiscountValue('');
+                  setDiscountReason('');
+                }}
+              >
+                Remove discount
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <Button type="button" size="sm" variant="outline" onClick={() => setDiscountOpen(true)}>
+              Add a discount
+            </Button>
+          </div>
+        )
+      ) : null}
+
       <fieldset className="flex flex-col gap-2">
         <legend className="text-small font-semibold text-surface">Paid by</legend>
         <div className="flex flex-wrap gap-2">
-          {(['room', 'cash', 'card'] as const).map((option) => (
+          {(['room', 'cash', 'card', 'split'] as const).map((option) => (
             <Button
               key={option}
               type="button"
@@ -401,11 +478,22 @@ function OrderPanel({
                 setError(null);
               }}
             >
-              {option === 'room' ? 'Charge to room' : SETTLEMENT_LABELS[option]}
+              {option === 'room' ? 'Charge to room' : option === 'split' ? 'Split cash + card' : SETTLEMENT_LABELS[option]}
             </Button>
           ))}
         </div>
       </fieldset>
+
+      {settlement === 'split' ? (
+        <div className="flex flex-col gap-1">
+          <Input name="cashPart" label="Paid in cash" type="number" min={0} step="0.01" value={cashPart} onChange={(e) => setCashPart(e.target.value)} />
+          {quote && cashPart ? (
+            <p className={`text-small ${splitValid ? 'text-surface-muted' : 'text-red-600'}`}>
+              {splitValid ? `The rest, ${formatMoney(cardPart, symbol)}, by card.` : `The cash part has to be less than the ${total} total.`}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {settlement === 'room' ? (
         <div className="flex flex-col gap-2">
@@ -544,6 +632,7 @@ function TodaysOrders({ outletId, supervisor, auth }: { outletId: string; superv
           <Stat label="Charged to rooms" value={formatMoney(day.summary.room, symbol)} />
           <Stat label="Cash" value={formatMoney(day.summary.cash, symbol)} />
           <Stat label="Card" value={formatMoney(day.summary.card, symbol)} />
+          {Number(day.summary.discounts) > 0 ? <Stat label="Discounts given" value={formatMoney(day.summary.discounts, symbol)} /> : null}
           {day.summary.voidCount > 0 ? <Stat label="Voided" value={String(day.summary.voidCount)} /> : null}
         </Card>
       ) : null}
@@ -558,8 +647,9 @@ function TodaysOrders({ outletId, supervisor, auth }: { outletId: string; superv
                   {order.voidedAt ? <span className="ml-2 rounded-pill bg-red-100 px-2 py-0.5 text-tiny font-semibold text-red-800">Void</span> : null}
                 </p>
                 <p className="text-small text-surface-muted">
-                  {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {order.items.map((l) => `${l.qty}× ${l.name}`).join(', ')} ·{' '}
-                  {settledText(order)}
+                  {formatMoment(order.createdAt, { hour: '2-digit', minute: '2-digit' })} · {order.items.map((l) => `${l.qty}× ${l.name}`).join(', ')} ·{' '}
+                  {settledText(order, symbol)}
+                  {Number(order.discountTotal) > 0 ? ` · ${formatMoney(order.discountTotal, symbol)} off (${order.discountReason ?? 'discount'})` : ''}
                   {order.tableNumber ? ` · Table ${order.tableNumber}` : ''}
                   {order.cashierName ? ` · ${order.cashierName}` : ''}
                 </p>
@@ -594,7 +684,9 @@ function VoidOrderDialog({ order, outletId, auth, symbol, onClose }: { order: Po
       ? `${amount} comes off ${order.reservation?.guest.name ?? 'the guest'}'s bill, tax and all.`
       : order.settlement === 'cash'
         ? `${amount} comes out of this shift's expected cash — hand the money back.`
-        : `Refund ${amount} on the card machine as well.`;
+        : order.settlement === 'split'
+          ? `${formatMoney(order.cashAmount, symbol)} comes out of this shift's expected cash — hand it back — and refund ${formatMoney(order.cardAmount, symbol)} on the card machine.`
+          : `Refund ${amount} on the card machine as well.`;
 
   async function confirm() {
     setError(null);

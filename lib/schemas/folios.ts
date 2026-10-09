@@ -42,5 +42,7 @@ export const recordPaymentSchema = z.object({
   method: z.enum(PAYMENT_METHOD_VALUES, { message: 'Pick a payment method' }),
   paymentPurpose: z.enum(PAYMENT_PURPOSE_VALUES).optional(),
   reference: z.string().trim().max(100).optional().or(z.literal('')),
+  /** Another currency the branch takes — empty for the branch's own. */
+  currency: z.string().optional(),
 });
 export type RecordPaymentFormValues = z.infer<typeof recordPaymentSchema>;

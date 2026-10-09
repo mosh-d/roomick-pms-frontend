@@ -13,7 +13,7 @@ import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
 import type { FolioListRow } from '@/lib/folios';
-import { formatDateOnly } from '@/lib/dates';
+import { formatDateOnly, formatMomentDate } from '@/lib/dates';
 
 type AlertTab = 'missedCheckIns' | 'overdueCheckouts' | 'overdueBalances' | 'maintenance';
 
@@ -230,7 +230,7 @@ function MaintenanceTable({ rows }: { rows: MaintenanceAlert[] }) {
                   {STATUS_LABEL[w.status]}
                   {w.assignedToUser ? <span className="block text-tiny text-surface-muted">{w.assignedToUser.name}</span> : null}
                 </td>
-                <td className="py-2 pr-4">{new Date(w.createdAt).toLocaleDateString()}</td>
+                <td className="py-2 pr-4">{formatMomentDate(w.createdAt)}</td>
                 <td className="py-2 pr-4 text-right">
                   <Link href="/dashboard/maintenance">
                     <Button type="button" size="sm">

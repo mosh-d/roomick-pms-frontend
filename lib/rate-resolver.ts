@@ -18,6 +18,19 @@ export interface RateQuote {
   ratePlanId: string | null;
   ruleApplied: { type: 'override' | 'cascade' | 'base'; planName: string | null; adjustmentApplied: string | null };
   perNight: Array<{ date: string; finalRate: string; isOverride: boolean; ratePlanId: string | null }>;
+  /** What the extra adults and children add to each night — already inside every night's rate. */
+  occupancySurcharge: string;
+  /** Packages added to the quote, each priced for the stay with its tax; null when none. */
+  packages: PackagesQuote | null;
+  /** The room and the packages, tax included — what the stay comes to. */
+  grandTotal: string;
+}
+
+export interface PackagesQuote {
+  lines: Array<{ packageId: string; name: string; basis: string; amount: string; tax: string; total: string }>;
+  subtotal: string;
+  taxTotal: string;
+  total: string;
 }
 
 export interface RatePlan {
@@ -50,12 +63,33 @@ type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined 
  */
 export function useCalculateRateQuery(
   branchId: string | null,
-  params: { roomTypeId: string | null; checkInDate: string | null; checkOutDate: string | null; promoCode?: string; corporateAccountId?: string },
+  params: {
+    roomTypeId: string | null;
+    checkInDate: string | null;
+    checkOutDate: string | null;
+    promoCode?: string;
+    corporateAccountId?: string;
+    /** Who is staying — prices the room type's extra-adult and child charges. */
+    adults?: number;
+    children?: number;
+    packageIds?: string[];
+  },
   { accessToken, tenantId }: AuthOpts,
 ) {
   const ready = Boolean(branchId && params.roomTypeId && params.checkInDate && params.checkOutDate && params.checkOutDate > params.checkInDate);
   return useQuery({
-    queryKey: ['rate-quote', branchId, params.roomTypeId, params.checkInDate, params.checkOutDate, params.promoCode ?? null, params.corporateAccountId ?? null] as const,
+    queryKey: [
+      'rate-quote',
+      branchId,
+      params.roomTypeId,
+      params.checkInDate,
+      params.checkOutDate,
+      params.promoCode ?? null,
+      params.corporateAccountId ?? null,
+      params.adults ?? null,
+      params.children ?? null,
+      (params.packageIds ?? []).join(','),
+    ] as const,
     queryFn: () =>
       apiFetch<RateQuote>(`/branches/${branchId}/rate-resolver/calculate`, {
         method: 'POST',
@@ -67,11 +101,19 @@ export function useCalculateRateQuery(
           checkOutDate: params.checkOutDate,
           promoCode: params.promoCode || undefined,
           corporateAccountId: params.corporateAccountId || undefined,
+          adults: validCount(params.adults, 1),
+          children: validCount(params.children, 0),
+          packageIds: params.packageIds?.length ? params.packageIds : undefined,
         },
       }),
     enabled: ready,
     staleTime: 0,
   });
+}
+
+/** A party-size field mid-edit (empty, or out of range) is left out rather than sent and refused. */
+function validCount(value: number | undefined, min: number): number | undefined {
+  return value !== undefined && Number.isInteger(value) && value >= min && value <= 20 ? value : undefined;
 }
 
 export function ratePlansQueryKey(branchId: string) {

@@ -31,6 +31,30 @@ export interface BranchDetail {
   /** Shown on the booking pages; when either is set, a guest booking online has to accept them. */
   privacyNotice: string | null;
   bookingTerms: string | null;
+  /** The deposit new bookings are asked for; NULL = none. */
+  depositPolicy: DepositPolicySettings | null;
+  /** Late check-out and early departure fees; NULL = neither. */
+  stayFeePolicy: StayFeePolicySettings | null;
+  /** Day-use hours; NULL = day use isn't sold. */
+  dayUsePolicy: { from: string; until: string } | null;
+  /** The evening turndown — every occupied room, or VIP guests' only. Null = none. */
+  turndownPolicy: { scope: TurndownScope } | null;
+}
+
+export type TurndownScope = 'all' | 'vip';
+
+export type DepositType = 'none' | 'first_night' | 'percentage' | 'fixed';
+
+/** Mirrors `DepositPolicyDto` (roomick-pms-backend/src/modules/property/dto/branch.dto.ts). */
+export interface DepositPolicySettings {
+  type: DepositType;
+  value: number | null;
+  dueDaysBeforeArrival: number;
+}
+
+export interface StayFeePolicySettings {
+  lateCheckout: { feeType: 'flat' | 'percent_of_night'; amount: number; graceMinutes: number } | null;
+  earlyDeparture: { feeType: 'flat' | 'first_night' | 'percent_of_remaining'; amount: number | null } | null;
 }
 
 export type PenaltyType = 'first_night' | 'full_stay' | 'flat_fee' | 'none';
@@ -145,6 +169,42 @@ export function useSetCancellationPolicyMutation(branchId: string, { accessToken
   return useMutation({
     mutationFn: (body: { freeCancellationHours: number; lateCancellationPenalty: PenaltyType; flatFeeAmount?: number; allowOnlineCancellation: boolean }) =>
       apiFetch<BranchDetail>(`/branches/${branchId}/policies/cancellation`, { method: 'PATCH', accessToken, tenantId, body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: branchDetailQueryKey(branchId) }),
+  });
+}
+
+export function useSetDepositPolicyMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { type: DepositType; value?: number; dueDaysBeforeArrival: number }) =>
+      apiFetch<BranchDetail>(`/branches/${branchId}/policies/deposit`, { method: 'PATCH', accessToken, tenantId, body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: branchDetailQueryKey(branchId) }),
+  });
+}
+
+export function useSetDayUsePolicyMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { enabled: boolean; from?: string; until?: string }) =>
+      apiFetch<BranchDetail>(`/branches/${branchId}/policies/day-use`, { method: 'PATCH', accessToken, tenantId, body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: branchDetailQueryKey(branchId) }),
+  });
+}
+
+export function useSetTurndownPolicyMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { enabled: boolean; scope?: TurndownScope }) =>
+      apiFetch<BranchDetail>(`/branches/${branchId}/policies/turndown`, { method: 'PATCH', accessToken, tenantId, body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: branchDetailQueryKey(branchId) }),
+  });
+}
+
+/** Either half sent as null switches it off. */
+export function useSetStayFeePolicyMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: StayFeePolicySettings) => apiFetch<BranchDetail>(`/branches/${branchId}/policies/stay-fees`, { method: 'PATCH', accessToken, tenantId, body }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: branchDetailQueryKey(branchId) }),
   });
 }

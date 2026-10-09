@@ -29,6 +29,7 @@ import {
 import { useReservationsQuery } from '@/lib/reservations';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+import { formatMoment } from '@/lib/dates';
 
 const DELIVERY_TONE: Record<DeliveryStatus, string> = {
   queued: 'bg-secondary-light/20 text-secondary',
@@ -238,7 +239,7 @@ function ConversationButton({ conversation, selected, onSelect }: { conversation
         ) : null}
       </div>
       <p className="text-tiny text-surface-muted">
-        {reservation ? `${reservation.confirmationNumber} · ${reservation.status.replace('_', ' ')}` : 'No booking'} · {new Date(lastMessage.sentAt).toLocaleString()}
+        {reservation ? `${reservation.confirmationNumber} · ${reservation.status.replace('_', ' ')}` : 'No booking'} · {formatMoment(lastMessage.sentAt)}
       </p>
       <p className="text-small text-surface/80 truncate">
         {lastMessage.direction === 'inbound' ? '' : 'You: '}
@@ -324,7 +325,7 @@ function ThreadMessage({ message }: { message: CommunicationLogEntry }) {
       <p className="flex flex-wrap items-center gap-1 text-tiny text-surface-muted">
         <CommsChannelIcon channel={message.channel} className="size-3" />
         <span>
-          {who} · {CHANNEL_LABELS[message.channel]} · {new Date(message.sentAt).toLocaleString()}
+          {who} · {CHANNEL_LABELS[message.channel]} · {formatMoment(message.sentAt)}
         </span>
       </p>
       {message.subject ? <p className="text-small font-semibold text-surface">{message.subject}</p> : null}
@@ -345,7 +346,7 @@ function TimelineEntry({ entry }: { entry: CommunicationLogEntry }) {
           <div>
             <p className="text-body font-semibold text-surface">{entry.subject ?? TRIGGER_LABELS[entry.trigger] ?? entry.trigger}</p>
             <p className="text-tiny text-surface-muted">
-              {TRIGGER_LABELS[entry.trigger] ?? entry.trigger} · {new Date(entry.sentAt).toLocaleString()} ·{' '}
+              {TRIGGER_LABELS[entry.trigger] ?? entry.trigger} · {formatMoment(entry.sentAt)} ·{' '}
               {entry.direction === 'inbound' ? 'From guest' : entry.sentBy ? 'Manual' : 'Automated'}
             </p>
           </div>
@@ -355,7 +356,7 @@ function TimelineEntry({ entry }: { entry: CommunicationLogEntry }) {
       {entry.deliveryStatus === 'queued' && entry.attempts > 0 ? (
         <p className="text-tiny text-amber-700">
           Not delivered yet — tried {entry.attempts} {entry.attempts === 1 ? 'time' : 'times'}
-          {entry.nextAttemptAt ? `, trying again ${new Date(entry.nextAttemptAt).toLocaleString()}` : ''}
+          {entry.nextAttemptAt ? `, trying again ${formatMoment(entry.nextAttemptAt)}` : ''}
           {entry.lastError ? ` (${entry.lastError})` : ''}
         </p>
       ) : null}

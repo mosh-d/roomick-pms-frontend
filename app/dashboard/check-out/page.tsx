@@ -7,16 +7,15 @@ import { Section } from '@/components/ui/Section';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select, type SelectOption } from '@/components/ui/Select';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { HotelCheckOutIcon } from '@/components/ui/Icons';
-import { useInHouseQuery, useCheckOutMutation } from '@/lib/reservations';
+import { useInHouseQuery } from '@/lib/reservations';
 import { useFoliosQuery } from '@/lib/folios';
 import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
-import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 import { formatDateOnly } from '@/lib/dates';
+import { CheckOutDialog } from '../_components/CheckOutDialog';
 
 /**
  * Check-Out Flow (Roomick-UI.pdf page 16) — pick an in-house guest, review
@@ -38,13 +37,11 @@ export default function CheckOutFlowPage() {
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [checkedOutName, setCheckedOutName] = useState<string | null>(null);
 
   const auth = { accessToken: accessToken ?? undefined, tenantId: user?.tenantId };
   const inHouseQuery = useInHouseQuery(activeBranchId, auth);
   const foliosQuery = useFoliosQuery(activeBranchId, 'in_house', auth);
-  const checkOutMutation = useCheckOutMutation(activeBranchId ?? '', auth);
 
   /** reservationId -> folio, so the selected guest's live balance can be shown before committing. */
   const folioByReservation = useMemo(() => {
@@ -69,20 +66,6 @@ export default function CheckOutFlowPage() {
   const owed = Number(folio?.balanceDue ?? 0);
 
   if (!activeBranchId) return null;
-
-  async function confirmCheckOut() {
-    if (!selected) return;
-    setActionError(null);
-    try {
-      await checkOutMutation.mutateAsync(selected.id);
-      setCheckedOutName(selected.guest.name);
-      setSelectedId(null);
-      setConfirming(false);
-    } catch (error) {
-      setActionError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
-      setConfirming(false);
-    }
-  }
 
   return (
     <Container className="max-w-3xl py-10 flex flex-col gap-6">
@@ -111,7 +94,6 @@ export default function CheckOutFlowPage() {
               value={selectedId}
               onChange={(value) => {
                 setSelectedId(value);
-                setActionError(null);
                 setCheckedOutName(null);
               }}
             />
@@ -141,8 +123,6 @@ export default function CheckOutFlowPage() {
               </p>
             ) : null}
 
-            {actionError ? <p className="text-small text-red-600">{actionError}</p> : null}
-
             <Button type="button" disabled={!selectedId} onClick={() => setConfirming(true)} className="self-start">
               Complete Check-Out
             </Button>
@@ -150,18 +130,15 @@ export default function CheckOutFlowPage() {
         )}
       </Section>
 
-      <ConfirmDialog
-        open={confirming}
-        title="Check out this guest?"
-        description={
-          owed > 0
-            ? `This checks out ${selected?.guest.name ?? 'this guest'} and releases the room for cleaning. They still owe ${formatMoney(folio?.balanceDue ?? 0, currencySymbolFor(folio?.currency))} — the balance becomes a City Ledger receivable.`
-            : `This checks out ${selected?.guest.name ?? 'this guest'} and releases the room for cleaning. The folio is fully paid and will be settled automatically.`
-        }
-        confirmLabel="Check-Out"
-        onCancel={() => setConfirming(false)}
-        onConfirm={confirmCheckOut}
-        loading={checkOutMutation.isPending}
+      <CheckOutDialog
+        target={confirming && selected ? { id: selected.id, guestName: selected.guest.name, balanceDue: folio?.balanceDue ?? null, currency: folio?.currency ?? null } : null}
+        branchId={activeBranchId}
+        auth={auth}
+        onClose={() => setConfirming(false)}
+        onCheckedOut={(name) => {
+          setCheckedOutName(name);
+          setSelectedId(null);
+        }}
       />
     </Container>
   );

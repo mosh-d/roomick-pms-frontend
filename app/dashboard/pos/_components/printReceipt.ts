@@ -1,6 +1,7 @@
 import { currencySymbolFor } from '@/lib/currencies';
 import { formatMoney } from '@/lib/numberFormat';
 import { SETTLEMENT_LABELS, type PosOrder } from '@/lib/pos';
+import { formatMoment } from '@/lib/dates';
 
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char] ?? char);
@@ -26,12 +27,15 @@ export function printReceipt(order: PosOrder): void {
   // the order records what the outlet keeps before tax — so the receipt says
   // "Before tax" rather than a "Subtotal" that doesn't match the items.
   const itemsTotal = order.items.reduce((sum, line) => sum + Number(line.lineTotal), 0);
-  const taxInPrices = Math.abs(itemsTotal - Number(order.subtotal)) > 0.005;
+  const discount = Number(order.discountTotal ?? 0);
+  const taxInPrices = Math.abs(itemsTotal - discount - Number(order.subtotal)) > 0.005;
 
   const settledTo =
     order.settlement === 'room' && order.reservation
       ? `Charged to Room ${escapeHtml(order.reservation.room?.number ?? '')} — ${escapeHtml(order.reservation.guest.name)}`
-      : `Paid by ${SETTLEMENT_LABELS[order.settlement].toLowerCase()}`;
+      : order.settlement === 'split'
+        ? `Paid ${money(order.cashAmount)} cash + ${money(order.cardAmount)} card`
+        : `Paid by ${SETTLEMENT_LABELS[order.settlement].toLowerCase()}`;
 
   const html = `<!doctype html><html><head><meta charset="utf-8"><title>Order #${order.orderNo}</title><style>
     @page { size: 80mm auto; margin: 4mm; }
@@ -50,12 +54,13 @@ export function printReceipt(order: PosOrder): void {
     <div class="centre">${escapeHtml(order.outlet.name)}</div>
     <div class="rule"></div>
     <div>Order #${order.orderNo}${order.tableNumber ? ` · Table ${escapeHtml(order.tableNumber)}` : ''}</div>
-    <div>${escapeHtml(new Date(order.createdAt).toLocaleString())}</div>
+    <div>${escapeHtml(formatMoment(order.createdAt))}</div>
     ${order.cashierName ? `<div>Served by ${escapeHtml(order.cashierName)}</div>` : ''}
     ${order.voidedAt ? '<div class="void">VOID</div>' : ''}
     <table>${lines}</table>
     <div class="rule"></div>
     <table>
+      ${discount > 0 ? `<tr><td>Discount${order.discountReason ? ` — ${escapeHtml(order.discountReason)}` : ''}</td><td class="amt">−${money(order.discountTotal)}</td></tr>` : ''}
       <tr><td>${taxInPrices ? 'Before tax' : 'Subtotal'}</td><td class="amt">${money(order.subtotal)}</td></tr>
       <tr><td>Tax</td><td class="amt">${money(order.taxTotal)}</td></tr>
       <tr class="total"><td>Total</td><td class="amt">${money(order.total)}</td></tr>

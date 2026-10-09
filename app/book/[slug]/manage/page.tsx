@@ -27,7 +27,7 @@ import {
   type PublicGuestFolio,
   type PublicMessage,
 } from '@/lib/publicBooking';
-import { formatDateOnly } from '@/lib/dates';
+import { formatDateOnly, formatMomentDate } from '@/lib/dates';
 
 /** Guest wording for `ChargeType`. */
 const CHARGE_LABELS: Record<string, string> = {
@@ -685,7 +685,7 @@ function GuestFolioSection({ slug, booking, lookupEmail }: { slug: string; booki
                   <div className="flex flex-col min-w-0">
                     <span className="wrap-break-word">{item.description}</span>
                     <span className="text-tiny text-surface-muted">
-                      {CHARGE_LABELS[item.chargeType] ?? item.chargeType} · {new Date(item.serviceDate ?? item.postedAt).toLocaleDateString()}
+                      {CHARGE_LABELS[item.chargeType] ?? item.chargeType} · {item.serviceDate ? formatDateOnly(item.serviceDate) : formatMomentDate(item.postedAt, undefined, booking.property.timezone)}
                     </span>
                   </div>
                   <span className="shrink-0 tabular-nums">{money(item.amount)}</span>
@@ -705,7 +705,7 @@ function GuestFolioSection({ slug, booking, lookupEmail }: { slug: string; booki
                     <span>
                       {PAYMENT_PURPOSE_LABELS[payment.purpose] ?? payment.purpose} · {PAYMENT_METHOD_LABELS[payment.method] ?? payment.method}
                     </span>
-                    <span className="text-tiny text-surface-muted">{new Date(payment.recordedAt).toLocaleDateString()}</span>
+                    <span className="text-tiny text-surface-muted">{formatMomentDate(payment.recordedAt, undefined, booking.property.timezone)}</span>
                   </div>
                   <span className="shrink-0 tabular-nums">{money(payment.amount)}</span>
                 </li>
@@ -807,6 +807,16 @@ function BookingDetail({ booking, onLookupAnother }: { booking: PublicBookingDet
               {booking.currency} {booking.totalRate}
             </dd>
           </div>
+          {booking.deposit ? (
+            <div>
+              <dt className="text-surface-muted">Deposit</dt>
+              <dd className="font-semibold">
+                {Number(booking.deposit.paid) >= Number(booking.deposit.amount)
+                  ? `${booking.currency} ${booking.deposit.paid} paid — thank you`
+                  : `${booking.currency} ${(Number(booking.deposit.amount) - Number(booking.deposit.paid)).toFixed(2)} due${booking.deposit.dueDate ? ` by ${formatDateOnly(booking.deposit.dueDate)}` : ''}`}
+              </dd>
+            </div>
+          ) : null}
         </dl>
 
         {booking.specialRequests ? (

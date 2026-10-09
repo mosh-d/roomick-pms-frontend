@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from './api';
+import { apiFetch, downloadFile } from './api';
 import { reservationsQueryKey } from './reservations';
 import type { GuestSummary } from './guests';
 
@@ -13,8 +13,11 @@ export type FolioStatus = 'pending' | 'open' | 'settled' | 'disputed';
  * + balance (see `FoliosService.deriveGuestStatus`). `city_ledger` = the
  * guest has departed and still owes — a collections matter, never a block.
  */
-/** `refund_due` — the bill holds a credit: the guest is owed money, and it can't close until it goes back. */
-export type FolioGuestStatus = 'in_house' | 'city_ledger' | 'refund_due' | null;
+/**
+ * `refund_due` — the bill holds a credit: the guest is owed money, and it can't close until it goes back.
+ * `deposit_held` — a credit on the bill of a stay still to come: its deposit, which the stay will use.
+ */
+export type FolioGuestStatus = 'in_house' | 'city_ledger' | 'refund_due' | 'deposit_held' | null;
 
 /** Money arrives as strings (Prisma `Decimal` serialised) — never parse to a float for arithmetic, only for display. */
 export interface LineItem {
@@ -35,13 +38,22 @@ export interface LineItem {
 
 export interface FolioPayment {
   id: string;
+  /** In the branch's currency. Negative: money handed back (a refund). */
   amount: string;
   method: PaymentMethod;
   currency: string;
+  /** Paid in another currency: what was handed over, and the rate it was taken at (branch currency per unit). */
+  foreignCurrency: string | null;
+  foreignAmount: string | null;
+  exchangeRate: string | null;
   reference: string | null;
   paymentPurpose: PaymentPurpose;
   recordedAt: string;
   isVoid: boolean;
+  voidedAt: string | null;
+  voidReason: string | null;
+  recordedByUser?: { name: string } | null;
+  voidedByUser?: { name: string } | null;
 }
 
 export interface FolioTotals {
@@ -223,7 +235,7 @@ export function usePostChargeMutation(branchId: string, folioId: string, { acces
 export function useRecordPaymentMutation(branchId: string, folioId: string, { accessToken, tenantId }: AuthOpts) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { amount: number; method: PaymentMethod; paymentPurpose?: PaymentPurpose; reference?: string }) =>
+    mutationFn: (body: { amount: number; method: PaymentMethod; paymentPurpose?: PaymentPurpose; reference?: string; currency?: string }) =>
       apiFetch<FolioPayment>(`/folios/${folioId}/payments`, { method: 'POST', accessToken, tenantId, body }),
     onSuccess: () => invalidateMoney(queryClient, branchId, folioId),
   });
@@ -367,6 +379,126 @@ export function useSplitFolioMutation(branchId: string, reservationId: string, {
       queryClient.invalidateQueries({ queryKey: folioQueryKey(variables.targetFolioId) });
       queryClient.invalidateQueries({ queryKey: ['reservation-folios', reservationId] });
       queryClient.invalidateQueries({ queryKey: ['folios', branchId] });
+    },
+  });
+}
+
+/** Voids a payment recorded in error (owner, manager, accountant) — kept on record, owed again. */
+export function useVoidPaymentMutation(branchId: string, folioId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ paymentId, reason }: { paymentId: string; reason: string }) =>
+      apiFetch<FolioPayment>(`/payments/${paymentId}/void`, { method: 'POST', accessToken, tenantId, body: { reason } }),
+    onSuccess: () => invalidateMoney(queryClient, branchId, folioId),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Invoices
+// ---------------------------------------------------------------------------
+
+export interface InvoiceLine {
+  date: string | null;
+  description: string;
+  chargeType: string;
+  amount: string;
+  tax: string;
+}
+
+/** Mirrors `InvoiceView` (roomick-pms-backend/src/modules/folios/invoices.service.ts). */
+export interface Invoice {
+  id: string;
+  folioId: string;
+  number: string;
+  issuedAt: string;
+  dueDate: string | null;
+  currency: string;
+  billTo: { name: string; company: string | null; email: string | null; phone: string | null; address: string | null };
+  lines: InvoiceLine[];
+  totals: { subTotal: string; taxTotal: string; total: string; paid: string; balanceDue: string; taxes: Array<{ name: string; amount: string }> };
+  supersededAt: string | null;
+  supersedes: { id: string; number: string } | null;
+  supersededBy: { id: string; number: string } | null;
+}
+
+export function useInvoicesQuery(folioId: string | null, { accessToken, tenantId }: AuthOpts) {
+  return useQuery({
+    queryKey: ['folio-invoices', folioId] as const,
+    queryFn: () => apiFetch<Invoice[]>(`/folios/${folioId}/invoices`, { accessToken, tenantId }),
+    enabled: folioId !== null,
+  });
+}
+
+/** Issues an invoice for the bill as it stands — the same one again when nothing changed. */
+export function useIssueInvoiceMutation(folioId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch<Invoice>(`/folios/${folioId}/invoices`, { method: 'POST', accessToken, tenantId }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['folio-invoices', folioId] }),
+  });
+}
+
+export function downloadInvoice(invoice: Pick<Invoice, 'id' | 'number'>, auth: AuthOpts): Promise<void> {
+  return downloadFile(`/invoices/${invoice.id}/pdf`, `${invoice.number}.pdf`, auth);
+}
+
+// ---------------------------------------------------------------------------
+// Other currencies
+// ---------------------------------------------------------------------------
+
+export interface ExchangeRates {
+  baseCurrency: string;
+  rates: Array<{ currency: string; rate: string; updatedAt: string }>;
+}
+
+export function useExchangeRatesQuery(branchId: string | null, { accessToken, tenantId }: AuthOpts) {
+  return useQuery({
+    queryKey: ['exchange-rates', branchId] as const,
+    queryFn: () => apiFetch<ExchangeRates>(`/branches/${branchId}/exchange-rates`, { accessToken, tenantId }),
+    enabled: branchId !== null,
+  });
+}
+
+export function useSetExchangeRateMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ currency, rate }: { currency: string; rate: number }) =>
+      apiFetch(`/branches/${branchId}/exchange-rates/${encodeURIComponent(currency)}`, { method: 'PUT', accessToken, tenantId, body: { rate } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['exchange-rates', branchId] }),
+  });
+}
+
+export function useRemoveExchangeRateMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (currency: string) => apiFetch(`/branches/${branchId}/exchange-rates/${encodeURIComponent(currency)}`, { method: 'DELETE', accessToken, tenantId }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['exchange-rates', branchId] }),
+  });
+}
+
+/** "USD 100.00 at 1,550.00" — how a payment taken in another currency reads. */
+export function describeForeign(payment: Pick<FolioPayment, 'foreignCurrency' | 'foreignAmount' | 'exchangeRate'>): string | null {
+  if (!payment.foreignCurrency || !payment.foreignAmount || !payment.exchangeRate) return null;
+  const amount = Number(payment.foreignAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const rate = Number(payment.exchangeRate).toLocaleString('en-US', { maximumFractionDigits: 6 });
+  return `${payment.foreignCurrency} ${amount} at ${rate}`;
+}
+
+// ---------------------------------------------------------------------------
+// Deposits
+// ---------------------------------------------------------------------------
+
+/** A deposit before arrival, on the stay's own bill (opened for it, `pending` until check-in). */
+export function useRecordDepositMutation(branchId: string, reservationId: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { amount: number; method: PaymentMethod; reference?: string; currency?: string }) =>
+      apiFetch<FolioPayment>(`/reservations/${reservationId}/deposits`, { method: 'POST', accessToken, tenantId, body }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservation-folios', reservationId] });
+      queryClient.invalidateQueries({ queryKey: ['folios', branchId] });
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['reservation', reservationId] });
     },
   });
 }

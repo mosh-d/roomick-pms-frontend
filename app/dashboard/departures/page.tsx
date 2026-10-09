@@ -4,18 +4,17 @@ import { useMemo, useState } from 'react';
 import { Container } from '@/components/ui/Container';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { CityDepartureIcon } from '@/components/ui/Icons';
 import { Table, type TableColumn } from '@/components/ui/Table';
-import { useDeparturesQuery, useCheckOutMutation, type ReservationSummary } from '@/lib/reservations';
+import { useDeparturesQuery, type ReservationSummary } from '@/lib/reservations';
 import { useFoliosQuery } from '@/lib/folios';
 import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
-import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 import { ExtendStayDialog, type ExtendStayTarget } from '../_components/ExtendStayDialog';
+import { CheckOutDialog } from '../_components/CheckOutDialog';
 import { formatDateOnly } from '@/lib/dates';
 
 /**
@@ -26,16 +25,6 @@ import { formatDateOnly } from '@/lib/dates';
  * blocked by it, but you're notified)") and Cloudbeds, whose AR transfer
  * likewise happens after check-out.
  */
-function checkOutDescription(pending: { guestName: string; balanceDue: string | null; currency: string | null } | null): string {
-  const base = `This checks out ${pending?.guestName ?? 'this guest'} and releases the room for cleaning.`;
-  const owed = Number(pending?.balanceDue ?? 0);
-  if (owed > 0) {
-    const amount = formatMoney(owed, currencySymbolFor(pending?.currency));
-    return `${base} They still owe ${amount} — settle payment first if you can. Checking out anyway is allowed; the balance becomes a City Ledger receivable.`;
-  }
-  return `${base} The folio is fully paid and will be settled automatically.`;
-}
-
 /**
  * Departures Dashboard (Roomick-UI.pdf page 15) — checked-in reservations
  * checking out today, each row showing its live folio balance.
@@ -43,7 +32,8 @@ function checkOutDescription(pending: { guestName: string; balanceDue: string | 
  * Still no dedicated Check-Out Flow page (ref p16): that screen is a full
  * folio line-item list plus a payment step, which the Guest Folio page
  * (`/dashboard/billing/[folioId]`) now provides — so check-out here stays
- * a `ConfirmDialog` that names the outstanding amount and links the
+ * a dialog that names the outstanding amount (and any late check-out or
+ * early departure fee it adds) and links the
  * settling work to where it actually lives.
  */
 export default function DeparturesDashboardPage() {
@@ -52,13 +42,11 @@ export default function DeparturesDashboardPage() {
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
   const [pendingCheckOut, setPendingCheckOut] = useState<{ id: string; guestName: string; balanceDue: string | null; currency: string | null } | null>(null);
   const [extendStayTarget, setExtendStayTarget] = useState<ExtendStayTarget | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
   const auth = { accessToken: accessToken ?? undefined, tenantId: user?.tenantId };
   const departuresQuery = useDeparturesQuery(activeBranchId, undefined, auth);
   const foliosQuery = useFoliosQuery(activeBranchId, 'in_house', auth);
-  const checkOutMutation = useCheckOutMutation(activeBranchId ?? '', auth);
 
   /** reservationId -> folio balance, so the row and the confirm dialog can both warn about money owed. */
   const folioByReservation = useMemo(() => {
@@ -77,17 +65,6 @@ export default function DeparturesDashboardPage() {
   }, [departuresQuery.data, search]);
 
   if (!activeBranchId) return null;
-
-  async function confirmCheckOut() {
-    if (!pendingCheckOut) return;
-    setActionError(null);
-    try {
-      await checkOutMutation.mutateAsync(pendingCheckOut.id);
-      setPendingCheckOut(null);
-    } catch (error) {
-      setActionError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
-    }
-  }
 
   const columns: TableColumn<ReservationSummary>[] = [
     { key: 'guest', label: 'Name', render: (r) => r.guest.name, sortValue: (r) => r.guest.name },
@@ -151,8 +128,6 @@ export default function DeparturesDashboardPage() {
 
       <SearchInput label="Search departures by guest name or room" placeholder="Search by guest name" value={search} onChange={setSearch} />
 
-      {actionError ? <p className="text-small text-red-600">{actionError}</p> : null}
-
       {departuresQuery.isLoading ? (
         <p className="text-body text-surface-muted">Loading departures…</p>
       ) : departuresQuery.isError ? (
@@ -168,15 +143,7 @@ export default function DeparturesDashboardPage() {
         </Card>
       )}
 
-      <ConfirmDialog
-        open={pendingCheckOut !== null}
-        title="Check out this guest?"
-        description={checkOutDescription(pendingCheckOut)}
-        confirmLabel="Check-Out"
-        onCancel={() => setPendingCheckOut(null)}
-        onConfirm={confirmCheckOut}
-        loading={checkOutMutation.isPending}
-      />
+      <CheckOutDialog target={pendingCheckOut} branchId={activeBranchId} auth={auth} onClose={() => setPendingCheckOut(null)} />
 
       <ExtendStayDialog target={extendStayTarget} branchId={activeBranchId} auth={auth} onClose={() => setExtendStayTarget(null)} />
     </Container>

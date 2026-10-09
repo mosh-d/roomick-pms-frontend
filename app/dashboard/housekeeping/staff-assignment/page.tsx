@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Select, type SelectOption } from '@/components/ui/Select';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StaffAssignmentIcon } from '@/components/ui/Icons';
-import { useHousekeepingTasksQuery, useHousekeepersQuery, useAssignTaskMutation } from '@/lib/housekeeping';
+import { useHousekeepingTasksQuery, useHousekeepersQuery, useAssignTaskMutation, isTurndown } from '@/lib/housekeeping';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
 
@@ -80,7 +80,10 @@ export default function StaffAssignmentPage() {
           <div className="flex flex-col gap-3">
             {unassigned.map((task) => (
               <Card key={task.id} tone="secondary" className="flex items-center justify-between gap-4">
-                <span className="text-body font-semibold text-surface">Room {task.room.number}</span>
+                <span className="text-body font-semibold text-surface">
+                  Room {task.room.number}
+                  {isTurndown(task) ? <span className="ml-2 text-small font-normal text-surface-muted">Turndown</span> : null}
+                </span>
                 <div className="flex items-center gap-3 w-72">
                   <div className="flex-1">
                     <Select

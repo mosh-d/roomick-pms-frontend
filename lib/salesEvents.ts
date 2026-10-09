@@ -167,6 +167,11 @@ export interface EventBookingSummary {
   status: string;
   cancelledAt: string | null;
   createdAt: string;
+  /** What the space costs for the event, before tax; null = no hire charge. */
+  spaceHireFee: string | null;
+  /** Billed: the bill its hire and catering went on, and when. */
+  folioId: string | null;
+  billedAt: string | null;
 }
 
 /** Mirrors `EventBookingDetail` — the catering priced by the server, tax by the branch's F&B rules. */
@@ -174,8 +179,10 @@ export interface EventBookingDetail extends EventBookingSummary {
   space: EventSpaceSummary;
   currency: string;
   cateringLines: Array<CateringLine & { amount: string }>;
-  /** `taxTotal` is added on top of `subtotal`; `taxIncluded` is already inside it. */
-  totals: { subtotal: string; taxTotal: string; taxIncluded: string; total: string };
+  /** Hire and catering together. `taxTotal` is added on top of `subtotal`; `taxIncluded` is already inside it. */
+  totals: { hire: string; catering: string; subtotal: string; taxTotal: string; taxIncluded: string; total: string };
+  /** The bill it went on, the way the desk knows it. */
+  billedTo: { folioId: string; guestName: string; roomNumber: string | null; confirmationNumber: string | null } | null;
 }
 
 /** Seats for a layout — the space's figure for it, else its general capacity. */
@@ -259,6 +266,7 @@ export type EventBookingChanges = Partial<{
   catering: CateringLine[];
   avRequirements: string | null;
   notes: string | null;
+  spaceHireFee: number | null;
 }>;
 
 export function useUpdateEventBookingMutation(branchId: string, from: string, to: string, { accessToken, tenantId }: AuthOpts) {
@@ -278,6 +286,21 @@ export function useCancelEventBookingMutation(branchId: string, from: string, to
   return useMutation({
     mutationFn: (bookingId: string) => apiFetch<{ ok: true }>(`/event-bookings/${bookingId}`, { method: 'DELETE', accessToken, tenantId }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: eventBookingsQueryKey(branchId, from, to) }),
+  });
+}
+
+/** Puts the event's space hire and catering on an open bill at the property — once. */
+export function useBillEventBookingMutation(branchId: string, from: string, to: string, { accessToken, tenantId }: AuthOpts) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ bookingId, folioId }: { bookingId: string; folioId: string }) =>
+      apiFetch<EventBookingDetail>(`/event-bookings/${bookingId}/bill`, { method: 'POST', accessToken, tenantId, body: { folioId } }),
+    onSuccess: (detail) => {
+      queryClient.setQueryData(['event-booking', detail.id], detail);
+      queryClient.invalidateQueries({ queryKey: eventBookingsQueryKey(branchId, from, to) });
+      queryClient.invalidateQueries({ queryKey: ['folios', branchId] });
+      if (detail.folioId) queryClient.invalidateQueries({ queryKey: ['folio', detail.folioId] });
+    },
   });
 }
 

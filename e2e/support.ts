@@ -15,7 +15,8 @@ export interface Owner {
   userId: string;
   /** Renewed by `api()` when it expires — the API under test signs in for 5 seconds. */
   token: string;
-  refreshToken: string;
+  /** `roomick_session=<refresh token>` — what a browser sends back to renew. */
+  sessionCookie: string;
 }
 
 export interface Property {
@@ -26,14 +27,27 @@ export interface Property {
 
 type Json = Record<string, unknown>;
 
+/** The session cookie an answer set, as a browser would send it back (`roomick_session=…`). */
+function sessionCookieOf(res: Response): string | undefined {
+  return res.headers
+    .getSetCookie()
+    .find((line) => line.startsWith('roomick_session='))
+    ?.split(';')[0];
+}
+
 /** One request to the API; as `owner`, an expired sign-in is renewed once and the request repeated. */
-export async function api(method: string, path: string, options: { owner?: Owner; body?: unknown } = {}): Promise<{ status: number; json: Json }> {
+export async function api(
+  method: string,
+  path: string,
+  options: { owner?: Owner; body?: unknown; cookie?: string } = {},
+): Promise<{ status: number; json: Json; sessionCookie?: string }> {
   const send = async () => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (options.owner) {
       headers.Authorization = `Bearer ${options.owner.token}`;
       headers['X-Tenant-ID'] = options.owner.tenantId;
     }
+    if (options.cookie) headers.Cookie = options.cookie;
     const res = await fetch(`${API_URL}${path}`, { method, headers, body: options.body === undefined ? undefined : JSON.stringify(options.body) });
     const text = await res.text();
     let json: Json = {};
@@ -42,7 +56,7 @@ export async function api(method: string, path: string, options: { owner?: Owner
     } catch {
       json = { text };
     }
-    return { status: res.status, json };
+    return { status: res.status, json, sessionCookie: sessionCookieOf(res) };
   };
   const first = await send();
   if (first.status !== 401 || !options.owner) return first;
@@ -50,13 +64,12 @@ export async function api(method: string, path: string, options: { owner?: Owner
   return send();
 }
 
-/** Swaps the owner's refresh token for a new pair, as the web app does. */
+/** Renews the owner's session from its cookie, as the web app does. */
 async function renew(owner: Owner): Promise<void> {
-  const res = await fetch(`${API_URL}/auth/refresh`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refreshToken: owner.refreshToken }) });
-  if (res.status !== 200) throw new Error(`refresh ${res.status}`);
-  const json = (await res.json()) as { accessToken: string; refreshToken: string };
-  owner.token = json.accessToken;
-  owner.refreshToken = json.refreshToken;
+  const res = await api('POST', '/auth/refresh', { cookie: owner.sessionCookie, body: {} });
+  if (res.status !== 200 || !res.sessionCookie) throw new Error(`refresh ${res.status}`);
+  owner.token = res.json.accessToken as string;
+  owner.sessionCookie = res.sessionCookie;
 }
 
 /** The Lagos calendar date `offsetDays` from today — the branches these tests make are in Lagos. */
@@ -81,9 +94,9 @@ export async function signUp(label: string): Promise<Owner> {
 
 export async function signIn(email: string, password: string): Promise<Owner> {
   const res = await api('POST', '/auth/login', { body: { email, password } });
-  if (res.status !== 200) throw new Error(`login ${res.status}: ${JSON.stringify(res.json)}`);
+  if (res.status !== 200 || !res.sessionCookie) throw new Error(`login ${res.status}: ${JSON.stringify(res.json)}`);
   const user = res.json.user as { id: string; tenantId: string };
-  return { email, password, tenantId: user.tenantId, userId: user.id, token: res.json.accessToken as string, refreshToken: res.json.refreshToken as string };
+  return { email, password, tenantId: user.tenantId, userId: user.id, token: res.json.accessToken as string, sessionCookie: res.sessionCookie };
 }
 
 /** The head brand, one Lagos branch, a room type and `rooms` rooms numbered from 101. */
@@ -144,13 +157,18 @@ export async function signInThroughUi(page: Page, owner: Owner): Promise<void> {
   await page.waitForLoadState('networkidle');
 }
 
-/** Records the page's sign-in renewals and its other API calls, from the last `reset()`. */
+/**
+ * Records the page's sign-in renewals and its other API calls, from the last
+ * `reset()` — those straight to the API, and the session routes that go
+ * through the web app's own `/api/v1/auth/`.
+ */
 export function watchApi(page: Page) {
   const state = { refreshes: [] as number[], calls: [] as Array<{ path: string; status: number }> };
   page.on('response', (res) => {
     const url = res.url();
-    if (!url.startsWith(API_URL)) return;
-    const path = url.slice(API_URL.length).split('?')[0];
+    const viaWebApp = new URL(url).pathname.startsWith('/api/v1/auth/') && !url.startsWith(API_URL);
+    if (!url.startsWith(API_URL) && !viaWebApp) return;
+    const path = (viaWebApp ? new URL(url).pathname.slice('/api/v1'.length) : url.slice(API_URL.length)).split('?')[0];
     if (path === '/auth/refresh') state.refreshes.push(res.status());
     else state.calls.push({ path, status: res.status() });
   });

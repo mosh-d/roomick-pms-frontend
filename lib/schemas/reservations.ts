@@ -12,8 +12,9 @@ export const walkInBookingSchema = z
     adults: z.number().int().min(1).max(20),
     children: z.number().int().min(0).max(20).optional(),
     specialRequests: z.string().max(1000).optional().or(z.literal('')),
+    dayUse: z.boolean().optional(),
   })
-  .refine((data) => data.checkOutDate > data.checkInDate, {
+  .refine((data) => data.dayUse === true || data.checkOutDate > data.checkInDate, {
     message: 'Check-out must be after check-in',
     path: ['checkOutDate'],
   });
@@ -39,8 +40,9 @@ export const createReservationSchema = z
     children: z.number().int().min(0).max(20).optional(),
     specialRequests: z.string().max(1000).optional().or(z.literal('')),
     joinWaitlist: z.boolean().optional(),
+    dayUse: z.boolean().optional(),
   })
-  .refine((data) => data.checkOutDate > data.checkInDate, {
+  .refine((data) => data.dayUse === true || data.checkOutDate > data.checkInDate, {
     message: 'Check-out must be after check-in',
     path: ['checkOutDate'],
   });

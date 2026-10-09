@@ -112,3 +112,41 @@ export type ReportType = 'occupancy' | 'adr' | 'revpar' | 'revenue';
 export function reportPdfPath(branchId: string, type: ReportType, params: ReportParams): string {
   return `/branches/${branchId}/reports/${type}/pdf?${reportQueryString(params)}`;
 }
+
+export type AgeingBucket = '0-30' | '31-60' | '61-90' | '90+';
+
+/** Mirrors `ArAgeingReport` (roomick-pms-backend/src/modules/reports/reports.service.ts). */
+export interface ArAgeingReport {
+  asOf: string;
+  currency: string;
+  buckets: AgeingBucket[];
+  debtors: Array<{
+    key: string;
+    type: 'company' | 'guest';
+    name: string;
+    buckets: Record<AgeingBucket, string>;
+    total: string;
+    bills: Array<{
+      folioId: string;
+      label: string | null;
+      guestName: string;
+      confirmationNumber: string | null;
+      invoice: { number: string; issuedOn: string; dueDate: string | null } | null;
+      since: string;
+      ageDays: number;
+      bucket: AgeingBucket;
+      overdue: boolean;
+      balance: string;
+    }>;
+  }>;
+  totals: Record<AgeingBucket, string> & { total: string };
+}
+
+/** What departed guests and companies still owe, aged — owners, managers and accountants. */
+export function useArAgeingQuery(branchId: string | null, asOf: string | null, auth: AuthOpts) {
+  return useQuery({
+    queryKey: ['reports', 'ar-ageing', branchId, asOf] as const,
+    queryFn: () => apiFetch<ArAgeingReport>(`/branches/${branchId}/reports/ar-ageing${asOf ? `?asOf=${asOf}` : ''}`, auth),
+    enabled: branchId !== null,
+  });
+}

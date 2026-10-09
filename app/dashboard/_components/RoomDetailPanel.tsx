@@ -3,12 +3,15 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { StatusTag } from '@/components/ui/StatusTag';
 import { ApiError } from '@/lib/api';
 import { deriveRoomStatus, type CleanlinessStatus } from '@/lib/deriveRoomStatus';
 import { floorLabel } from '@/lib/groupRoomsByFloor';
 import { isSupervisorAtBranch } from '@/lib/roles';
 import { useChangeRoomStatusMutation, type RoomWithDetails } from '@/lib/rooms';
+import { useCreateTaskMutation } from '@/lib/housekeeping';
+import { dayAfter, formatDateOnly, hotelToday } from '@/lib/dates';
 import type { AuthUser } from '@/lib/store/authStore';
 
 /**
@@ -53,7 +56,9 @@ export function RoomDetailPanel({
   tenantId: string | undefined;
 }) {
   const [actionError, setActionError] = useState<string | null>(null);
+  const [requested, setRequested] = useState<string | null>(null);
   const mutation = useChangeRoomStatusMutation(branchId, { accessToken, tenantId });
+  const taskMutation = useCreateTaskMutation(branchId, { accessToken, tenantId });
 
   if (!room) {
     return (
@@ -73,6 +78,17 @@ export function RoomDetailPanel({
     setActionError(null);
     try {
       await mutation.mutateAsync(body);
+    } catch (error) {
+      setActionError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
+    }
+  }
+
+  async function requestTurndown(roomId: string) {
+    setActionError(null);
+    setRequested(null);
+    try {
+      await taskMutation.mutateAsync({ roomId, kind: 'turndown' });
+      setRequested(roomId);
     } catch (error) {
       setActionError(error instanceof ApiError ? error.message : 'Something went wrong. Please try again.');
     }
@@ -100,6 +116,11 @@ export function RoomDetailPanel({
       <Card tone="secondary" className="flex flex-col gap-3">
         <h3 className="text-small font-bold text-surface-muted">Housekeeping</h3>
         <div className="flex flex-wrap gap-2">
+          {room.occupancyStatus === 'occupied' ? (
+            <Button size="sm" variant="outline" loading={taskMutation.isPending} onClick={() => requestTurndown(room.id)}>
+              Request Turndown
+            </Button>
+          ) : null}
           {nextCleanlinessStates.map((next) => (
             <Button
               key={next}
@@ -138,42 +159,73 @@ export function RoomDetailPanel({
             </div>
 
             <h3 className="text-small font-bold text-surface-muted pt-2 border-t border-secondary/20">Hold</h3>
-            <div className="flex flex-wrap gap-2">
-              {room.heldStatus ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={mutation.isPending}
-                  onClick={() => runAction({ roomId: room.id, heldStatus: null })}
-                >
-                  Release Hold
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    disabled={mutation.isPending}
-                    onClick={() => runAction({ roomId: room.id, heldStatus: 'out_of_order' })}
-                  >
-                    Out of Order
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    disabled={mutation.isPending}
-                    onClick={() => runAction({ roomId: room.id, heldStatus: 'blocked' })}
-                  >
-                    Block
-                  </Button>
-                </>
-              )}
-            </div>
+            <HoldControls key={`${room.id}:${room.heldStatus ?? ''}:${room.heldUntil ?? ''}`} room={room} pending={mutation.isPending} onChange={runAction} />
           </>
         ) : null}
 
+        {requested === room.id ? <p className="text-small text-surface">Turndown requested — it&apos;s on the Task Board.</p> : null}
         {actionError ? <p className="text-small text-red-600">{actionError}</p> : null}
       </Card>
+    </div>
+  );
+}
+
+/**
+ * Out of order or blocked, with an optional date the room comes back into
+ * service: it's sold again from that night, and released that day by the
+ * hourly sweep. Left blank, it's held until someone releases it.
+ */
+function HoldControls({
+  room,
+  pending,
+  onChange,
+}: {
+  room: RoomWithDetails;
+  pending: boolean;
+  onChange: (body: { roomId: string; heldStatus?: 'out_of_order' | 'blocked' | null; heldUntil?: string | null }) => void;
+}) {
+  const [backOn, setBackOn] = useState(room.heldUntil ? room.heldUntil.slice(0, 10) : '');
+  const tomorrow = dayAfter(hotelToday());
+
+  return (
+    <div className="flex flex-col gap-2">
+      {room.heldStatus ? (
+        <p className="text-small text-surface-muted">{room.heldUntil ? `Back in service on ${formatDateOnly(room.heldUntil)}` : 'Held until someone releases it'}</p>
+      ) : null}
+      <div className="w-48">
+        <Input id={`hold-until-${room.id}`} label="Back in service on (optional)" type="date" min={tomorrow} value={backOn} onChange={(e) => setBackOn(e.target.value)} />
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {room.heldStatus ? (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={pending || !backOn || backOn === room.heldUntil?.slice(0, 10)}
+              onClick={() => onChange({ roomId: room.id, heldUntil: backOn })}
+            >
+              Set Date
+            </Button>
+            {room.heldUntil ? (
+              <Button size="sm" variant="outline" disabled={pending} onClick={() => onChange({ roomId: room.id, heldUntil: null })}>
+                Clear Date
+              </Button>
+            ) : null}
+            <Button size="sm" variant="outline" disabled={pending} onClick={() => onChange({ roomId: room.id, heldStatus: null })}>
+              Release Hold
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button size="sm" variant="danger" disabled={pending} onClick={() => onChange({ roomId: room.id, heldStatus: 'out_of_order', heldUntil: backOn || undefined })}>
+              Out of Order
+            </Button>
+            <Button size="sm" variant="danger" disabled={pending} onClick={() => onChange({ roomId: room.id, heldStatus: 'blocked', heldUntil: backOn || undefined })}>
+              Block
+            </Button>
+          </>
+        )}
+      </div>
     </div>
   );
 }

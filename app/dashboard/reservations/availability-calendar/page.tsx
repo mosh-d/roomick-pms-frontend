@@ -8,15 +8,17 @@ import { Select, type SelectOption } from '@/components/ui/Select';
 import { CalendarIcon } from '@/components/ui/Icons';
 import { useAvailabilityCalendarQuery } from '@/lib/reservations';
 import { useAuthStore } from '@/lib/store/authStore';
+import { hotelToday } from '@/lib/dates';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
+/** This month at the hotel. */
 function currentYearMonth(): { year: number; month: number } {
-  const now = new Date();
-  return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  const [year, month] = hotelToday().split('-').map(Number);
+  return { year, month };
 }
 
 /** Green when comfortably open, amber when tight, red when full — same three-way read as the reference's own occupancy row, applied per cell instead of only at the bottom. */

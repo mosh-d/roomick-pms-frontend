@@ -17,6 +17,8 @@ import { PropertyConfigIcon, HotelCheckInIcon, OverbookingIcon } from '@/compone
 import { HubCard } from '../_components/HubCard';
 import { TaxRulesSection } from './_components/TaxRulesSection';
 import { RoomsLayoutSection } from './_components/RoomsLayoutSection';
+import { CurrenciesSection, DayUseSection, DepositPolicySection, StayFeePolicySection } from './_components/MoneyPolicySections';
+import { TurndownSection } from './_components/TurndownSection';
 import {
   useBrandsQuery,
   useUpdateBrandMutation,
@@ -32,7 +34,7 @@ import {
   useUnpublishBookingEngineMutation,
   type BranchDetail,
 } from '@/lib/propertyConfig';
-import { useRoomTypesQuery, useCreateRoomTypeMutation, useUpdateRoomTypeMutation, type RoomTypeSummary } from '@/lib/rooms';
+import { useRoomTypesQuery, useCreateRoomTypeMutation, useUpdateRoomTypeMutation, usePhotoUploadsQuery, useUploadRoomPhotoMutation, type RoomTypeSummary } from '@/lib/rooms';
 import { COUNTRIES } from '@/lib/countries';
 import { timezoneOptionsFor } from '@/lib/timezones';
 import { formatMoney } from '@/lib/numberFormat';
@@ -656,7 +658,16 @@ const AMENITY_OPTIONS = [
  * The thumbnail matters because a typo'd URL is otherwise invisible until a
  * guest loads the booking page and sees a broken image.
  */
-function PhotoUrlListInput({ value, onChange }: { value: string[]; onChange: (next: string[]) => void }) {
+function PhotoUrlListInput({
+  value,
+  onChange,
+  upload,
+}: {
+  value: string[];
+  onChange: (next: string[]) => void;
+  /** Present when photos can be uploaded: the room type saved, and storage set up. */
+  upload?: { onFile: (file: File) => void; pending: boolean; error: string | null; maxBytes: number } | null;
+}) {
   const rows = value.length > 0 ? value : [''];
 
   function update(index: number, next: string) {
@@ -690,12 +701,35 @@ function PhotoUrlListInput({ value, onChange }: { value: string[]; onChange: (ne
           </Button>
         </div>
       ))}
-      <div>
+      <div className="flex flex-wrap items-center gap-2">
         <Button type="button" size="sm" variant="outline" onClick={() => onChange([...rows, ''])} disabled={rows.some((u) => !u.trim())}>
-          Add photo
+          Add photo link
         </Button>
+        {upload ? (
+          <label
+            className={`inline-flex items-center rounded-control border border-secondary/30 px-3 py-1.5 text-small font-semibold text-secondary ${upload.pending ? 'opacity-60' : 'cursor-pointer hover:bg-secondary/5'}`}
+          >
+            {upload.pending ? 'Uploading…' : 'Upload photo'}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              disabled={upload.pending}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = '';
+                if (file) upload.onFile(file);
+              }}
+            />
+          </label>
+        ) : null}
       </div>
-      <p className="text-tiny text-surface-muted">Paste image links from wherever you already host them. The first photo is the one guests see first.</p>
+      {upload?.error ? <p className="text-small text-red-600">{upload.error}</p> : null}
+      <p className="text-tiny text-surface-muted">
+        {upload
+          ? `Upload a JPEG, PNG or WebP of up to ${Math.round(upload.maxBytes / (1024 * 1024))} MB — it's added straight away — or paste a link from wherever you host it. The first photo is the one guests see first.`
+          : 'Paste image links from wherever you already host them. The first photo is the one guests see first.'}
+      </p>
     </div>
   );
 }
@@ -713,6 +747,9 @@ function RoomTypeModalInner({
 }) {
   const createMutation = useCreateRoomTypeMutation(branchId, auth);
   const updateMutation = useUpdateRoomTypeMutation(branchId, auth);
+  const photoUploads = usePhotoUploadsQuery(branchId, auth);
+  const uploadMutation = useUploadRoomPhotoMutation(branchId, auth);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [name, setName] = useState(existing?.name ?? '');
   const [baseRate, setBaseRate] = useState(existing?.baseRate ?? '');
   const [adults, setAdults] = useState(String(existing?.capacity.adults ?? 2));
@@ -721,11 +758,22 @@ function RoomTypeModalInner({
   const [sizeM2, setSizeM2] = useState(existing?.sizeM2 ?? '');
   const [amenities, setAmenities] = useState<string[]>(existing?.amenities ?? []);
   const [photoUrls, setPhotoUrls] = useState<string[]>(existing?.photoUrls ?? []);
+  const [adultsIncluded, setAdultsIncluded] = useState(existing?.adultsIncluded ? String(existing.adultsIncluded) : '');
+  const [extraAdultRate, setExtraAdultRate] = useState(existing?.extraAdultRate ?? '');
+  const [childrenIncluded, setChildrenIncluded] = useState(String(existing?.childrenIncluded ?? 0));
+  const [childRate, setChildRate] = useState(existing?.childRate ?? '');
+  const [dayUseRate, setDayUseRate] = useState(existing?.dayUseRate ?? '');
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit() {
     setError(null);
     const body = {
+      // Extra people: blank means "no charge" — every adult included, children free.
+      adultsIncluded: adultsIncluded ? Number(adultsIncluded) : null,
+      extraAdultRate: adultsIncluded && extraAdultRate ? Number(extraAdultRate) : null,
+      childrenIncluded: Number(childrenIncluded || 0),
+      childRate: childRate ? Number(childRate) : null,
+      dayUseRate: dayUseRate ? Number(dayUseRate) : null,
       name,
       baseRate: Number(baseRate),
       capacity: { adults: Number(adults), children: Number(children) },
@@ -768,7 +816,61 @@ function RoomTypeModalInner({
         allowCustom
         hint="Shown to guests on your public booking page."
       />
-      <PhotoUrlListInput value={photoUrls} onChange={setPhotoUrls} />
+      <PhotoUrlListInput
+        value={photoUrls}
+        onChange={setPhotoUrls}
+        upload={
+          existing && photoUploads.data?.enabled
+            ? {
+                pending: uploadMutation.isPending,
+                error: uploadError,
+                maxBytes: photoUploads.data.maxBytes,
+                onFile: (file) => {
+                  setUploadError(null);
+                  if (file.size > photoUploads.data!.maxBytes) {
+                    setUploadError(`That photo is over ${Math.round(photoUploads.data!.maxBytes / (1024 * 1024))} MB — choose a smaller one.`);
+                    return;
+                  }
+                  uploadMutation.mutate(
+                    { roomTypeId: existing.id, file },
+                    {
+                      // The saved list plus any links typed here and not saved yet.
+                      onSuccess: (saved) => setPhotoUrls((current) => [...saved.photoUrls, ...current.filter((url) => url.trim() && !saved.photoUrls.includes(url))]),
+                      onError: (err) => setUploadError(err instanceof ApiError ? err.message : 'Couldn’t upload that photo. Please try again.'),
+                    },
+                  );
+                },
+              }
+            : null
+        }
+      />
+      {!existing && photoUploads.data?.enabled ? <p className="text-tiny text-surface-muted">Save the room type first to upload photos for it.</p> : null}
+      <p className="text-small font-semibold text-surface">Extra people (optional)</p>
+      <div className="grid grid-cols-2 gap-3">
+        <Input
+          id="room-type-adults-included"
+          label="Adults the rate covers"
+          type="number"
+          min={1}
+          max={20}
+          value={adultsIncluded}
+          onChange={(e) => setAdultsIncluded(e.target.value)}
+          hint="Blank: every adult is included."
+        />
+        <Input id="room-type-extra-adult" label="Each extra adult, a night" type="number" min={0} step="0.01" value={extraAdultRate} onChange={(e) => setExtraAdultRate(e.target.value)} disabled={!adultsIncluded} />
+        <Input id="room-type-children-free" label="Children who stay free" type="number" min={0} max={20} value={childrenIncluded} onChange={(e) => setChildrenIncluded(e.target.value)} />
+        <Input id="room-type-child-rate" label="Each other child, a night" type="number" min={0} step="0.01" value={childRate} onChange={(e) => setChildRate(e.target.value)} hint="Blank: children stay free." />
+      </div>
+      <Input
+        id="room-type-day-use"
+        label="Day-use rate (optional)"
+        type="number"
+        min={0}
+        step="0.01"
+        value={dayUseRate}
+        onChange={(e) => setDayUseRate(e.target.value)}
+        hint="The room for the day, no night — sold when Day Use is switched on below. Blank: not sold for day use."
+      />
       {error ? <p className="text-small text-red-600">{error}</p> : null}
       {existing ? <p className="text-tiny text-surface-muted">Changing the rate only affects future bookings — existing reservations keep their own confirmed rate.</p> : null}
       <div className="flex items-center gap-3">
@@ -868,6 +970,11 @@ export default function PropertyConfigPage() {
           <BookingEngineSection branch={branchQuery.data} auth={auth} />
           <NoShowPolicySection branch={branchQuery.data} auth={auth} />
           <CancellationPolicySection branch={branchQuery.data} auth={auth} />
+          <DepositPolicySection branch={branchQuery.data} auth={auth} />
+          <StayFeePolicySection branch={branchQuery.data} auth={auth} />
+          <DayUseSection branch={branchQuery.data} auth={auth} />
+          <TurndownSection branch={branchQuery.data} auth={auth} />
+          <CurrenciesSection branch={branchQuery.data} auth={auth} />
           <GuestTermsSection branch={branchQuery.data} auth={auth} />
           <TaxRulesSection branchId={branchQuery.data.id} currency={branchQuery.data.currency} auth={auth} />
         </>

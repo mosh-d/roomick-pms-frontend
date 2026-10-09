@@ -77,6 +77,9 @@ jobs:
         with:
           repository: mosh-d/roomick-pms-backend
           path: api
+          # Needed only if the API's repository is made private: a read-only
+          # token for it, saved in this repository's Actions secrets.
+          token: ${{ secrets.BACKEND_REPO_TOKEN || github.token }}
 
       - uses: actions/setup-node@v4
         with:

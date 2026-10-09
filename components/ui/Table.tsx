@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { ArrowLeftIcon, ArrowRightIcon, DownloadIcon, SortIcon } from './Icons';
 import { Button } from './Button';
 import { csvCell } from '@/lib/csv';
+import { hotelToday } from '@/lib/dates';
 
 export interface TableColumn<T> {
   key: string;
@@ -90,7 +91,7 @@ export function Table<T extends { id: string }>({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${exportFileName}-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `${exportFileName}-${hotelToday()}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   }

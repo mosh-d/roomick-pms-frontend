@@ -11,6 +11,10 @@ export interface CorporateAccount {
   ratePlanId: string | null;
   contactName: string | null;
   contactEmail: string | null;
+  /** Days the company has to pay an invoice; null = due on receipt. */
+  paymentTermsDays: number | null;
+  /** `{ address }` — printed on its invoices. */
+  billingInfo: { address?: string } | null;
   isActive: boolean;
   createdAt: string;
   /** The contracted (negotiated) rate plan — it belongs to one branch, so the contract applies there. */
@@ -46,6 +50,8 @@ export interface CorporateAccountInput {
   ratePlanId: string | null;
   contactName?: string;
   contactEmail?: string;
+  paymentTermsDays?: number | null;
+  billingAddress?: string;
 }
 
 /** The active account whose email domains include this address's — a guest booked with a company address is offered the company's rate. */
@@ -62,6 +68,30 @@ export function useCorporateAccountsQuery({ accessToken, tenantId }: AuthOpts) {
     queryKey: KEY,
     queryFn: () => apiFetch<CorporateAccount[]>('/corporate-accounts', { accessToken, tenantId }),
     enabled: tenantId !== undefined,
+  });
+}
+
+/** One page of the company list, found by name, contact or email domain — and how many match in all. */
+export function useCorporateAccountsPageQuery(
+  params: { search: string; page: number; pageSize: number },
+  { accessToken, tenantId }: AuthOpts,
+) {
+  const query = new URLSearchParams();
+  if (params.search.trim()) query.set('search', params.search.trim());
+  const listQuery = new URLSearchParams(query);
+  listQuery.set('limit', String(params.pageSize));
+  listQuery.set('offset', String(params.page * params.pageSize));
+  return useQuery({
+    queryKey: [...KEY, 'page', params.search.trim(), params.page, params.pageSize] as const,
+    queryFn: async () => {
+      const [rows, total] = await Promise.all([
+        apiFetch<CorporateAccount[]>(`/corporate-accounts?${listQuery.toString()}`, { accessToken, tenantId }),
+        apiFetch<{ count: number }>(`/corporate-accounts/count${query.size ? `?${query.toString()}` : ''}`, { accessToken, tenantId }),
+      ]);
+      return { rows, total: total.count };
+    },
+    enabled: tenantId !== undefined,
+    placeholderData: (previous) => previous,
   });
 }
 

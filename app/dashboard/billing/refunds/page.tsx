@@ -22,7 +22,7 @@ import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { isSupervisorAtBranch, mayActAtBranch } from '@/lib/roles';
 import { useAuthStore } from '@/lib/store/authStore';
-import { formatDateOnly } from '@/lib/dates';
+import { formatDateOnly, formatMoment, formatMomentDate } from '@/lib/dates';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
@@ -255,9 +255,9 @@ function RefundList({ refunds, actions }: { refunds: Refund[]; actions: (r: Refu
                     {billName(r.folio)}
                   </Link>
                   <p className="text-tiny text-surface-muted">
-                    Asked {new Date(r.createdAt).toLocaleString()} by {r.requestedByUser?.name ?? 'Unknown'}
+                    Asked {formatMoment(r.createdAt)} by {r.requestedByUser?.name ?? 'Unknown'}
                     {r.approvedByUser ? ` · approved by ${r.approvedByUser.name}` : ''}
-                    {r.processedByUser && r.processedAt ? ` · paid out by ${r.processedByUser.name}, ${new Date(r.processedAt).toLocaleString()}` : ''}
+                    {r.processedByUser && r.processedAt ? ` · paid out by ${r.processedByUser.name}, ${formatMoment(r.processedAt)}` : ''}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -271,7 +271,7 @@ function RefundList({ refunds, actions }: { refunds: Refund[]; actions: (r: Refu
               <p className="text-small text-surface">Reason: {r.reason}</p>
               {r.payment ? (
                 <p className="text-tiny text-surface-muted">
-                  Against the {METHOD_LABEL[r.payment.method].toLowerCase()} payment of {formatMoney(r.payment.amount, symbol)} on {new Date(r.payment.recordedAt).toLocaleDateString()}
+                  Against the {METHOD_LABEL[r.payment.method].toLowerCase()} payment of {formatMoney(r.payment.amount, symbol)} on {formatMomentDate(r.payment.recordedAt)}
                 </p>
               ) : null}
               {r.rejectionReason ? <p className="text-small text-red-700">Turned down: {r.rejectionReason}</p> : null}
@@ -438,7 +438,7 @@ function RefundForm({
   const effectiveMethod = method || (payment?.method as RefundMethod | undefined) || '';
   const paymentOptions: SelectOption[] = [
     { value: '', label: 'No particular payment' },
-    ...payments.map((p) => ({ value: p.id, label: `${METHOD_LABEL[p.method]} — ${formatMoney(p.amount, symbol)}, ${new Date(p.recordedAt).toLocaleDateString()}${p.reference ? ` (${p.reference})` : ''}` })),
+    ...payments.map((p) => ({ value: p.id, label: `${METHOD_LABEL[p.method]} — ${formatMoney(p.amount, symbol)}, ${formatMomentDate(p.recordedAt)}${p.reference ? ` (${p.reference})` : ''}` })),
   ];
   const valid = amount !== undefined && amount > 0 && amount <= refundable + 0.004 && effectiveMethod !== '' && reason.trim().length > 0;
 

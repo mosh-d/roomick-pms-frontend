@@ -27,6 +27,7 @@ import {
 } from '@/lib/marketplace';
 import { useAuthStore } from '@/lib/store/authStore';
 import { ListingStateBadge } from '../_components/marketplaceUi';
+import { addDays, formatMoment, formatMomentDate, hotelToday } from '@/lib/dates';
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 type Message = { kind: 'ok' | 'error'; text: string } | null;
@@ -69,7 +70,7 @@ function ListingContent({ listing, auth, branchId }: { listing: ListingDetail; a
         <div className="flex flex-wrap items-center gap-3">
           <ListingStateBadge state={state} />
           {state === 'on' && listing.connection ? (
-            <span className="text-small text-surface">Switched on {new Date(listing.connection.enabledAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+            <span className="text-small text-surface">Switched on {formatMomentDate(listing.connection.enabledAt, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
           ) : null}
           {state === 'on' ? (
             <Button
@@ -98,7 +99,7 @@ function ListingContent({ listing, auth, branchId }: { listing: ListingDetail; a
         ) : null}
         {listing.connection?.lastRunSummary ? (
           <p className="text-tiny text-surface/70">
-            Last run {listing.connection.lastRunAt ? new Date(listing.connection.lastRunAt).toLocaleString() : ''}: {listing.connection.lastRunSummary}
+            Last run {listing.connection.lastRunAt ? formatMoment(listing.connection.lastRunAt) : ''}: {listing.connection.lastRunSummary}
           </p>
         ) : null}
         {message ? <p className={`text-small ${message.kind === 'error' ? 'text-red-600' : 'text-green-700'}`}>{message.text}</p> : null}
@@ -232,17 +233,10 @@ function AccountingSetup({ listing, config, auth }: { listing: ListingDetail; co
   );
 }
 
-function isoDay(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
-/** Yesterday, and the first of yesterday's month — the usual "month to date" an accountant asks for. */
+/** Yesterday at the hotel, and the first of yesterday's month — the usual "month to date" an accountant asks for. */
 function defaultRange(): { from: string; to: string } {
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const first = new Date(yesterday.getFullYear(), yesterday.getMonth(), 1);
-  return { from: isoDay(first), to: isoDay(yesterday) };
+  const yesterday = addDays(hotelToday(), -1);
+  return { from: `${yesterday.slice(0, 8)}01`, to: yesterday };
 }
 
 function ExportSection({ provider, name, auth, branchId }: { provider: string; name: string; auth: AuthOpts; branchId: string | null }) {

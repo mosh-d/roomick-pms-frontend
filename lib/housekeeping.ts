@@ -21,6 +21,11 @@ export interface HousekeepingTask {
   room: { id: string; number: string };
 }
 
+/** An evening turndown — the room is tidied for the night, not cleaned, and its cleanliness doesn't change. */
+export function isTurndown(task: Pick<HousekeepingTask, 'triggerEvent'>): boolean {
+  return task.triggerEvent === 'turndown';
+}
+
 export interface HousekeeperSummary {
   id: string;
   name: string;
@@ -60,7 +65,7 @@ export function useHousekeepersQuery(branchId: string | null, { accessToken, ten
 export function useCreateTaskMutation(branchId: string, { accessToken, tenantId }: AuthOpts) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { roomId: string; priority?: number; notes?: string }) =>
+    mutationFn: (body: { roomId: string; priority?: number; notes?: string; kind?: 'clean' | 'turndown' }) =>
       apiFetch<HousekeepingTask>(`/branches/${branchId}/housekeeping/tasks`, { method: 'POST', accessToken, tenantId, body }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['housekeeping-tasks', branchId] }),
   });

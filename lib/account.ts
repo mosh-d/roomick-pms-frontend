@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { apiFetch } from './api';
-import type { AuthUser } from './store/authStore';
+import type { LoginResult } from './store/authStore';
 
 /**
  * Getting into an account and back into it: accepting a staff invitation,
@@ -16,8 +16,6 @@ export const newPasswordSchema = z
   .regex(/[a-z]/, 'Needs a lowercase letter')
   .regex(/[A-Z]/, 'Needs an uppercase letter')
   .regex(/[0-9]/, 'Needs a number');
-
-export type LoginResult = { accessToken: string; refreshToken: string; user: AuthUser };
 
 /** Mirrors `InvitePreview` (roomick-pms-backend/src/modules/auth/auth.service.ts). */
 export interface InvitePreview {
@@ -38,7 +36,8 @@ export function previewInvite(token: string): Promise<InvitePreview> {
 }
 
 export function acceptInvite(token: string, body: { name?: string; password: string; phone?: string }): Promise<LoginResult | InviteJoined> {
-  return apiFetch<LoginResult | InviteJoined>(`/auth/accept-invite/${encodeURIComponent(token)}`, { method: 'POST', body });
+  // Through the web app's own address: a new account comes back signed in, its session in a cookie (see api.ts).
+  return apiFetch<LoginResult | InviteJoined>(`/auth/accept-invite/${encodeURIComponent(token)}`, { method: 'POST', session: true, body });
 }
 
 export function isInviteJoined(result: LoginResult | InviteJoined): result is InviteJoined {
@@ -69,7 +68,7 @@ export function resendVerification(email: string, password?: string): Promise<{ 
 
 type AuthOpts = { accessToken: string | undefined; tenantId: string | undefined };
 
-/** Ends every other session; the new pair it returns carries this one on. */
+/** Ends every other session; the new one it returns (its cookie included) carries this one on. */
 export function changePassword(body: { currentPassword: string; newPassword: string }, { accessToken, tenantId }: AuthOpts): Promise<LoginResult> {
-  return apiFetch<LoginResult>('/auth/change-password', { method: 'POST', accessToken, tenantId, body });
+  return apiFetch<LoginResult>('/auth/change-password', { method: 'POST', session: true, accessToken, tenantId, body });
 }

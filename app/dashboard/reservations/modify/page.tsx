@@ -21,8 +21,10 @@ import { formatMoney } from '@/lib/numberFormat';
 import { currencySymbolFor } from '@/lib/currencies';
 import { dayAfter } from '@/lib/dates';
 import { CapacityWarning } from '../../_components/CapacityWarning';
+import { DepositDialog, DepositStatus } from '../../_components/DepositDialog';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+import { StayPackagesEditor } from '../../_components/StayPackagesEditor';
 
 /** ISO date -> the plain `YYYY-MM-DD` a `type="date"` input needs. */
 function toDateInput(iso: string): string {
@@ -52,6 +54,7 @@ export default function ModifyReservationPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [takingDeposit, setTakingDeposit] = useState(false);
 
   // Confirmed + waitlisted are the only statuses the backend allows here —
   // fetched together and filtered client-side rather than adding a
@@ -222,6 +225,15 @@ export default function ModifyReservationPage() {
                 {newRate ? (
                   <Row label="New Total" value={`${formatMoney(newRate.total, currencySymbolFor(selected.branch.currency))} (${newRate.nights} ${newRate.nights === 1 ? 'night' : 'nights'})`} />
                 ) : null}
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-small text-accent-dark">Deposit</span>
+                  <span className="text-body">
+                    <DepositStatus reservation={selected} />
+                  </span>
+                </div>
+                <Button type="button" size="sm" variant="outline" className="self-start" onClick={() => setTakingDeposit(true)}>
+                  Take Deposit
+                </Button>
               </Card>
             </div>
           </Section>
@@ -238,6 +250,10 @@ export default function ModifyReservationPage() {
           </Button>
         </form>
       ) : null}
+
+      {selected && activeBranchId ? <StayPackagesEditor key={selected.id} reservation={selected} branchId={activeBranchId} auth={auth} /> : null}
+
+      <DepositDialog reservation={takingDeposit ? selected : null} branchId={activeBranchId ?? ''} auth={auth} onClose={() => setTakingDeposit(false)} />
     </Container>
   );
 }

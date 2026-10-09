@@ -13,6 +13,10 @@ import { useRatePlansQuery, useCreateRatePlanMutation, useUpdateRatePlanMutation
 import { useRoomTypesQuery } from '@/lib/rooms';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/authStore';
+import { useBranchDetailQuery } from '@/lib/propertyConfig';
+import { currencySymbolFor } from '@/lib/currencies';
+import { isSupervisorAtBranch } from '@/lib/roles';
+import { PackagesSection } from './_components/PackagesSection';
 
 const TYPE_OPTIONS: SelectOption[] = [
   { value: 'base', label: 'Base' },
@@ -60,6 +64,7 @@ export default function RatePlansPage() {
 
   const roomTypesQuery = useRoomTypesQuery(activeBranchId, auth);
   const ratePlansQuery = useRatePlansQuery(activeBranchId, auth);
+  const branchQuery = useBranchDetailQuery(activeBranchId, auth);
   const createMutation = useCreateRatePlanMutation(activeBranchId ?? '', auth);
   const updateMutation = useUpdateRatePlanMutation(activeBranchId ?? '', auth);
 
@@ -195,6 +200,14 @@ export default function RatePlansPage() {
           <Table columns={columns} rows={ratePlansQuery.data ?? []} emptyMessage="No rate plans yet — every stay prices at the room type's own base rate." />
         )}
       </Section>
+
+      <PackagesSection
+        branchId={activeBranchId}
+        roomTypes={roomTypesQuery.data ?? []}
+        currencySymbol={currencySymbolFor(branchQuery.data?.currency)}
+        canManage={isSupervisorAtBranch(user, activeBranchId)}
+        auth={auth}
+      />
     </Container>
   );
 }

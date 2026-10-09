@@ -59,6 +59,8 @@ export interface LoyaltyProgram {
   /** What one point is worth when redeemed. */
   pointValue: string;
   tiers: LoyaltyTier[];
+  /** Points earned lapse this many months later if unspent; null = never. */
+  pointsExpireAfterMonths: number | null;
   branchCurrencies: string[];
   updatedAt: string | null;
 }
@@ -76,7 +78,9 @@ export interface GuestLoyalty {
   tierName: string | null;
   nextTier: { name: string; pointsToGo: number } | null;
   redeemableValue: string | null;
-  transactions: Array<{ id: string; type: 'earn' | 'redeem' | 'adjust'; points: number; description: string; createdAt: string }>;
+  /** The next points to lapse unspent, and when. */
+  expiring: { points: number; on: string } | null;
+  transactions: Array<{ id: string; type: 'earn' | 'redeem' | 'adjust' | 'expire' | 'reversal'; points: number; description: string; createdAt: string }>;
 }
 
 export interface RedemptionResult {
@@ -113,7 +117,7 @@ function invalidateLoyalty(queryClient: QueryClient) {
 export function useSaveLoyaltyProgramMutation({ accessToken, tenantId }: AuthOpts) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { isActive: boolean; currency: string; pointsPerUnit: number; pointValue: number; tiers: LoyaltyTier[] }) =>
+    mutationFn: (body: { isActive: boolean; currency: string; pointsPerUnit: number; pointValue: number; tiers: LoyaltyTier[]; pointsExpireAfterMonths: number | null }) =>
       apiFetch<LoyaltyProgram>('/loyalty/program', { method: 'PUT', accessToken, tenantId, body }),
     onSuccess: () => invalidateLoyalty(queryClient),
   });

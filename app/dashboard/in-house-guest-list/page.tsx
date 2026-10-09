@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Container } from '@/components/ui/Container';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { ClipboardListIcon } from '@/components/ui/Icons';
@@ -16,6 +17,8 @@ import { currencySymbolFor } from '@/lib/currencies';
 import { useAuthStore } from '@/lib/store/authStore';
 import { ExtendStayDialog, type ExtendStayTarget } from '../_components/ExtendStayDialog';
 import { GuestNameCell } from '../_components/GuestNameCell';
+import { StayPackagesEditor } from '../_components/StayPackagesEditor';
+import { mayActAtBranch } from '@/lib/roles';
 import { formatDateOnly } from '@/lib/dates';
 
 /**
@@ -35,6 +38,7 @@ export default function InHouseGuestListPage() {
   const activeBranchId = useAuthStore((s) => s.activeBranchId);
   const [search, setSearch] = useState('');
   const [extendStayTarget, setExtendStayTarget] = useState<ExtendStayTarget | null>(null);
+  const [packagesFor, setPackagesFor] = useState<string | null>(null);
   const auth = { accessToken: accessToken ?? undefined, tenantId: user?.tenantId };
 
   const inHouseQuery = useInHouseQuery(activeBranchId, auth);
@@ -57,6 +61,9 @@ export default function InHouseGuestListPage() {
   }, [inHouseQuery.data, search]);
 
   if (!activeBranchId) return null;
+  const mayChangePackages = mayActAtBranch(user, activeBranchId, ['owner', 'manager', 'front_desk']);
+  // Looked up from the live list, so a save that refetches it shows the stay's new packages.
+  const packagesStay = (inHouseQuery.data ?? []).find((r) => r.id === packagesFor) ?? null;
 
   const columns: TableColumn<ReservationSummary>[] = [
     { key: 'guest', label: 'Name', render: (r) => <GuestNameCell guest={r.guest} />, sortValue: (r) => r.guest.name },
@@ -103,6 +110,11 @@ export default function InHouseGuestListPage() {
             <Button size="sm" variant="outline" onClick={() => setExtendStayTarget({ id: r.id, guestName: r.guest.name, checkOutDate: r.checkOutDate })}>
               Extend Stay
             </Button>
+            {mayChangePackages ? (
+              <Button size="sm" variant="outline" onClick={() => setPackagesFor(r.id)}>
+                Packages
+              </Button>
+            ) : null}
             {folio ? (
               <Button size="sm" variant="outline" onClick={() => router.push(`/dashboard/billing/${folio.id}`)}>
                 View Folio
@@ -136,6 +148,11 @@ export default function InHouseGuestListPage() {
       )}
 
       <ExtendStayDialog target={extendStayTarget} branchId={activeBranchId} auth={auth} onClose={() => setExtendStayTarget(null)} />
+      {packagesStay ? (
+        <Modal open onClose={() => setPackagesFor(null)} title={`Packages — ${packagesStay.guest.name}, room ${packagesStay.room?.number ?? '—'}`}>
+          <StayPackagesEditor key={packagesStay.id} reservation={packagesStay} branchId={activeBranchId} auth={auth} showWhenNone />
+        </Modal>
+      ) : null}
     </Container>
   );
 }
