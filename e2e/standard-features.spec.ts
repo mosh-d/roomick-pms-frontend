@@ -6,15 +6,22 @@ import { api, lagosDay, Owner, Property, sharedOrganisation, signInThroughUi } f
  * allotments, turndown, room release dates, POS discounts and split payments,
  * points expiry — each driven through its own page, and what the page did
  * checked on the API.
+ *
+ * One page, signed in once, for the whole run: sign-ins are limited to ten a
+ * minute from one address, and a test each signing in afresh ran past that
+ * on CI's faster machines.
  */
 test.describe.serial('Standard features', () => {
   let owner: Owner;
   let property: Property;
   let packageId: string;
   let stayId: string;
+  let page: Page;
 
-  test.beforeAll(async () => {
+  test.beforeAll(async ({ browser }) => {
     ({ owner, property } = await sharedOrganisation());
+    page = await browser.newPage();
+    await signInThroughUi(page, owner);
   });
 
   /** Picks `option` in the combobox labelled `label`. */
@@ -27,8 +34,7 @@ test.describe.serial('Standard features', () => {
     await expect(page.getByText(/went wrong/i)).toHaveCount(0);
   }
 
-  test('a manager adds a package on the Rate Resolver page', async ({ page }) => {
-    await signInThroughUi(page, owner);
+  test('a manager adds a package on the Rate Resolver page', async () => {
     await page.goto('/dashboard/reservations/rate-plans', { waitUntil: 'networkidle' });
     await page.getByRole('button', { name: 'Add Package' }).click();
     const dialog = page.getByRole('dialog');
@@ -46,8 +52,7 @@ test.describe.serial('Standard features', () => {
     packageId = list[0].id;
   });
 
-  test('the desk books a stay with the package, priced in the preview', async ({ page }) => {
-    await signInThroughUi(page, owner);
+  test('the desk books a stay with the package, priced in the preview', async () => {
     await page.goto('/dashboard/reservations/create', { waitUntil: 'networkidle' });
     await page.getByLabel('Name').fill('Package Guest');
     await page.getByLabel('Email').fill(`package.${Date.now()}@example.com`);
@@ -68,11 +73,10 @@ test.describe.serial('Standard features', () => {
     expect(stay.packages).toEqual([expect.objectContaining({ packageId })]);
   });
 
-  test('day use: with the branch selling it, the desk books a room for the day', async ({ page }) => {
+  test('day use: with the branch selling it, the desk books a room for the day', async () => {
     expect((await api('PATCH', `/branches/${property.branchId}/policies/day-use`, { owner, body: { enabled: true, from: '10:00', until: '17:00' } })).status).toBe(200);
     expect((await api('PATCH', `/room-types/${property.roomTypeId}`, { owner, body: { dayUseRate: 8000 } })).status).toBe(200);
     try {
-      await signInThroughUi(page, owner);
       await page.goto('/dashboard/reservations/create', { waitUntil: 'networkidle' });
       await page.getByLabel('Name').fill('Day Guest');
       await page.getByLabel('Email').fill(`day.${Date.now()}@example.com`);
@@ -95,8 +99,7 @@ test.describe.serial('Standard features', () => {
     }
   });
 
-  test('a channel allotment is added, changed and removed on Revenue Management', async ({ page }) => {
-    await signInThroughUi(page, owner);
+  test('a channel allotment is added, changed and removed on Revenue Management', async () => {
     await page.goto('/dashboard/revenue', { waitUntil: 'networkidle' });
     // The page has a Room Type field in each of its sections.
     await page.locator('#allotment-room-type').click();
@@ -120,8 +123,7 @@ test.describe.serial('Standard features', () => {
     await noErrors(page);
   });
 
-  test('turndown: switched on in Property Config, done from the Task Board', async ({ page }) => {
-    await signInThroughUi(page, owner);
+  test('turndown: switched on in Property Config, done from the Task Board', async () => {
     await page.goto('/dashboard/property-config', { waitUntil: 'networkidle' });
     await page.getByRole('radiogroup', { name: 'Turn rooms down in the evening' }).getByText('Yes').click();
     await page.getByRole('button', { name: 'Save Turndown' }).click();
@@ -145,8 +147,7 @@ test.describe.serial('Standard features', () => {
     await noErrors(page);
   });
 
-  test('a package added to the stay under way from the In-House list is charged from tonight', async ({ page }) => {
-    await signInThroughUi(page, owner);
+  test('a package added to the stay under way from the In-House list is charged from tonight', async () => {
     await page.goto('/dashboard/in-house-guest-list', { waitUntil: 'networkidle' });
     await page.getByRole('row', { name: /Turndown Guest/ }).getByRole('button', { name: 'Packages' }).click();
     const dialog = page.getByRole('dialog');
@@ -160,8 +161,7 @@ test.describe.serial('Standard features', () => {
     expect(bill.lineItems.filter((line) => line.packageId === packageId).map((line) => [line.amount, line.serviceDate.slice(0, 10)])).toEqual([['10000', lagosDay(0)]]);
   });
 
-  test('a room is put out of order until a date, then released, on the Room Status Board', async ({ page }) => {
-    await signInThroughUi(page, owner);
+  test('a room is put out of order until a date, then released, on the Room Status Board', async () => {
     await page.goto('/dashboard/room-status-board', { waitUntil: 'networkidle' });
     await page.getByRole('button', { name: '101', exact: true }).click();
     await page.getByLabel('Back in service on (optional)').fill(lagosDay(3));
@@ -178,14 +178,13 @@ test.describe.serial('Standard features', () => {
     await noErrors(page);
   });
 
-  test('POS: a manager’s discount, and a sale split between cash and card', async ({ page }) => {
+  test('POS: a manager’s discount, and a sale split between cash and card', async () => {
     const outlet = await api('POST', `/branches/${property.branchId}/pos/outlets`, { owner, body: { name: 'Pool Bar', category: 'bar' } });
     expect(outlet.status).toBe(201);
     expect((await api('POST', `/pos/outlets/${outlet.json.id as string}/menu-items`, { owner, body: { name: 'Chapman', category: 'Drinks', price: 2000 } })).status).toBe(201);
     const shift = await api('POST', `/branches/${property.branchId}/shifts/open`, { owner, body: { shiftType: 'morning', openingFloat: 0 } });
     expect(shift.status).toBe(201);
     try {
-      await signInThroughUi(page, owner);
       await page.goto('/dashboard/pos/terminal', { waitUntil: 'networkidle' });
       // The menu's own tile — the basket adds its own Chapman buttons once there's one in it.
       const chapman = page.getByRole('tabpanel').getByRole('button', { name: /Chapman/ });
@@ -207,8 +206,7 @@ test.describe.serial('Standard features', () => {
     }
   });
 
-  test('loyalty: points are set to lapse after so many months', async ({ page }) => {
-    await signInThroughUi(page, owner);
+  test('loyalty: points are set to lapse after so many months', async () => {
     await page.goto('/dashboard/loyalty', { waitUntil: 'networkidle' });
     await page.getByLabel('Points lapse after (months)').fill('24');
     await page.getByRole('button', { name: 'Save Programme' }).click();
@@ -216,7 +214,7 @@ test.describe.serial('Standard features', () => {
     await noErrors(page);
   });
 
-  test('a guest adds the package on the booking page and sees it in the price', async ({ page }) => {
+  test('a guest adds the package on the booking page and sees it in the price', async () => {
     const slug = `browser-features-${Date.now()}`;
     expect((await api('PUT', `/branches/${property.branchId}/booking-engine`, { owner, body: { slug } })).status).toBe(200);
     await page.goto(`/book/${slug}`, { waitUntil: 'networkidle' });
@@ -228,6 +226,7 @@ test.describe.serial('Standard features', () => {
   });
 
   test.afterAll(async () => {
+    await page?.close();
     if (stayId) await api('POST', `/reservations/${stayId}/check-out`, { owner, body: {} });
     await api('PATCH', `/branches/${property.branchId}/policies/turndown`, { owner, body: { enabled: false } });
   });
