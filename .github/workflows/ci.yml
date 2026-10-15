@@ -111,7 +111,7 @@ jobs:
           NODE_ENV: test
           JWT_ACCESS_TTL: 5s
           PORT: '3096'
-          CORS_ORIGINS: http://localhost:3097
+          CORS_ORIGINS: http://127.0.0.1:3097
         run: |
           npm run build
           nohup node dist/main > "$GITHUB_WORKSPACE/api.log" 2>&1 &
@@ -121,19 +121,24 @@ jobs:
       - name: Install the web app
         run: npm ci
 
-      - name: Build and start the web app against that API
+      # The build that goes live: OpenNext's Worker, served by wrangler in
+      # Cloudflare's own runtime (workerd), not by `next start`.
+      - name: Build the web app for Cloudflare Workers and serve it against that API
         env:
           NEXT_PUBLIC_API_URL: http://127.0.0.1:3096/api/v1
+          WRANGLER_SEND_METRICS: 'false'
         run: |
-          npm run build
-          nohup npx next start -p 3097 > "$GITHUB_WORKSPACE/web.log" 2>&1 &
-          for i in $(seq 1 60); do curl -s -o /dev/null http://localhost:3097/login && exit 0; sleep 2; done
+          npx opennextjs-cloudflare build
+          nohup npx wrangler dev --port 3097 --ip 127.0.0.1 > "$GITHUB_WORKSPACE/web.log" 2>&1 &
+          for i in $(seq 1 60); do curl -s -o /dev/null http://127.0.0.1:3097/login && exit 0; sleep 2; done
           echo "The web app didn't start"; cat "$GITHUB_WORKSPACE/web.log"; exit 1
 
       - name: Install the browser
         run: npx playwright install --with-deps chromium
 
       - name: Browser tests
+        env:
+          E2E_WEB_URL: http://127.0.0.1:3097
         run: npx playwright test
 
       - name: Keep the logs and the report when something failed

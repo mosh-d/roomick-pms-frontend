@@ -5,7 +5,7 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1
 
 /**
  * The routes that start, renew or end a session go to the web app's own
- * address instead, and `proxy.ts` forwards them to the API. The API keeps the
+ * address instead, and `middleware.ts` forwards them to the API. The API keeps the
  * refresh token in an httpOnly cookie no script on the page can read; coming
  * back through this site's own address makes it this site's own cookie, which
  * a browser that blocks other sites' cookies (Safari does) keeps all the same.

@@ -3,7 +3,7 @@ import { withSentryConfig } from '@sentry/nextjs';
 
 
 /**
- * The Content Security Policy is set per request by `proxy.ts`, which gives
+ * The Content Security Policy is set per request by `middleware.ts`, which gives
  * every page its own script nonce — a static header here could only allow
  * inline scripts wholesale, which is what an injected script is.
  */

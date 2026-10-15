@@ -37,8 +37,11 @@ yarn-error.log*
 # ...except the committed template documenting what's required — see README.
 !.env.example
 
-# vercel
-.vercel
+# cloudflare workers (OpenNext's build output, wrangler's local state and its local secrets)
+/.open-next/
+/.wrangler/
+.dev.vars*
+cloudflare-env.d.ts
 
 # typescript
 *.tsbuildinfo

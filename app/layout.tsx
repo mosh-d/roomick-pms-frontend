@@ -21,7 +21,7 @@ export const viewport = {
 // helper), not the older `{ children }: { children: ReactNode }` — see
 // AGENTS.md at the project root and node_modules/next/dist/docs/.
 export default async function RootLayout({ children }: LayoutProps<'/'>) {
-  // Every page is rendered per request: `proxy.ts` gives each one its own
+  // Every page is rendered per request: `middleware.ts` gives each one its own
   // script nonce, and a page prerendered at build time would carry a stale
   // one that no live policy matches. Reading the headers is what makes the
   // whole tree dynamic.

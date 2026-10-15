@@ -166,7 +166,10 @@ test.describe.serial('Standard features', () => {
     await page.getByRole('button', { name: '101', exact: true }).click();
     await page.getByLabel('Back in service on (optional)').fill(lagosDay(3));
     await page.getByRole('button', { name: 'Out of Order' }).click();
-    await expect(page.getByText(/^Back in service on /)).toBeVisible();
+    // Not the "Back in service on" text alone: the date field's own label
+    // starts with the same words, so it matched before the hold was saved.
+    await expect(page.getByRole('button', { name: 'Release Hold' })).toBeVisible();
+    await expect(page.getByText(/^Back in service on \d/)).toBeVisible();
     const held = ((await api('GET', `/branches/${property.branchId}/rooms`, { owner })).json as unknown as Array<{ id: string; heldStatus: string | null; heldUntil: string | null }>).find((room) => room.id === property.roomIds[0]);
     expect(held).toMatchObject({ heldStatus: 'out_of_order' });
     expect(held?.heldUntil?.slice(0, 10)).toBe(lagosDay(3));

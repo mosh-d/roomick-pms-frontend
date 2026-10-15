@@ -13,9 +13,15 @@ import { NextResponse, type NextRequest } from 'next/server';
  * from the `x-nonce` request header and stamps it on every script tag it
  * emits, and `'strict-dynamic'` lets those scripts load the chunks they need.
  *
- * Runs as Next.js's proxy (what used to be called middleware) so each request
- * gets its own nonce; the page itself is rendered per request for the same
- * reason (see `app/layout.tsx`).
+ * Runs as Next.js middleware so each request gets its own nonce; the page
+ * itself is rendered per request for the same reason (see `app/layout.tsx`).
+ *
+ * Middleware, not Next.js 16's `proxy.ts`, on purpose. The web app runs on
+ * Cloudflare Workers (OpenNext), where middleware runs on the edge runtime
+ * and is fully supported; `proxy.ts` always runs on Node.js, which OpenNext
+ * supports only experimentally, and its build fails outright alongside
+ * Sentry (opennextjs-cloudflare issue #1400). Everything here is plain web
+ * APIs, so the edge runtime loses nothing.
  *
  * - Scripts: this app's own, by nonce (plus eval and a WebSocket for hot
  *   reloading in development).
@@ -67,6 +73,13 @@ const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3000/api/v
  * server, and count every sign-in in the country against one address — and
  * WEB_PROXY_SECRET, the value both services share, which is the only reason
  * the API believes the first. A visitor's own copies of either are dropped.
+ *
+ * The visitor is `cf-connecting-ip`, which Cloudflare sets itself on every
+ * request and overwrites if a visitor sends one. Never `x-forwarded-for`:
+ * Cloudflare adds the real address to the end of that, after whatever the
+ * visitor put first, so its first entry is anyone's to choose — and with it
+ * the sign-in rate limit. Off Cloudflare (`next start` in tests) there is no
+ * visitor header, and the API counts this server's own address instead.
  */
 function forwardSessionRoute(request: NextRequest): NextResponse {
   let target: URL;
@@ -79,7 +92,7 @@ function forwardSessionRoute(request: NextRequest): NextResponse {
   headers.delete('x-roomick-proxy-secret');
   headers.delete('x-roomick-visitor-ip');
   const secret = process.env.WEB_PROXY_SECRET;
-  const visitor = request.headers.get('x-real-ip') ?? request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+  const visitor = request.headers.get('cf-connecting-ip');
   if (secret && visitor) {
     headers.set('x-roomick-proxy-secret', secret);
     headers.set('x-roomick-visitor-ip', visitor);
@@ -87,7 +100,7 @@ function forwardSessionRoute(request: NextRequest): NextResponse {
   return NextResponse.rewrite(target, { request: { headers } });
 }
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/api/v1/auth/')) return forwardSessionRoute(request);
 
   const nonce = btoa(crypto.randomUUID());

@@ -1,0 +1,30 @@
+// The web app on Cloudflare Workers, built by OpenNext (`npm run deploy`, or
+// Cloudflare's own build from the repository). The two `.open-next` paths are
+// where `opennextjs-cloudflare build` writes the Worker and its static files.
+//
+// NEXT_PUBLIC_API_URL is built into the app, so it is a BUILD variable;
+// WEB_PROXY_SECRET is read on each request, so it is a runtime SECRET. Both
+// are set in the Cloudflare dashboard, never here (see the setup guide).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "roomick-web",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-09-30",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "roomick-web"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  },
+  // Variables set in the dashboard survive each deploy instead of being wiped
+  // by this file, which deliberately lists none.
+  "keep_vars": true
+}
