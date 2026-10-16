@@ -10,9 +10,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -69,11 +69,11 @@ jobs:
         working-directory: web
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: web
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: mosh-d/roomick-pms-backend
           path: api
@@ -81,7 +81,7 @@ jobs:
           # token for it, saved in this repository's Actions secrets.
           token: ${{ secrets.BACKEND_REPO_TOKEN || github.token }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -143,7 +143,7 @@ jobs:
 
       - name: Keep the logs and the report when something failed
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: browser-test-output
           path: |
