@@ -97,7 +97,7 @@ jobs:
         working-directory: api
         run: |
           npx prisma migrate deploy
-          npx prisma db execute --url "$DATABASE_URL" --stdin <<'SQL'
+          npx prisma db execute --stdin <<'SQL'
           CREATE ROLE roomick_app LOGIN PASSWORD 'roomick_app' NOSUPERUSER NOBYPASSRLS;
           GRANT USAGE ON SCHEMA public TO roomick_app;
           GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO roomick_app;
