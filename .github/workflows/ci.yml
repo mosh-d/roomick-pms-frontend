@@ -7,7 +7,9 @@ on:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    # Named, not ubuntu-latest: GitHub moves ubuntu-latest to 26.04 from 19 Oct 2026,
+    # and a named image changes only when this line does.
+    runs-on: ubuntu-26.04
 
     steps:
       - uses: actions/checkout@v7
@@ -41,7 +43,9 @@ jobs:
     # The web app and the API sit side by side (web/, api/): checked out
     # inside the web app, the API's own test files were type-checked by the
     # web app's build ("Cannot find name 'expect'").
-    runs-on: ubuntu-latest
+    # Named, not ubuntu-latest: GitHub moves ubuntu-latest to 26.04 from 19 Oct 2026,
+    # and a named image changes only when this line does.
+    runs-on: ubuntu-26.04
 
     services:
       postgres:
