@@ -126,17 +126,27 @@ export async function deleteOrganisation(owner: Owner | undefined): Promise<void
   if (res.status !== 204) throw new Error(`delete ${res.status}: ${JSON.stringify(res.json)}`);
 }
 
+/** The owner's API session, signed in once per test process and shared by every spec (`api()` keeps it renewed). */
+let sharedOwner: Promise<Owner> | undefined;
+
 /**
  * The one organisation every browser test shares, made by the global setup
- * (one sign-up and one delete a run: both are rate-limited). Each test signs
- * in afresh, so tests never share a session.
+ * (one sign-up and one delete a run: both are rate-limited). Its API session
+ * is signed in once and shared: sign-ins are limited to ten a minute from one
+ * address, and a sign-in per spec ran past that on CI once the tests got
+ * faster. A test's browser still signs in on its own, so browsers never share
+ * a session.
  */
 export async function sharedOrganisation(): Promise<{ owner: Owner; property: Property }> {
   const email = process.env.E2E_OWNER_EMAIL;
   const password = process.env.E2E_OWNER_PASSWORD;
   if (!email || !password) throw new Error('No shared organisation — run through playwright.config.ts, whose global setup makes it');
+  sharedOwner ??= signIn(email, password).catch((error: unknown) => {
+    sharedOwner = undefined;
+    throw error;
+  });
   return {
-    owner: await signIn(email, password),
+    owner: await sharedOwner,
     property: { branchId: process.env.E2E_BRANCH_ID ?? '', roomTypeId: process.env.E2E_ROOM_TYPE_ID ?? '', roomIds: (process.env.E2E_ROOM_IDS ?? '').split(',') },
   };
 }
